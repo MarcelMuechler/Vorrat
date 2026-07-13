@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
 
@@ -56,13 +57,14 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
   }
 
   Future<void> _consumeDialog(StockItem item) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: '1');
     var reason = 'used';
     final amount = await showDialog<double>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('Use some of "${widget.productName}"'),
+          title: Text(l10n.useSomeOfTitle(widget.productName)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -70,13 +72,13 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                 controller: controller,
                 autofocus: true,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Amount (of ${item.amount} in stock)'),
+                decoration: InputDecoration(labelText: l10n.amountInStockLabel('${item.amount}')),
               ),
               const SizedBox(height: 12),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'used', label: Text('Used')),
-                  ButtonSegment(value: 'spoiled', label: Text('Spoiled')),
+                segments: [
+                  ButtonSegment(value: 'used', label: Text(l10n.usedLabel)),
+                  ButtonSegment(value: 'spoiled', label: Text(l10n.spoiledLabel)),
                 ],
                 selected: {reason},
                 onSelectionChanged: (value) => setState(() => reason = value.first),
@@ -84,10 +86,10 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
             FilledButton(
               onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
-              child: const Text('Consume'),
+              child: Text(l10n.consumeButton),
             ),
           ],
         ),
@@ -100,20 +102,23 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
       if (mounted) await context.read<StockProvider>().refresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not consume: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotConsume('$e'))));
       }
     }
   }
 
   Future<void> _confirmDelete(StockItem item) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove from stock?'),
-        content: Text('This deletes this batch of "${widget.productName}".'),
+        title: Text(l10n.removeStockTitle),
+        content: Text(l10n.deleteBatchConfirm(widget.productName)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.removeButton)),
         ],
       ),
     );
@@ -125,6 +130,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(widget.productName)),
       body: RefreshIndicator(
@@ -136,12 +142,12 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Could not load batches: $_error'),
+                        child: Text(l10n.couldNotLoadBatches('$_error')),
                       ),
                     ],
                   )
                 : _items.isEmpty
-                    ? const Center(child: Text('No batches left.'))
+                    ? Center(child: Text(l10n.noBatchesLeft))
                     : ListView.separated(
                         itemCount: _items.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
@@ -153,7 +159,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                             subtitle: Text([
                               if (item.locationName != null) item.locationName!,
                               if (item.bestBeforeDate != null)
-                                'BBD: ${item.bestBeforeDate!.toIso8601String().split('T').first}',
+                                l10n.bbdLabel(item.bestBeforeDate!.toIso8601String().split('T').first),
                             ].join(' · ')),
                             onTap: () => _consumeDialog(item),
                             onLongPress: () => _confirmDelete(item),

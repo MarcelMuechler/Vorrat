@@ -5,10 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
-import '../util/open_url.dart';
+import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
+import '../util/open_url.dart';
 import 'locations_screen.dart';
 import 'products_screen.dart';
 
@@ -65,11 +66,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveExpiringSoonDays() async {
+    final l10n = AppLocalizations.of(context)!;
     final days = int.tryParse(_expiringSoonController.text);
     if (days == null || days <= 0) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Enter a whole number greater than 0.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.enterWholeNumber)));
       return;
     }
     setState(() => _savingExpiringSoon = true);
@@ -80,7 +82,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await stock.loadExpiringSoonDays();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave('$e'))));
       }
     } finally {
       if (mounted) setState(() => _savingExpiringSoon = false);
@@ -92,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _testing = true;
       _testResult = null;
     });
+    final l10n = AppLocalizations.of(context)!;
     final settings = context.read<SettingsProvider>();
     final api = context.read<ApiClient>();
     await settings.setServerUrl(_controller.text);
@@ -99,17 +104,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() {
       _testing = false;
-      _testResult = health != null ? 'Connected — server v${health['version']}' : 'Could not reach server';
+      _testResult = health != null
+          ? l10n.connectedVersion('${health['version']}')
+          : l10n.couldNotReachServer;
     });
   }
 
   Future<void> _exportStockCsv() async {
+    final l10n = AppLocalizations.of(context)!;
     final url = context.read<ApiClient>().exportStockCsvUrl();
     try {
       await openInBrowser(url.toString());
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not export: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotExport('$e'))));
       }
     }
   }
@@ -125,23 +135,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Server URL. Leave blank when running inside Home Assistant '
-              '(same-origin via Ingress). Native apps and local dev need the '
-              'full URL, e.g. http://192.168.1.20:8099',
-            ),
+            Text(l10n.serverUrlDescription),
             const SizedBox(height: 12),
             TextField(
               controller: _controller,
               decoration: InputDecoration(
-                labelText: 'Server URL',
+                labelText: l10n.serverUrlLabel,
                 hintText: 'http://192.168.1.20:8099',
                 border: const OutlineInputBorder(),
                 suffixIcon: ValueListenableBuilder<bool>(
@@ -149,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   builder: (context, hasCamera, _) => hasCamera
                       ? IconButton(
                           icon: const Icon(Icons.qr_code_scanner),
-                          tooltip: 'Scan to connect',
+                          tooltip: l10n.scanToConnectTooltip,
                           onPressed: _scanToConnect,
                         )
                       : const SizedBox.shrink(),
@@ -166,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save & test connection'),
+                  : Text(l10n.saveTestConnectionButton),
             ),
             if (_testResult != null) ...[
               const SizedBox(height: 8),
@@ -174,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
             const SizedBox(height: 24),
             const Divider(),
-            const Text('"Expiring soon" applies to items due within this many days.'),
+            Text(l10n.expiringSoonDescription),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -191,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: _savingExpiringSoon ? null : _saveExpiringSoonDays,
                   child: _savingExpiringSoon
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save'),
+                      : Text(l10n.saveButton),
                 ),
               ],
             ),
@@ -199,8 +206,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.location_on_outlined),
-              title: const Text('Locations'),
-              subtitle: const Text('Rename or delete storage locations'),
+              title: Text(l10n.locationsTitle),
+              subtitle: Text(l10n.locationsSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const LocationsScreen()),
@@ -209,8 +216,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.inventory_2_outlined),
-              title: const Text('Products'),
-              subtitle: const Text('Browse, edit, or delete products'),
+              title: Text(l10n.productsTitle),
+              subtitle: Text(l10n.productsSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProductsScreen()),
@@ -219,24 +226,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.file_download_outlined),
-              title: const Text('Export stock (CSV)'),
-              subtitle: const Text('Download current stock as a spreadsheet'),
+              title: Text(l10n.exportCsvTitle),
+              subtitle: Text(l10n.exportCsvSubtitle),
               onTap: _exportStockCsv,
             ),
             if (_wastedThisMonth != null) ...[
               const Divider(),
-              Text(
-                _wastedThisMonth == 0
-                    ? 'Nothing marked spoiled this month.'
-                    : '$_wastedThisMonth batch${_wastedThisMonth == 1 ? '' : 'es'} marked spoiled this month.',
-              ),
+              Text(l10n.spoiledThisMonth(_wastedThisMonth!)),
             ],
             if (kIsWeb) ...[
               const SizedBox(height: 32),
-              const Text(
-                'Pair another device: open Settings → Scan to connect on it, '
-                'then scan this code.',
-              ),
+              Text(l10n.pairDeviceHint),
               const SizedBox(height: 12),
               Center(
                 child: QrImageView(
@@ -281,7 +281,7 @@ class _QrConnectScannerState extends State<_QrConnectScanner> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan server QR code')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.scanQrTitle)),
       body: MobileScanner(onDetect: _onDetect),
     );
   }

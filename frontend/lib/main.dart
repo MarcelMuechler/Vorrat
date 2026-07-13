@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'api/client.dart';
+import 'l10n/app_localizations.dart';
 import 'screens/scan_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stock_overview_screen.dart';
@@ -57,6 +58,8 @@ class VorratApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Vorrat',
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal, brightness: Brightness.dark),
@@ -77,23 +80,32 @@ class _Tab {
   const _Tab({required this.id, required this.screen, required this.destination});
 }
 
-const _allTabs = [
-  _Tab(
-    id: _AppTab.stock,
-    screen: StockOverviewScreen(),
-    destination: NavigationDestination(icon: Icon(Icons.kitchen), label: 'Stock'),
-  ),
-  _Tab(
-    id: _AppTab.scan,
-    screen: ScanScreen(),
-    destination: NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
-  ),
-  _Tab(
-    id: _AppTab.settings,
-    screen: SettingsScreen(),
-    destination: NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
-  ),
-];
+List<_Tab> _allTabs(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  return [
+    _Tab(
+      id: _AppTab.stock,
+      screen: const StockOverviewScreen(),
+      destination: NavigationDestination(icon: const Icon(Icons.kitchen), label: l10n.stockTitle),
+    ),
+    _Tab(
+      id: _AppTab.scan,
+      screen: const ScanScreen(),
+      destination: NavigationDestination(
+        icon: const Icon(Icons.qr_code_scanner),
+        label: l10n.scanTitle,
+      ),
+    ),
+    _Tab(
+      id: _AppTab.settings,
+      screen: const SettingsScreen(),
+      destination: NavigationDestination(
+        icon: const Icon(Icons.settings),
+        label: l10n.settingsTitle,
+      ),
+    ),
+  ];
+}
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -108,11 +120,13 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final pendingScans = context.watch<ScanQueue>().length;
+    final l10n = AppLocalizations.of(context)!;
 
     return ValueListenableBuilder<bool>(
       valueListenable: cameraAvailable,
       builder: (context, hasCamera, _) {
-        final tabs = hasCamera ? _allTabs : _allTabs.where((t) => t.id != _AppTab.scan).toList();
+        final allTabs = _allTabs(context);
+        final tabs = hasCamera ? allTabs : allTabs.where((t) => t.id != _AppTab.scan).toList();
         var index = tabs.indexWhere((t) => t.id == _selected);
         if (index == -1) index = 0; // the selected tab (Scan) just disappeared
         return Scaffold(
@@ -128,7 +142,7 @@ class _HomeShellState extends State<HomeShell> {
                           label: Text('$pendingScans'),
                           child: const Icon(Icons.qr_code_scanner),
                         ),
-                        label: 'Scan',
+                        label: l10n.scanTitle,
                       )
                     : t.destination,
             ],

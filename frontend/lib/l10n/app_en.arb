@@ -1,0 +1,244 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Vorrat",
+
+  "stockTitle": "Stock",
+  "scanTitle": "Scan",
+  "settingsTitle": "Settings",
+  "locationsTitle": "Locations",
+  "productsTitle": "Products",
+
+  "cancelButton": "Cancel",
+  "saveButton": "Save",
+  "deleteButton": "Delete",
+  "addButton": "Add",
+  "removeButton": "Remove",
+  "consumeButton": "Consume",
+  "lookUpButton": "Look up",
+  "usedLabel": "Used",
+  "spoiledLabel": "Spoiled",
+  "nameLabel": "Name",
+  "brandLabel": "Brand",
+  "categoryLabel": "Category",
+  "amountFieldLabel": "Amount",
+  "unitLabel": "Unit",
+  "quantityUnitLabel": "Quantity unit",
+  "locationLabel": "Location",
+  "defaultLocationLabel": "Default location",
+  "noneLabel": "None",
+  "searchLabel": "Search",
+  "barcodeLabel": "Barcode: {code}",
+  "@barcodeLabel": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+
+  "viewTooltip": "View",
+  "viewModeFlat": "Every batch",
+  "viewModeGrouped": "Grouped by product",
+  "viewModeBreakdown": "Expiry breakdown",
+  "sortTooltip": "Sort",
+  "sortBestBeforeDateLabel": "Best-before date",
+  "expiringSoonChip": "Expiring soon",
+  "allLocationsLabel": "All locations",
+  "stockLoadError": "Could not load stock: {error}\n\nCheck the server URL in Settings.",
+  "@stockLoadError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "noStockYet": "No stock yet. Scan something to add it.",
+  "addProductManuallyTooltip": "Add product manually",
+  "groupTotalAmount": "{amount} total",
+  "@groupTotalAmount": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "markAsOpenedTooltip": "Mark as opened",
+  "useSomeOfTitle": "Use some of \"{name}\"",
+  "@useSomeOfTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "amountInStockLabel": "Amount (of {amount} in stock)",
+  "@amountInStockLabel": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "removeStockTitle": "Remove from stock?",
+  "deleteBatchConfirm": "This deletes this batch of \"{name}\".",
+  "@deleteBatchConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "couldNotConsume": "Could not consume: {error}",
+  "@couldNotConsume": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "expiryToday": "Expires today",
+  "expiryTomorrow": "Expires tomorrow",
+  "expiredYesterday": "Expired yesterday",
+  "expiryInDays": "Expires in {days} days",
+  "@expiryInDays": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "expiredDaysAgo": "Expired {days} days ago",
+  "@expiredDaysAgo": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "purchasedToday": "Purchased today",
+  "purchasedTomorrow": "Purchased tomorrow",
+  "purchasedYesterday": "Purchased yesterday",
+  "purchasedInDays": "Purchased in {days} days",
+  "@purchasedInDays": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "purchasedDaysAgo": "Purchased {days} days ago",
+  "@purchasedDaysAgo": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "openedToday": "Opened today",
+  "openedTomorrow": "Opened tomorrow",
+  "openedYesterday": "Opened yesterday",
+  "openedInDays": "Opened in {days} days",
+  "@openedInDays": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "openedDaysAgo": "Opened {days} days ago",
+  "@openedDaysAgo": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "invalidBarcodeMessage": "That doesn't look like a valid barcode.",
+  "enterBarcodeTitle": "Enter barcode",
+  "savedForLater": "No connection — saved for later ({count} pending).",
+  "@savedForLater": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "lookupFailed": "Lookup failed: {error}\n\nCheck the server URL in Settings.",
+  "@lookupFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "enterManuallyTooltip": "Enter barcode manually",
+  "recentlyScanned": "Recently scanned",
+  "pendingScans": "Pending scans",
+  "nothingScannedYet": "Nothing scanned yet.",
+
+  "newLocationTitle": "New location",
+  "couldNotAddLocation": "Could not add location: {error}",
+  "@couldNotAddLocation": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotSave": "Could not save: {error}",
+  "@couldNotSave": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "addToStockTitle": "Add to stock",
+  "offReviewHint": "From Open Food Facts — check before saving.",
+  "noBestBeforeDate": "No best-before date",
+  "bestBeforeLabel": "Best before: {date}",
+  "@bestBeforeLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "fetchedFromOff": "Fetched from Open Food Facts — review, then Save.",
+  "couldNotRefresh": "Could not refresh: {error}",
+  "@couldNotRefresh": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "editProductTitle": "Edit product",
+  "refreshFromOffTooltip": "Refresh from Open Food Facts",
+  "defaultBestBeforeDaysLabel": "Default best-before days",
+  "defaultBestBeforeDaysHint": "e.g. 7 — prefilled when adding this product to stock",
+  "openShelfLifeLabel": "Use within (days after opening)",
+  "openShelfLifeHint": "e.g. 3 — for products that spoil faster once opened",
+
+  "deleteProductTitle": "Delete product?",
+  "deleteProductConfirm": "This deletes \"{name}\". Products still in stock can't be deleted.",
+  "@deleteProductConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "couldNotDeleteProduct": "Could not delete product: {error}",
+  "@couldNotDeleteProduct": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotLoadProducts": "Could not load products: {error}",
+  "@couldNotLoadProducts": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "noProductsYet": "No products yet.",
+  "viewStockBatchesTooltip": "View stock batches",
+
+  "couldNotLoadBatches": "Could not load batches: {error}",
+  "@couldNotLoadBatches": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "noBatchesLeft": "No batches left.",
+  "bbdLabel": "BBD: {date}",
+  "@bbdLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "renameLocationTitle": "Rename location",
+  "couldNotRenameLocation": "Could not rename location: {error}",
+  "@couldNotRenameLocation": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "deleteLocationTitle": "Delete location?",
+  "deleteLocationConfirm": "This deletes \"{name}\".",
+  "@deleteLocationConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "couldNotDeleteLocation": "Could not delete location: {error}",
+  "@couldNotDeleteLocation": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotLoadLocations": "Could not load locations: {error}",
+  "@couldNotLoadLocations": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "noLocationsYet": "No locations yet.",
+  "renameTooltip": "Rename",
+  "addLocationTooltip": "Add location",
+  "locationsSubtitle": "Rename or delete storage locations",
+  "productsSubtitle": "Browse, edit, or delete products",
+
+  "lookupsFailedPending": "{failures, plural, =1{1 lookup failed} other{{failures} lookups failed}}; {remaining} still pending.",
+  "@lookupsFailedPending": {
+    "placeholders": {
+      "failures": { "type": "int" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "stoppedStillOffline": "Stopped -- still offline. {remaining} still pending.",
+  "@stoppedStillOffline": {
+    "placeholders": { "remaining": { "type": "int" } }
+  },
+  "allSynced": "All pending scans synced.",
+  "syncNowButton": "Sync now",
+  "nothingPending": "Nothing pending.",
+  "queuedLabel": "Queued {date}",
+  "@queuedLabel": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "discardTooltip": "Discard",
+
+  "enterWholeNumber": "Enter a whole number greater than 0.",
+  "connectedVersion": "Connected — server v{version}",
+  "@connectedVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "couldNotReachServer": "Could not reach server",
+  "couldNotExport": "Could not export: {error}",
+  "@couldNotExport": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "serverUrlDescription": "Server URL. Leave blank when running inside Home Assistant (same-origin via Ingress). Native apps and local dev need the full URL, e.g. http://192.168.1.20:8099",
+  "serverUrlLabel": "Server URL",
+  "scanToConnectTooltip": "Scan to connect",
+  "saveTestConnectionButton": "Save & test connection",
+  "expiringSoonDescription": "\"Expiring soon\" applies to items due within this many days.",
+  "exportCsvTitle": "Export stock (CSV)",
+  "exportCsvSubtitle": "Download current stock as a spreadsheet",
+  "spoiledThisMonth": "{count, plural, =0{Nothing marked spoiled this month.} =1{1 batch marked spoiled this month.} other{{count} batches marked spoiled this month.}}",
+  "@spoiledThisMonth": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pairDeviceHint": "Pair another device: open Settings → Scan to connect on it, then scan this code.",
+  "scanQrTitle": "Scan server QR code"
+}

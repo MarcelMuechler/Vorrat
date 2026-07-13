@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 
 class ProductEditScreen extends StatefulWidget {
@@ -84,7 +85,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -103,12 +106,14 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         _categoryController.text = data['category'] as String? ?? _categoryController.text;
         _imageUrl = data['image_url'] as String? ?? _imageUrl;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fetched from Open Food Facts — review, then Save.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.fetchedFromOff)));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not refresh: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotRefresh('$e'))));
       }
     } finally {
       if (mounted) setState(() => _refreshingFromOff = false);
@@ -117,16 +122,17 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit product'),
+        title: Text(l10n.editProductTitle),
         actions: [
           if (widget.product.barcode != null)
             IconButton(
               icon: _refreshingFromOff
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.refresh),
-              tooltip: 'Refresh from Open Food Facts',
+              tooltip: l10n.refreshFromOffTooltip,
               onPressed: _refreshingFromOff ? null : _refreshFromOff,
             ),
         ],
@@ -143,37 +149,40 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   const SizedBox(height: 12),
                 ],
                 if (widget.product.barcode != null) ...[
-                  Text('Barcode: ${widget.product.barcode}'),
+                  Text(l10n.barcodeLabel(widget.product.barcode!)),
                   const SizedBox(height: 12),
                 ],
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _brandController,
-                  decoration: const InputDecoration(labelText: 'Brand', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.brandLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.categoryLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _quantityUnitController,
-                  decoration: const InputDecoration(labelText: 'Quantity unit', border: OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: l10n.quantityUnitLabel,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: _selectedLocationId,
-                  decoration: const InputDecoration(
-                    labelText: 'Default location',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.defaultLocationLabel,
+                    border: const OutlineInputBorder(),
                   ),
                   items: [
-                    const DropdownMenuItem<int>(value: null, child: Text('None')),
+                    DropdownMenuItem<int>(value: null, child: Text(l10n.noneLabel)),
                     for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
                   ],
                   onChanged: (value) => setState(() => _selectedLocationId = value),
@@ -181,20 +190,20 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _bestBeforeDaysController,
-                  decoration: const InputDecoration(
-                    labelText: 'Default best-before days',
-                    hintText: 'e.g. 7 — prefilled when adding this product to stock',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.defaultBestBeforeDaysLabel,
+                    hintText: l10n.defaultBestBeforeDaysHint,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _openShelfLifeDaysController,
-                  decoration: const InputDecoration(
-                    labelText: 'Use within (days after opening)',
-                    hintText: 'e.g. 3 — for products that spoil faster once opened',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.openShelfLifeLabel,
+                    hintText: l10n.openShelfLifeHint,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -203,7 +212,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   onPressed: _saving ? null : _save,
                   child: _saving
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save'),
+                      : Text(l10n.saveButton),
                 ),
               ],
             ),

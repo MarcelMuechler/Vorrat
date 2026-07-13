@@ -1,0 +1,872 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_de.dart';
+import 'app_localizations_en.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
+    Locale('en'),
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vorrat'**
+  String get appTitle;
+
+  /// No description provided for @stockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get stockTitle;
+
+  /// No description provided for @scanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scanTitle;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @locationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Locations'**
+  String get locationsTitle;
+
+  /// No description provided for @productsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get productsTitle;
+
+  /// No description provided for @cancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelButton;
+
+  /// No description provided for @saveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButton;
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteButton;
+
+  /// No description provided for @addButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addButton;
+
+  /// No description provided for @removeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeButton;
+
+  /// No description provided for @consumeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Consume'**
+  String get consumeButton;
+
+  /// No description provided for @lookUpButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up'**
+  String get lookUpButton;
+
+  /// No description provided for @usedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Used'**
+  String get usedLabel;
+
+  /// No description provided for @spoiledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoiled'**
+  String get spoiledLabel;
+
+  /// No description provided for @nameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nameLabel;
+
+  /// No description provided for @brandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brandLabel;
+
+  /// No description provided for @categoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get categoryLabel;
+
+  /// No description provided for @amountFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get amountFieldLabel;
+
+  /// No description provided for @unitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unitLabel;
+
+  /// No description provided for @quantityUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity unit'**
+  String get quantityUnitLabel;
+
+  /// No description provided for @locationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get locationLabel;
+
+  /// No description provided for @defaultLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default location'**
+  String get defaultLocationLabel;
+
+  /// No description provided for @noneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneLabel;
+
+  /// No description provided for @searchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchLabel;
+
+  /// No description provided for @barcodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode: {code}'**
+  String barcodeLabel(String code);
+
+  /// No description provided for @viewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewTooltip;
+
+  /// No description provided for @viewModeFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Every batch'**
+  String get viewModeFlat;
+
+  /// No description provided for @viewModeGrouped.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped by product'**
+  String get viewModeGrouped;
+
+  /// No description provided for @viewModeBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry breakdown'**
+  String get viewModeBreakdown;
+
+  /// No description provided for @sortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortTooltip;
+
+  /// No description provided for @sortBestBeforeDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Best-before date'**
+  String get sortBestBeforeDateLabel;
+
+  /// No description provided for @expiringSoonChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get expiringSoonChip;
+
+  /// No description provided for @allLocationsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All locations'**
+  String get allLocationsLabel;
+
+  /// No description provided for @stockLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load stock: {error}\n\nCheck the server URL in Settings.'**
+  String stockLoadError(String error);
+
+  /// No description provided for @noStockYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock yet. Scan something to add it.'**
+  String get noStockYet;
+
+  /// No description provided for @addProductManuallyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product manually'**
+  String get addProductManuallyTooltip;
+
+  /// No description provided for @groupTotalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} total'**
+  String groupTotalAmount(String amount);
+
+  /// No description provided for @markAsOpenedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as opened'**
+  String get markAsOpenedTooltip;
+
+  /// No description provided for @useSomeOfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use some of \"{name}\"'**
+  String useSomeOfTitle(String name);
+
+  /// No description provided for @amountInStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (of {amount} in stock)'**
+  String amountInStockLabel(String amount);
+
+  /// No description provided for @removeStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from stock?'**
+  String get removeStockTitle;
+
+  /// No description provided for @deleteBatchConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes this batch of \"{name}\".'**
+  String deleteBatchConfirm(String name);
+
+  /// No description provided for @couldNotConsume.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not consume: {error}'**
+  String couldNotConsume(String error);
+
+  /// No description provided for @expiryToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires today'**
+  String get expiryToday;
+
+  /// No description provided for @expiryTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires tomorrow'**
+  String get expiryTomorrow;
+
+  /// No description provided for @expiredYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired yesterday'**
+  String get expiredYesterday;
+
+  /// No description provided for @expiryInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires in {days} days'**
+  String expiryInDays(int days);
+
+  /// No description provided for @expiredDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired {days} days ago'**
+  String expiredDaysAgo(int days);
+
+  /// No description provided for @purchasedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchased today'**
+  String get purchasedToday;
+
+  /// No description provided for @purchasedTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchased tomorrow'**
+  String get purchasedTomorrow;
+
+  /// No description provided for @purchasedYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchased yesterday'**
+  String get purchasedYesterday;
+
+  /// No description provided for @purchasedInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchased in {days} days'**
+  String purchasedInDays(int days);
+
+  /// No description provided for @purchasedDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchased {days} days ago'**
+  String purchasedDaysAgo(int days);
+
+  /// No description provided for @openedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened today'**
+  String get openedToday;
+
+  /// No description provided for @openedTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened tomorrow'**
+  String get openedTomorrow;
+
+  /// No description provided for @openedYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened yesterday'**
+  String get openedYesterday;
+
+  /// No description provided for @openedInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened in {days} days'**
+  String openedInDays(int days);
+
+  /// No description provided for @openedDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {days} days ago'**
+  String openedDaysAgo(int days);
+
+  /// No description provided for @invalidBarcodeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'That doesn\'t look like a valid barcode.'**
+  String get invalidBarcodeMessage;
+
+  /// No description provided for @enterBarcodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter barcode'**
+  String get enterBarcodeTitle;
+
+  /// No description provided for @savedForLater.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection — saved for later ({count} pending).'**
+  String savedForLater(int count);
+
+  /// No description provided for @lookupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Lookup failed: {error}\n\nCheck the server URL in Settings.'**
+  String lookupFailed(String error);
+
+  /// No description provided for @enterManuallyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter barcode manually'**
+  String get enterManuallyTooltip;
+
+  /// No description provided for @recentlyScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently scanned'**
+  String get recentlyScanned;
+
+  /// No description provided for @pendingScans.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending scans'**
+  String get pendingScans;
+
+  /// No description provided for @nothingScannedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing scanned yet.'**
+  String get nothingScannedYet;
+
+  /// No description provided for @newLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New location'**
+  String get newLocationTitle;
+
+  /// No description provided for @couldNotAddLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add location: {error}'**
+  String couldNotAddLocation(String error);
+
+  /// No description provided for @couldNotSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save: {error}'**
+  String couldNotSave(String error);
+
+  /// No description provided for @addToStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to stock'**
+  String get addToStockTitle;
+
+  /// No description provided for @offReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'From Open Food Facts — check before saving.'**
+  String get offReviewHint;
+
+  /// No description provided for @noBestBeforeDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No best-before date'**
+  String get noBestBeforeDate;
+
+  /// No description provided for @bestBeforeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Best before: {date}'**
+  String bestBeforeLabel(String date);
+
+  /// No description provided for @fetchedFromOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetched from Open Food Facts — review, then Save.'**
+  String get fetchedFromOff;
+
+  /// No description provided for @couldNotRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh: {error}'**
+  String couldNotRefresh(String error);
+
+  /// No description provided for @editProductTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit product'**
+  String get editProductTitle;
+
+  /// No description provided for @refreshFromOffTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh from Open Food Facts'**
+  String get refreshFromOffTooltip;
+
+  /// No description provided for @defaultBestBeforeDaysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default best-before days'**
+  String get defaultBestBeforeDaysLabel;
+
+  /// No description provided for @defaultBestBeforeDaysHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 7 — prefilled when adding this product to stock'**
+  String get defaultBestBeforeDaysHint;
+
+  /// No description provided for @openShelfLifeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Use within (days after opening)'**
+  String get openShelfLifeLabel;
+
+  /// No description provided for @openShelfLifeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 3 — for products that spoil faster once opened'**
+  String get openShelfLifeHint;
+
+  /// No description provided for @deleteProductTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete product?'**
+  String get deleteProductTitle;
+
+  /// No description provided for @deleteProductConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes \"{name}\". Products still in stock can\'t be deleted.'**
+  String deleteProductConfirm(String name);
+
+  /// No description provided for @couldNotDeleteProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete product: {error}'**
+  String couldNotDeleteProduct(String error);
+
+  /// No description provided for @couldNotLoadProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load products: {error}'**
+  String couldNotLoadProducts(String error);
+
+  /// No description provided for @noProductsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No products yet.'**
+  String get noProductsYet;
+
+  /// No description provided for @viewStockBatchesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View stock batches'**
+  String get viewStockBatchesTooltip;
+
+  /// No description provided for @couldNotLoadBatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load batches: {error}'**
+  String couldNotLoadBatches(String error);
+
+  /// No description provided for @noBatchesLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'No batches left.'**
+  String get noBatchesLeft;
+
+  /// No description provided for @bbdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BBD: {date}'**
+  String bbdLabel(String date);
+
+  /// No description provided for @renameLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename location'**
+  String get renameLocationTitle;
+
+  /// No description provided for @couldNotRenameLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not rename location: {error}'**
+  String couldNotRenameLocation(String error);
+
+  /// No description provided for @deleteLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete location?'**
+  String get deleteLocationTitle;
+
+  /// No description provided for @deleteLocationConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes \"{name}\".'**
+  String deleteLocationConfirm(String name);
+
+  /// No description provided for @couldNotDeleteLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete location: {error}'**
+  String couldNotDeleteLocation(String error);
+
+  /// No description provided for @couldNotLoadLocations.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load locations: {error}'**
+  String couldNotLoadLocations(String error);
+
+  /// No description provided for @noLocationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No locations yet.'**
+  String get noLocationsYet;
+
+  /// No description provided for @renameTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameTooltip;
+
+  /// No description provided for @addLocationTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add location'**
+  String get addLocationTooltip;
+
+  /// No description provided for @locationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename or delete storage locations'**
+  String get locationsSubtitle;
+
+  /// No description provided for @productsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse, edit, or delete products'**
+  String get productsSubtitle;
+
+  /// No description provided for @lookupsFailedPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{failures, plural, =1{1 lookup failed} other{{failures} lookups failed}}; {remaining} still pending.'**
+  String lookupsFailedPending(int failures, int remaining);
+
+  /// No description provided for @stoppedStillOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped -- still offline. {remaining} still pending.'**
+  String stoppedStillOffline(int remaining);
+
+  /// No description provided for @allSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'All pending scans synced.'**
+  String get allSynced;
+
+  /// No description provided for @syncNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get syncNowButton;
+
+  /// No description provided for @nothingPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing pending.'**
+  String get nothingPending;
+
+  /// No description provided for @queuedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued {date}'**
+  String queuedLabel(String date);
+
+  /// No description provided for @discardTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardTooltip;
+
+  /// No description provided for @enterWholeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number greater than 0.'**
+  String get enterWholeNumber;
+
+  /// No description provided for @connectedVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected — server v{version}'**
+  String connectedVersion(String version);
+
+  /// No description provided for @couldNotReachServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach server'**
+  String get couldNotReachServer;
+
+  /// No description provided for @couldNotExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export: {error}'**
+  String couldNotExport(String error);
+
+  /// No description provided for @serverUrlDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL. Leave blank when running inside Home Assistant (same-origin via Ingress). Native apps and local dev need the full URL, e.g. http://192.168.1.20:8099'**
+  String get serverUrlDescription;
+
+  /// No description provided for @serverUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL'**
+  String get serverUrlLabel;
+
+  /// No description provided for @scanToConnectTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to connect'**
+  String get scanToConnectTooltip;
+
+  /// No description provided for @saveTestConnectionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & test connection'**
+  String get saveTestConnectionButton;
+
+  /// No description provided for @expiringSoonDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Expiring soon\" applies to items due within this many days.'**
+  String get expiringSoonDescription;
+
+  /// No description provided for @exportCsvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export stock (CSV)'**
+  String get exportCsvTitle;
+
+  /// No description provided for @exportCsvSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download current stock as a spreadsheet'**
+  String get exportCsvSubtitle;
+
+  /// No description provided for @spoiledThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing marked spoiled this month.} =1{1 batch marked spoiled this month.} other{{count} batches marked spoiled this month.}}'**
+  String spoiledThisMonth(int count);
+
+  /// No description provided for @pairDeviceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair another device: open Settings → Scan to connect on it, then scan this code.'**
+  String get pairDeviceHint;
+
+  /// No description provided for @scanQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan server QR code'**
+  String get scanQrTitle;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['de', 'en'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'de':
+      return AppLocalizationsDe();
+    case 'en':
+      return AppLocalizationsEn();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

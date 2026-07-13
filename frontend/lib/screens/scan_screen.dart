@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
@@ -61,9 +62,9 @@ class _ScanScreenState extends State<ScanScreen> {
       // spamming a snackbar per frame.
       if (_lastRejected != code) {
         _lastRejected = code;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("That doesn't look like a valid barcode.")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.invalidBarcodeMessage)),
+        );
       }
       return;
     }
@@ -72,21 +73,22 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> _enterManually() async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final code = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enter barcode'),
+        title: Text(l10n.enterBarcodeTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.number,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Look up'),
+            child: Text(l10n.lookUpButton),
           ),
         ],
       ),
@@ -95,7 +97,7 @@ class _ScanScreenState extends State<ScanScreen> {
     if (!isPlausibleBarcode(code)) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("That doesn't look like a valid barcode.")));
+      ).showSnackBar(SnackBar(content: Text(l10n.invalidBarcodeMessage)));
       return;
     }
     await _lookUp(code);
@@ -136,12 +138,12 @@ class _ScanScreenState extends State<ScanScreen> {
       await queue.add(code);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No connection — saved for later (${queue.length} pending).')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.savedForLater(queue.length))),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lookup failed: $e\n\nCheck the server URL in Settings.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.lookupFailed('$e'))),
         );
       }
     } finally {
@@ -152,24 +154,25 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     final pendingCount = context.watch<ScanQueue>().length;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan'),
+        title: Text(l10n.scanTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.keyboard),
-            tooltip: 'Enter barcode manually',
+            tooltip: l10n.enterManuallyTooltip,
             onPressed: _handling ? null : _enterManually,
           ),
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'Recently scanned',
+            tooltip: l10n.recentlyScanned,
             onPressed: _handling ? null : _openHistory,
           ),
           if (pendingCount > 0)
             IconButton(
               icon: Badge(label: Text('$pendingCount'), child: const Icon(Icons.pending_actions)),
-              tooltip: 'Pending scans',
+              tooltip: l10n.pendingScans,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PendingScansScreen()),
               ),

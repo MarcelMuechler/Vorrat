@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../state/scan_history.dart';
 
 /// Pops with the tapped entry's barcode, so ScanScreen can re-run its own
@@ -12,10 +13,11 @@ class ScanHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = context.watch<ScanHistory>().entries;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Recently scanned')),
+      appBar: AppBar(title: Text(l10n.recentlyScanned)),
       body: entries.isEmpty
-          ? const Center(child: Text('Nothing scanned yet.'))
+          ? Center(child: Text(l10n.nothingScannedYet))
           : ListView.separated(
               itemCount: entries.length,
               separatorBuilder: (_, _) => const Divider(height: 1),

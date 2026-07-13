@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import 'product_batches_screen.dart';
 import 'product_edit_screen.dart';
@@ -48,14 +49,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _delete(Product product) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete product?'),
-        content: Text('This deletes "${product.name}". Products still in stock can\'t be deleted.'),
+        title: Text(l10n.deleteProductTitle),
+        content: Text(l10n.deleteProductConfirm(product.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.deleteButton)),
         ],
       ),
     );
@@ -65,7 +67,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
       await _refresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete product: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteProduct('$e'))));
       }
     }
   }
@@ -79,18 +83,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Products')),
+      appBar: AppBar(title: Text(l10n.productsTitle)),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.searchLabel,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onSubmitted: (_) => _refresh(),
@@ -102,10 +107,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 : _error != null
                     ? Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Could not load products: $_error'),
+                        child: Text(l10n.couldNotLoadProducts('$_error')),
                       )
                     : _products.isEmpty
-                        ? const Center(child: Text('No products yet.'))
+                        ? Center(child: Text(l10n.noProductsYet))
                         : ListView.separated(
                             itemCount: _products.length,
                             separatorBuilder: (_, _) => const Divider(height: 1),
@@ -123,7 +128,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.inventory_2_outlined),
-                                      tooltip: 'View stock batches',
+                                      tooltip: l10n.viewStockBatchesTooltip,
                                       onPressed: () => Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) => ProductBatchesScreen(
@@ -135,7 +140,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete_outline),
-                                      tooltip: 'Delete',
+                                      tooltip: l10n.deleteButton,
                                       onPressed: () => _delete(product),
                                     ),
                                   ],

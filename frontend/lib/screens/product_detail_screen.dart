@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
 
@@ -63,17 +64,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _addLocation() async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New location'),
+        title: Text(l10n.newLocationTitle),
         content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Add'),
+            child: Text(l10n.addButton),
           ),
         ],
       ),
@@ -89,7 +91,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add location: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotAddLocation('$e'))));
       }
     }
   }
@@ -135,7 +139,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSave('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -144,18 +150,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Add to stock')),
+      appBar: AppBar(title: Text(l10n.addToStockTitle)),
       body: _loadingLocations
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 if (widget.prefill != null) ...[
-                  Text(
-                    'From Open Food Facts — check before saving.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  Text(l10n.offReviewHint, style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 12),
                 ],
                 if (_imageUrl != null) ...[
@@ -165,17 +169,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(height: 12),
                 ],
                 if (widget.barcode != null) ...[
-                  Text('Barcode: ${widget.barcode}'),
+                  Text(l10n.barcodeLabel(widget.barcode!)),
                   const SizedBox(height: 12),
                 ],
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _brandController,
-                  decoration: const InputDecoration(labelText: 'Brand', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.brandLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -183,7 +187,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Expanded(
                       child: DropdownButtonFormField<int>(
                         initialValue: _selectedLocationId,
-                        decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: l10n.locationLabel,
+                          border: const OutlineInputBorder(),
+                        ),
                         items: _locations
                             .map((l) => DropdownMenuItem(value: l.id, child: Text(l.name)))
                             .toList(),
@@ -199,7 +206,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Expanded(
                       child: TextField(
                         controller: _amountController,
-                        decoration: const InputDecoration(labelText: 'Amount', border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: l10n.amountFieldLabel,
+                          border: const OutlineInputBorder(),
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -211,7 +221,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       Expanded(
                         child: TextField(
                           controller: _quantityUnitController,
-                          decoration: const InputDecoration(labelText: 'Unit', border: OutlineInputBorder()),
+                          decoration: InputDecoration(
+                            labelText: l10n.unitLabel,
+                            border: const OutlineInputBorder(),
+                          ),
                         ),
                       ),
                     ],
@@ -222,8 +235,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(
                     _bestBeforeDate == null
-                        ? 'No best-before date'
-                        : 'Best before: ${_bestBeforeDate!.toIso8601String().split('T').first}',
+                        ? l10n.noBestBeforeDate
+                        : l10n.bestBeforeLabel(_bestBeforeDate!.toIso8601String().split('T').first),
                   ),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: _pickBestBeforeDate,
@@ -233,7 +246,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: _saving ? null : _save,
                   child: _saving
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save'),
+                      : Text(l10n.saveButton),
                 ),
               ],
             ),

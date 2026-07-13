@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
 import 'product_batches_screen.dart';
@@ -18,20 +19,38 @@ Color _statusColor(String status) {
   }
 }
 
+enum _RelativeKind { expiry, purchased, opened }
+
 /// Relative day label ("today"/"tomorrow"/"in N days"/"N days ago"), so
 /// scanning the list doesn't require doing date math against a raw ISO
-/// string. [presentVerb] is used for today/future ("Expires"), [pastVerb]
-/// for anything already in the past ("Expired").
-String _relativeLabel(DateTime date, {required String presentVerb, required String pastVerb}) {
+/// string. [kind] picks which localized phrase set applies (expiry uses
+/// "Expires"/"Expired", purchased/opened use the same word both ways).
+String _relativeLabel(BuildContext context, DateTime date, _RelativeKind kind) {
+  final l10n = AppLocalizations.of(context)!;
   final today = DateTime.now();
   final days = DateTime(date.year, date.month, date.day)
       .difference(DateTime(today.year, today.month, today.day))
       .inDays;
-  if (days == 0) return '$presentVerb today';
-  if (days == 1) return '$presentVerb tomorrow';
-  if (days == -1) return '$pastVerb yesterday';
-  if (days > 0) return '$presentVerb in $days days';
-  return '$pastVerb ${-days} days ago';
+  switch (kind) {
+    case _RelativeKind.expiry:
+      if (days == 0) return l10n.expiryToday;
+      if (days == 1) return l10n.expiryTomorrow;
+      if (days == -1) return l10n.expiredYesterday;
+      if (days > 0) return l10n.expiryInDays(days);
+      return l10n.expiredDaysAgo(-days);
+    case _RelativeKind.purchased:
+      if (days == 0) return l10n.purchasedToday;
+      if (days == 1) return l10n.purchasedTomorrow;
+      if (days == -1) return l10n.purchasedYesterday;
+      if (days > 0) return l10n.purchasedInDays(days);
+      return l10n.purchasedDaysAgo(-days);
+    case _RelativeKind.opened:
+      if (days == 0) return l10n.openedToday;
+      if (days == 1) return l10n.openedTomorrow;
+      if (days == -1) return l10n.openedYesterday;
+      if (days > 0) return l10n.openedInDays(days);
+      return l10n.openedDaysAgo(-days);
+  }
 }
 
 class StockOverviewScreen extends StatefulWidget {
@@ -75,32 +94,36 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final stock = context.watch<StockProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stock'),
+        title: Text(l10n.stockTitle),
         actions: [
           PopupMenuButton<StockViewMode>(
             icon: const Icon(Icons.view_agenda),
-            tooltip: 'View',
+            tooltip: l10n.viewTooltip,
             initialValue: stock.viewMode,
             onSelected: stock.setViewMode,
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: StockViewMode.flat, child: Text('Every batch')),
-              PopupMenuItem(value: StockViewMode.grouped, child: Text('Grouped by product')),
-              PopupMenuItem(value: StockViewMode.breakdown, child: Text('Expiry breakdown')),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: StockViewMode.flat, child: Text(l10n.viewModeFlat)),
+              PopupMenuItem(value: StockViewMode.grouped, child: Text(l10n.viewModeGrouped)),
+              PopupMenuItem(value: StockViewMode.breakdown, child: Text(l10n.viewModeBreakdown)),
             ],
           ),
           PopupMenuButton<StockSort>(
             icon: const Icon(Icons.sort),
-            tooltip: 'Sort',
+            tooltip: l10n.sortTooltip,
             initialValue: stock.sort,
             onSelected: stock.setSort,
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: StockSort.bestBeforeDate, child: Text('Best-before date')),
-              PopupMenuItem(value: StockSort.name, child: Text('Name')),
-              PopupMenuItem(value: StockSort.amount, child: Text('Amount')),
-              PopupMenuItem(value: StockSort.location, child: Text('Location')),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: StockSort.bestBeforeDate,
+                child: Text(l10n.sortBestBeforeDateLabel),
+              ),
+              PopupMenuItem(value: StockSort.name, child: Text(l10n.nameLabel)),
+              PopupMenuItem(value: StockSort.amount, child: Text(l10n.amountFieldLabel)),
+              PopupMenuItem(value: StockSort.location, child: Text(l10n.locationLabel)),
             ],
           ),
         ],
@@ -111,10 +134,10 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.searchLabel,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onSubmitted: (value) => stock.setSearchFilter(value),
@@ -125,7 +148,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
             child: Row(
               children: [
                 FilterChip(
-                  label: const Text('Expiring soon'),
+                  label: Text(l10n.expiringSoonChip),
                   selected: stock.expiringWithinDaysFilter != null,
                   onSelected: (selected) =>
                       stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
@@ -134,9 +157,9 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                 if (_locations.isNotEmpty)
                   DropdownButton<int?>(
                     value: stock.locationIdFilter,
-                    hint: const Text('All locations'),
+                    hint: Text(l10n.allLocationsLabel),
                     items: [
-                      const DropdownMenuItem<int?>(value: null, child: Text('All locations')),
+                      DropdownMenuItem<int?>(value: null, child: Text(l10n.allLocationsLabel)),
                       for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
                     ],
                     onChanged: (value) => stock.setLocationFilter(value),
@@ -153,7 +176,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Add product manually',
+        tooltip: l10n.addProductManuallyTooltip,
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ProductDetailScreen()),
         ),
@@ -163,6 +186,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   }
 
   Widget _buildBody(StockProvider stock) {
+    final l10n = AppLocalizations.of(context)!;
     if (stock.loading && stock.items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -171,13 +195,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Could not load stock: ${stock.error}\n\nCheck the server URL in Settings.'),
+            child: Text(l10n.stockLoadError('${stock.error}')),
           ),
         ],
       );
     }
     if (stock.items.isEmpty) {
-      return const Center(child: Text('No stock yet. Scan something to add it.'));
+      return Center(child: Text(l10n.noStockYet));
     }
     switch (stock.viewMode) {
       case StockViewMode.grouped:
@@ -217,12 +241,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   }
 
   Widget _buildGroupTile(BuildContext context, ProductGroup group) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       leading: CircleAvatar(backgroundColor: _statusColor(group.status), radius: 6),
       title: Text(group.productName),
       subtitle: Text([
         if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
-        '${group.totalAmount} total',
+        l10n.groupTotalAmount('${group.totalAmount}'),
       ].join(' · ')),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Navigator.of(context).push(
@@ -234,23 +259,23 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   }
 
   Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
       title: Text(item.productName),
       subtitle: Text([
         if (item.locationName != null) item.locationName!,
         if (item.bestBeforeDate != null)
-          _relativeLabel(item.bestBeforeDate!, presentVerb: 'Expires', pastVerb: 'Expired'),
+          _relativeLabel(context, item.bestBeforeDate!, _RelativeKind.expiry),
         if (item.purchasedDate != null)
-          _relativeLabel(item.purchasedDate!, presentVerb: 'Purchased', pastVerb: 'Purchased'),
-        if (item.openedAt != null)
-          _relativeLabel(item.openedAt!, presentVerb: 'Opened', pastVerb: 'Opened'),
+          _relativeLabel(context, item.purchasedDate!, _RelativeKind.purchased),
+        if (item.openedAt != null) _relativeLabel(context, item.openedAt!, _RelativeKind.opened),
         '${item.amount}',
       ].join(' · ')),
       trailing: item.openedAt == null
           ? IconButton(
               icon: const Icon(Icons.open_in_full),
-              tooltip: 'Mark as opened',
+              tooltip: l10n.markAsOpenedTooltip,
               onPressed: () => stock.markOpened(item.id),
             )
           : null,
@@ -260,13 +285,14 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   }
 
   Future<void> _consumeDialog(BuildContext context, StockProvider stock, StockItem item) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: '1');
     var reason = 'used';
     final amount = await showDialog<double>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('Use some of "${item.productName}"'),
+          title: Text(l10n.useSomeOfTitle(item.productName)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -274,13 +300,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                 controller: controller,
                 autofocus: true,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Amount (of ${item.amount} in stock)'),
+                decoration: InputDecoration(labelText: l10n.amountInStockLabel('${item.amount}')),
               ),
               const SizedBox(height: 12),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'used', label: Text('Used')),
-                  ButtonSegment(value: 'spoiled', label: Text('Spoiled')),
+                segments: [
+                  ButtonSegment(value: 'used', label: Text(l10n.usedLabel)),
+                  ButtonSegment(value: 'spoiled', label: Text(l10n.spoiledLabel)),
                 ],
                 selected: {reason},
                 onSelectionChanged: (value) => setState(() => reason = value.first),
@@ -288,10 +314,10 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
             FilledButton(
               onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
-              child: const Text('Consume'),
+              child: Text(l10n.consumeButton),
             ),
           ],
         ),
@@ -302,20 +328,23 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       await stock.consume(item.id, amount, reason: reason);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not consume: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotConsume('$e'))));
       }
     }
   }
 
   Future<void> _confirmDelete(BuildContext context, StockProvider stock, int id, String name) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove from stock?'),
-        content: Text('This deletes this batch of "$name".'),
+        title: Text(l10n.removeStockTitle),
+        content: Text(l10n.deleteBatchConfirm(name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.removeButton)),
         ],
       ),
     );

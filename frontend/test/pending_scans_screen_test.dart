@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vorrat/api/client.dart';
+import 'package:vorrat/l10n/app_localizations.dart';
 import 'package:vorrat/models/models.dart';
 import 'package:vorrat/screens/pending_scans_screen.dart';
 import 'package:vorrat/state/scan_queue.dart';
@@ -58,7 +59,11 @@ void main() {
           ChangeNotifierProvider<ScanQueue>.value(value: queue),
           ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
         ],
-        child: const MaterialApp(home: PendingScansScreen()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const PendingScansScreen(),
+        ),
       ),
     );
 

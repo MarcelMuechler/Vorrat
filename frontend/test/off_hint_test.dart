@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:vorrat/api/client.dart';
+import 'package:vorrat/l10n/app_localizations.dart';
 import 'package:vorrat/models/models.dart';
 import 'package:vorrat/screens/product_detail_screen.dart';
 import 'package:vorrat/state/settings_provider.dart';
@@ -23,6 +24,8 @@ void main() {
           ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: ProductDetailScreen(
             barcode: '123',
             prefill: ProductPrefill(barcode: '123', name: 'Milk', imageUrl: 'https://example.com/milk.png'),

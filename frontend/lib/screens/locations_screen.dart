@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 
 class LocationsScreen extends StatefulWidget {
@@ -39,40 +40,47 @@ class _LocationsScreenState extends State<LocationsScreen> {
   }
 
   Future<void> _addLocation() async {
-    final name = await _promptName(context, title: 'New location');
+    final l10n = AppLocalizations.of(context)!;
+    final name = await _promptName(context, title: l10n.newLocationTitle);
     if (name == null || name.isEmpty || !mounted) return;
     try {
       await context.read<ApiClient>().createLocation(name);
       await _refresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add location: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotAddLocation('$e'))));
       }
     }
   }
 
   Future<void> _rename(Location location) async {
-    final name = await _promptName(context, title: 'Rename location', initialValue: location.name);
+    final l10n = AppLocalizations.of(context)!;
+    final name = await _promptName(context, title: l10n.renameLocationTitle, initialValue: location.name);
     if (name == null || name.isEmpty || !mounted) return;
     try {
       await context.read<ApiClient>().renameLocation(location.id, name);
       await _refresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not rename location: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotRenameLocation('$e'))));
       }
     }
   }
 
   Future<void> _delete(Location location) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete location?'),
-        content: Text('This deletes "${location.name}".'),
+        title: Text(l10n.deleteLocationTitle),
+        content: Text(l10n.deleteLocationConfirm(location.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.deleteButton)),
         ],
       ),
     );
@@ -82,12 +90,15 @@ class _LocationsScreenState extends State<LocationsScreen> {
       await _refresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete location: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteLocation('$e'))));
       }
     }
   }
 
   static Future<String?> _promptName(BuildContext context, {required String title, String? initialValue}) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: initialValue);
     return showDialog<String>(
       context: context,
@@ -95,10 +106,10 @@ class _LocationsScreenState extends State<LocationsScreen> {
         title: Text(title),
         content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
+            child: Text(l10n.saveButton),
           ),
         ],
       ),
@@ -107,17 +118,18 @@ class _LocationsScreenState extends State<LocationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Locations')),
+      appBar: AppBar(title: Text(l10n.locationsTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text('Could not load locations: $_error'),
+                  child: Text(l10n.couldNotLoadLocations('$_error')),
                 )
               : _locations.isEmpty
-                  ? const Center(child: Text('No locations yet.'))
+                  ? Center(child: Text(l10n.noLocationsYet))
                   : ListView.separated(
                       itemCount: _locations.length,
                       separatorBuilder: (_, _) => const Divider(height: 1),
@@ -130,12 +142,12 @@ class _LocationsScreenState extends State<LocationsScreen> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit),
-                                tooltip: 'Rename',
+                                tooltip: l10n.renameTooltip,
                                 onPressed: () => _rename(location),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline),
-                                tooltip: 'Delete',
+                                tooltip: l10n.deleteButton,
                                 onPressed: () => _delete(location),
                               ),
                             ],
@@ -144,7 +156,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
                       },
                     ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Add location',
+        tooltip: l10n.addLocationTooltip,
         onPressed: _addLocation,
         child: const Icon(Icons.add),
       ),
