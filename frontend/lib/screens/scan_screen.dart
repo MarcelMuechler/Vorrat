@@ -16,13 +16,56 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
+/// A permissive sanity check, not a full barcode-format validator -- only
+/// rejects the obviously-malformed (empty, or a numeric format with clearly
+/// the wrong digit count for what it claims to be). Anything that merely
+/// isn't in the local DB or on Open Food Facts is still a valid lookup, not
+/// a validation failure.
+bool isPlausibleBarcode(String value, [BarcodeFormat? format]) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return false;
+  switch (format) {
+    case BarcodeFormat.ean13:
+      return RegExp(r'^\d{13}$').hasMatch(trimmed);
+    case BarcodeFormat.ean8:
+      return RegExp(r'^\d{8}$').hasMatch(trimmed);
+    case BarcodeFormat.upcA:
+      return RegExp(r'^\d{12}$').hasMatch(trimmed);
+    case BarcodeFormat.upcE:
+      return RegExp(r'^\d{6,8}$').hasMatch(trimmed);
+    default:
+      // QR/DataMatrix/PDF417 encode arbitrary data, and Code128/Code39/etc.
+      // vary too much in length to check meaningfully -- just require
+      // something was actually detected. Also used for manual entry, where
+      // the format isn't known: a loose digit-length check covers the
+      // common EAN/UPC range without rejecting valid non-numeric formats.
+      return format == null ? RegExp(r'^\d{6,14}$').hasMatch(trimmed) : true;
+  }
+}
+
 class _ScanScreenState extends State<ScanScreen> {
   bool _handling = false;
+  String? _lastRejected;
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_handling) return;
-    final code = capture.barcodes.firstOrNull?.rawValue;
+    final barcode = capture.barcodes.firstOrNull;
+    final code = barcode?.rawValue;
     if (code == null) return;
+
+    if (!isPlausibleBarcode(code, barcode!.format)) {
+      // onDetect fires on every camera frame while the same (bad) value is
+      // in view -- only tell the user once per distinct value instead of
+      // spamming a snackbar per frame.
+      if (_lastRejected != code) {
+        _lastRejected = code;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("That doesn't look like a valid barcode.")));
+      }
+      return;
+    }
+    _lastRejected = null;
 
     setState(() => _handling = true);
     final api = context.read<ApiClient>();
