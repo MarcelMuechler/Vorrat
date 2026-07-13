@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
 import '../main.dart';
+import '../state/scan_queue.dart';
 import 'product_detail_screen.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -23,6 +25,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
     setState(() => _handling = true);
     final api = context.read<ApiClient>();
+    final queue = context.read<ScanQueue>();
     try {
       final result = await api.lookupBarcode(code);
       if (!mounted) return;
@@ -34,6 +37,15 @@ class _ScanScreenState extends State<ScanScreen> {
             prefill: result.prefill,
           ),
         ),
+      );
+    } on http.ClientException catch (_) {
+      // A connection-level failure (package:http wraps SocketException into
+      // this on IO platforms too, see ClientException docs) -- worth queuing
+      // for later rather than just failing, unlike a real API error below.
+      await queue.add(code);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No connection — saved for later (${queue.length} pending).')),
       );
     } catch (e) {
       if (mounted) {

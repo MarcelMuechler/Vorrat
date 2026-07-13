@@ -5,6 +5,7 @@ import 'api/client.dart';
 import 'screens/scan_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stock_overview_screen.dart';
+import 'state/scan_queue.dart';
 import 'state/settings_provider.dart';
 import 'state/stock_provider.dart';
 
@@ -19,19 +20,23 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = SettingsProvider();
   await settings.load();
-  runApp(VorratApp(settings: settings));
+  final scanQueue = ScanQueue();
+  await scanQueue.load();
+  runApp(VorratApp(settings: settings, scanQueue: scanQueue));
 }
 
 class VorratApp extends StatelessWidget {
   final SettingsProvider settings;
+  final ScanQueue scanQueue;
 
-  const VorratApp({super.key, required this.settings});
+  const VorratApp({super.key, required this.settings, required this.scanQueue});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider.value(value: scanQueue),
         ProxyProvider<SettingsProvider, ApiClient>(
           update: (_, settings, _) => ApiClient(settings),
         ),
@@ -92,6 +97,8 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final pendingScans = context.watch<ScanQueue>().length;
+
     return ValueListenableBuilder<bool>(
       valueListenable: cameraAvailable,
       builder: (context, hasCamera, _) {
@@ -103,7 +110,18 @@ class _HomeShellState extends State<HomeShell> {
           bottomNavigationBar: NavigationBar(
             selectedIndex: index,
             onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
-            destinations: [for (final t in tabs) t.destination],
+            destinations: [
+              for (final t in tabs)
+                t.id == _AppTab.scan && pendingScans > 0
+                    ? NavigationDestination(
+                        icon: Badge(
+                          label: Text('$pendingScans'),
+                          child: const Icon(Icons.qr_code_scanner),
+                        ),
+                        label: 'Scan',
+                      )
+                    : t.destination,
+            ],
           ),
         );
       },
