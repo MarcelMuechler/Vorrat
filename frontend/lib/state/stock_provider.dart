@@ -5,6 +5,17 @@ import '../models/models.dart';
 
 enum StockSort { bestBeforeDate, name, amount, location }
 
+enum StockViewMode { flat, grouped, breakdown }
+
+/// A date-based bucket of stock items ("Expired", "Today", "This week", ...)
+/// for [StockProvider.expiryBreakdown].
+class ExpiryBucket {
+  final String label;
+  final List<StockItem> items;
+
+  ExpiryBucket(this.label, this.items);
+}
+
 /// Same product, summed across however many batches/locations it's spread
 /// across -- one row instead of one per StockOverviewScreen.groupedItems /
 /// batch.
@@ -38,7 +49,7 @@ class StockProvider extends ChangeNotifier {
   int? locationIdFilter;
   String searchFilter = '';
   StockSort sort = StockSort.bestBeforeDate;
-  bool grouped = false;
+  StockViewMode viewMode = StockViewMode.flat;
   int expiringSoonDays = 3;
 
   /// [items] sorted client-side -- the list is already fully fetched, and
@@ -85,8 +96,45 @@ class StockProvider extends ChangeNotifier {
     }).toList();
   }
 
-  void toggleGrouped() {
-    grouped = !grouped;
+  /// [sortedItems] bucketed by best-before date -- expired / today / this
+  /// week (2-7 days out) / later / no best-before date at all. Only
+  /// non-empty buckets are included.
+  List<ExpiryBucket> get expiryBreakdown {
+    final expired = <StockItem>[];
+    final today = <StockItem>[];
+    final thisWeek = <StockItem>[];
+    final later = <StockItem>[];
+    final noDate = <StockItem>[];
+    final todayDate = DateTime.now();
+    final todayOnly = DateTime(todayDate.year, todayDate.month, todayDate.day);
+    for (final item in sortedItems) {
+      final bbd = item.bestBeforeDate;
+      if (bbd == null) {
+        noDate.add(item);
+        continue;
+      }
+      final days = DateTime(bbd.year, bbd.month, bbd.day).difference(todayOnly).inDays;
+      if (days < 0) {
+        expired.add(item);
+      } else if (days == 0) {
+        today.add(item);
+      } else if (days <= 7) {
+        thisWeek.add(item);
+      } else {
+        later.add(item);
+      }
+    }
+    return [
+      if (expired.isNotEmpty) ExpiryBucket('Expired', expired),
+      if (today.isNotEmpty) ExpiryBucket('Today', today),
+      if (thisWeek.isNotEmpty) ExpiryBucket('This week', thisWeek),
+      if (later.isNotEmpty) ExpiryBucket('Later', later),
+      if (noDate.isNotEmpty) ExpiryBucket('No best-before date', noDate),
+    ];
+  }
+
+  void setViewMode(StockViewMode mode) {
+    viewMode = mode;
     notifyListeners();
   }
 

@@ -80,10 +80,16 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       appBar: AppBar(
         title: const Text('Stock'),
         actions: [
-          IconButton(
-            icon: Icon(stock.grouped ? Icons.view_agenda : Icons.view_list),
-            tooltip: stock.grouped ? 'Show every batch' : 'Group by product',
-            onPressed: stock.toggleGrouped,
+          PopupMenuButton<StockViewMode>(
+            icon: const Icon(Icons.view_agenda),
+            tooltip: 'View',
+            initialValue: stock.viewMode,
+            onSelected: stock.setViewMode,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: StockViewMode.flat, child: Text('Every batch')),
+              PopupMenuItem(value: StockViewMode.grouped, child: Text('Grouped by product')),
+              PopupMenuItem(value: StockViewMode.breakdown, child: Text('Expiry breakdown')),
+            ],
           ),
           PopupMenuButton<StockSort>(
             icon: const Icon(Icons.sort),
@@ -173,52 +179,74 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     if (stock.items.isEmpty) {
       return const Center(child: Text('No stock yet. Scan something to add it.'));
     }
-    if (stock.grouped) {
-      final groups = stock.groupedItems;
-      return ListView.separated(
-        itemCount: groups.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final group = groups[index];
-          return ListTile(
-            leading: CircleAvatar(backgroundColor: _statusColor(group.status), radius: 6),
-            title: Text(group.productName),
-            subtitle: Text([
-              if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
-              '${group.totalAmount} total',
-            ].join(' · ')),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    ProductBatchesScreen(productId: group.productId, productName: group.productName),
-              ),
-            ),
-          );
-        },
-      );
-    }
-    final items = stock.sortedItems;
-    return ListView.separated(
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return ListTile(
-          leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
-          title: Text(item.productName),
-          subtitle: Text([
-            if (item.locationName != null) item.locationName!,
-            if (item.bestBeforeDate != null)
-              _relativeLabel(item.bestBeforeDate!, presentVerb: 'Expires', pastVerb: 'Expired'),
-            if (item.purchasedDate != null)
-              _relativeLabel(item.purchasedDate!, presentVerb: 'Purchased', pastVerb: 'Purchased'),
-            '${item.amount}',
-          ].join(' · ')),
-          onTap: () => _consumeDialog(context, stock, item),
-          onLongPress: () => _confirmDelete(context, stock, item.id, item.productName),
+    switch (stock.viewMode) {
+      case StockViewMode.grouped:
+        final groups = stock.groupedItems;
+        return ListView.separated(
+          itemCount: groups.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) => _buildGroupTile(context, groups[index]),
         );
-      },
+      case StockViewMode.breakdown:
+        final buckets = stock.expiryBreakdown;
+        return ListView.builder(
+          itemCount: buckets.length,
+          itemBuilder: (context, index) {
+            final bucket = buckets[index];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text(bucket.label, style: Theme.of(context).textTheme.titleSmall),
+                ),
+                for (final item in bucket.items) _buildItemTile(context, stock, item),
+                const Divider(height: 1),
+              ],
+            );
+          },
+        );
+      case StockViewMode.flat:
+        final items = stock.sortedItems;
+        return ListView.separated(
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) => _buildItemTile(context, stock, items[index]),
+        );
+    }
+  }
+
+  Widget _buildGroupTile(BuildContext context, ProductGroup group) {
+    return ListTile(
+      leading: CircleAvatar(backgroundColor: _statusColor(group.status), radius: 6),
+      title: Text(group.productName),
+      subtitle: Text([
+        if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
+        '${group.totalAmount} total',
+      ].join(' · ')),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProductBatchesScreen(productId: group.productId, productName: group.productName),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
+    return ListTile(
+      leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
+      title: Text(item.productName),
+      subtitle: Text([
+        if (item.locationName != null) item.locationName!,
+        if (item.bestBeforeDate != null)
+          _relativeLabel(item.bestBeforeDate!, presentVerb: 'Expires', pastVerb: 'Expired'),
+        if (item.purchasedDate != null)
+          _relativeLabel(item.purchasedDate!, presentVerb: 'Purchased', pastVerb: 'Purchased'),
+        '${item.amount}',
+      ].join(' · ')),
+      onTap: () => _consumeDialog(context, stock, item),
+      onLongPress: () => _confirmDelete(context, stock, item.id, item.productName),
     );
   }
 
