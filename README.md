@@ -35,6 +35,21 @@ wrapper repo that clones this repo's tagged releases at build time (see "Releasi
 for why it's separate). Install "Vorrat" from the store, start it, and open it from the
 sidebar. See [`vorrat/DOCS.md`](vorrat/DOCS.md) for mobile app setup.
 
+## Commit message convention
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):
+`<type>: <description>`, e.g. `fix: reject non-positive amounts in consume_stock` or
+`feat: add partial stock consumption to the overview screen`. This repo's history already
+follows this — see `git log` — so it's a matter of keeping it up, not a new habit.
+
+The type determines the version bump once #21 automates this (until then, it's still the
+mental model behind the manual bump in "Releasing" below):
+
+- `fix:` → patch
+- `feat:` → minor
+- A `!` after the type (e.g. `feat!:`) or a `BREAKING CHANGE:` footer → major
+- `chore:`, `docs:`, `refactor:`, etc. → no bump, unless they carry a `BREAKING CHANGE:` footer
+
 ## Releasing
 
 The Home Assistant add-on store only rechecks a repository's `config.yaml` for a new
