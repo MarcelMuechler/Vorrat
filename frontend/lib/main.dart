@@ -5,6 +5,7 @@ import 'api/client.dart';
 import 'screens/scan_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stock_overview_screen.dart';
+import 'state/scan_history.dart';
 import 'state/scan_queue.dart';
 import 'state/settings_provider.dart';
 import 'state/stock_provider.dart';
@@ -22,14 +23,22 @@ Future<void> main() async {
   await settings.load();
   final scanQueue = ScanQueue();
   await scanQueue.load();
-  runApp(VorratApp(settings: settings, scanQueue: scanQueue));
+  final scanHistory = ScanHistory();
+  await scanHistory.load();
+  runApp(VorratApp(settings: settings, scanQueue: scanQueue, scanHistory: scanHistory));
 }
 
 class VorratApp extends StatelessWidget {
   final SettingsProvider settings;
   final ScanQueue scanQueue;
+  final ScanHistory scanHistory;
 
-  const VorratApp({super.key, required this.settings, required this.scanQueue});
+  const VorratApp({
+    super.key,
+    required this.settings,
+    required this.scanQueue,
+    required this.scanHistory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +46,7 @@ class VorratApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: scanQueue),
+        ChangeNotifierProvider.value(value: scanHistory),
         ProxyProvider<SettingsProvider, ApiClient>(
           update: (_, settings, _) => ApiClient(settings),
         ),

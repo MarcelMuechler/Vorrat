@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 
 import '../api/client.dart';
 import '../main.dart';
+import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
 import 'pending_scans_screen.dart';
 import 'product_detail_screen.dart';
+import 'scan_history_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -99,13 +101,24 @@ class _ScanScreenState extends State<ScanScreen> {
     await _lookUp(code);
   }
 
+  Future<void> _openHistory() async {
+    final code = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const ScanHistoryScreen()));
+    if (code != null) await _lookUp(code);
+  }
+
   Future<void> _lookUp(String code) async {
     if (_handling) return;
     setState(() => _handling = true);
     final api = context.read<ApiClient>();
     final queue = context.read<ScanQueue>();
+    final history = context.read<ScanHistory>();
     try {
       final result = await api.lookupBarcode(code);
+      if (!mounted) return;
+      final name = result.localProduct?.name ?? result.prefill?.name;
+      if (name != null) await history.add(code, name);
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -147,6 +160,11 @@ class _ScanScreenState extends State<ScanScreen> {
             icon: const Icon(Icons.keyboard),
             tooltip: 'Enter barcode manually',
             onPressed: _handling ? null : _enterManually,
+          ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Recently scanned',
+            onPressed: _handling ? null : _openHistory,
           ),
           if (pendingCount > 0)
             IconButton(
