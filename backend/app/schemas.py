@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LocationCreate(BaseModel):
@@ -68,7 +68,7 @@ class StockEntryUpdate(BaseModel):
 
 
 class StockEntryConsume(BaseModel):
-    amount: float
+    amount: float = Field(gt=0)
 
 
 class StockEntryRead(BaseModel):
