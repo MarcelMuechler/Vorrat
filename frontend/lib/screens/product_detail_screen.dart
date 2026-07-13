@@ -104,6 +104,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (picked != null) setState(() => _bestBeforeDate = picked);
   }
 
+  /// Barcode-less products have no uniqueness constraint at all (unlike
+  /// barcoded ones, protected by the DB's unique barcode column) -- a typo'd
+  /// re-entry of an existing name would otherwise silently create a second,
+  /// separate product. Only an exact case-insensitive match after trimming;
+  /// no fuzzy matching (#47).
+  Future<Product?> _findExactNameMatch(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
+    final api = context.read<ApiClient>();
+    final candidates = await api.listProducts(search: trimmed);
+    for (final p in candidates) {
+      if (p.name.trim().toLowerCase() == trimmed.toLowerCase()) return p;
+    }
+    return null;
+  }
+
+  Future<bool> _confirmUseExisting(Product existing) async {
+    final l10n = AppLocalizations.of(context)!;
+    final useExisting = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.duplicateProductTitle),
+        content: Text(l10n.duplicateProductMessage(existing.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.duplicateProductCreateNew),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.duplicateProductUseExisting),
+          ),
+        ],
+      ),
+    );
+    return useExisting ?? false;
+  }
+
   Future<void> _save() async {
     final amount = double.tryParse(_amountController.text) ?? 1;
     setState(() => _saving = true);
@@ -113,14 +151,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (widget.existingProduct != null) {
         productId = widget.existingProduct!.id;
       } else {
-        final created = await api.createProduct({
-          'barcode': widget.barcode,
-          'name': _nameController.text,
-          'image_url': widget.prefill?.imageUrl,
-          'category': widget.prefill?.category,
-          'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
-        });
-        productId = created.id;
+        Product? useExisting;
+        if (widget.barcode == null) {
+          final match = await _findExactNameMatch(_nameController.text);
+          if (match != null && mounted && await _confirmUseExisting(match)) {
+            useExisting = match;
+          }
+        }
+        if (useExisting != null) {
+          productId = useExisting.id;
+        } else {
+          final created = await api.createProduct({
+            'barcode': widget.barcode,
+            'name': _nameController.text,
+            'image_url': widget.prefill?.imageUrl,
+            'category': widget.prefill?.category,
+            'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
+          });
+          productId = created.id;
+        }
       }
       await api.addStock({
         'product_id': productId,

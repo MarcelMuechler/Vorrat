@@ -251,6 +251,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get duplicateProductTitle => 'Similar product exists';
+
+  @override
+  String duplicateProductMessage(String name) {
+    return 'A product named \"$name\" already exists — use it instead?';
+  }
+
+  @override
+  String get duplicateProductCreateNew => 'Create new';
+
+  @override
+  String get duplicateProductUseExisting => 'Use existing';
+
+  @override
   String get addToStockTitle => 'Add to stock';
 
   @override

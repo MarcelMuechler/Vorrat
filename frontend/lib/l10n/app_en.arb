@@ -127,6 +127,13 @@
   "@couldNotSave": {
     "placeholders": { "error": { "type": "String" } }
   },
+  "duplicateProductTitle": "Similar product exists",
+  "duplicateProductMessage": "A product named \"{name}\" already exists — use it instead?",
+  "@duplicateProductMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "duplicateProductCreateNew": "Create new",
+  "duplicateProductUseExisting": "Use existing",
   "addToStockTitle": "Add to stock",
   "offReviewHint": "From Open Food Facts — check before saving.",
   "noBestBeforeDate": "No best-before date",
