@@ -63,13 +63,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+    expect(find.byIcon(Icons.lock_open), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.open_in_full));
+    await tester.tap(find.byIcon(Icons.lock_open));
     await tester.pumpAndSettle();
 
     expect(api.opened, isTrue);
-    expect(find.byIcon(Icons.open_in_full), findsNothing);
+    expect(find.byIcon(Icons.lock_open), findsNothing);
   });
 
   testWidgets('the FAB adds a new batch to the same product', (tester) async {
