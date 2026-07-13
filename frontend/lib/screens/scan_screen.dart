@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../main.dart';
 import '../state/scan_queue.dart';
+import 'pending_scans_screen.dart';
 import 'product_detail_screen.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -60,8 +61,21 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pendingCount = context.watch<ScanQueue>().length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan')),
+      appBar: AppBar(
+        title: const Text('Scan'),
+        actions: [
+          if (pendingCount > 0)
+            IconButton(
+              icon: Badge(label: Text('$pendingCount'), child: const Icon(Icons.pending_actions)),
+              tooltip: 'Pending scans',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PendingScansScreen()),
+              ),
+            ),
+        ],
+      ),
       body: Stack(
         children: [
           MobileScanner(

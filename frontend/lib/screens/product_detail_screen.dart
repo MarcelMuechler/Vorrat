@@ -123,7 +123,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (!mounted) return;
       await context.read<StockProvider>().refresh();
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save: $e')));
