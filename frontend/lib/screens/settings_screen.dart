@@ -9,6 +9,7 @@ import '../main.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import 'locations_screen.dart';
+import 'products_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -174,6 +175,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const LocationsScreen()),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.inventory_2_outlined),
+              title: const Text('Products'),
+              subtitle: const Text('Browse, edit, or delete products'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProductsScreen()),
               ),
             ),
             if (kIsWeb) ...[

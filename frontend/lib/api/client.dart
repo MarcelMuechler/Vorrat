@@ -112,6 +112,30 @@ class ApiClient {
     return Product.fromJson(jsonDecode(res.body));
   }
 
+  Future<List<Product>> listProducts({String? search}) async {
+    final query = <String, String>{};
+    if (search != null && search.isNotEmpty) query['search'] = search;
+    final res = await http.get(_uri('/api/products', query));
+    _checkOk(res);
+    final list = jsonDecode(res.body) as List;
+    return list.map((e) => Product.fromJson(e)).toList();
+  }
+
+  Future<Product> updateProduct(int id, Map<String, dynamic> payload) async {
+    final res = await http.patch(
+      _uri('/api/products/$id'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    _checkOk(res);
+    return Product.fromJson(jsonDecode(res.body));
+  }
+
+  Future<void> deleteProduct(int id) async {
+    final res = await http.delete(_uri('/api/products/$id'));
+    _checkOk(res);
+  }
+
   Future<List<StockItem>> listStock({int? locationId, String? search, int? expiringWithinDays}) async {
     final query = <String, String>{};
     if (locationId != null) query['location_id'] = '$locationId';
