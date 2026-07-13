@@ -12,13 +12,17 @@ class StockProvider extends ChangeNotifier {
   bool loading = false;
   String? error;
   int? expiringWithinDaysFilter;
+  int? locationIdFilter;
 
   Future<void> refresh() async {
     loading = true;
     error = null;
     notifyListeners();
     try {
-      items = await api.listStock(expiringWithinDays: expiringWithinDaysFilter);
+      items = await api.listStock(
+        expiringWithinDays: expiringWithinDaysFilter,
+        locationId: locationIdFilter,
+      );
     } catch (e) {
       error = '$e';
     } finally {
@@ -29,6 +33,11 @@ class StockProvider extends ChangeNotifier {
 
   Future<void> setExpiringFilter(int? days) async {
     expiringWithinDaysFilter = days;
+    await refresh();
+  }
+
+  Future<void> setLocationFilter(int? locationId) async {
+    locationIdFilter = locationId;
     await refresh();
   }
 

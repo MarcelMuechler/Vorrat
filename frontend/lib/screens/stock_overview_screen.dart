@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../api/client.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
 import 'product_detail_screen.dart';
@@ -24,12 +25,25 @@ class StockOverviewScreen extends StatefulWidget {
 }
 
 class _StockOverviewScreenState extends State<StockOverviewScreen> {
+  List<Location> _locations = [];
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StockProvider>().refresh();
     });
+    _loadLocations();
+  }
+
+  Future<void> _loadLocations() async {
+    try {
+      final locations = await context.read<ApiClient>().listLocations();
+      if (mounted) setState(() => _locations = locations);
+    } catch (_) {
+      // Filter dropdown just stays hidden (see _locations.isNotEmpty below) --
+      // the stock list's own error state already surfaces connectivity issues.
+    }
   }
 
   @override
@@ -42,13 +56,25 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FilterChip(
-                label: const Text('Expiring soon'),
-                selected: stock.expiringWithinDaysFilter != null,
-                onSelected: (selected) => stock.setExpiringFilter(selected ? 3 : null),
-              ),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('Expiring soon'),
+                  selected: stock.expiringWithinDaysFilter != null,
+                  onSelected: (selected) => stock.setExpiringFilter(selected ? 3 : null),
+                ),
+                const SizedBox(width: 12),
+                if (_locations.isNotEmpty)
+                  DropdownButton<int?>(
+                    value: stock.locationIdFilter,
+                    hint: const Text('All locations'),
+                    items: [
+                      const DropdownMenuItem<int?>(value: null, child: Text('All locations')),
+                      for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
+                    ],
+                    onChanged: (value) => stock.setLocationFilter(value),
+                  ),
+              ],
             ),
           ),
           Expanded(
