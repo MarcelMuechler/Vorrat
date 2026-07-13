@@ -14,12 +14,11 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      # Uses the default GITHUB_TOKEN, which keeps this working with zero setup.
-      # Trade-off: pushes/tags made with GITHUB_TOKEN don't trigger *other*
-      # workflows (a GitHub Actions restriction) -- so the tag this creates
-      # won't auto-fire a future "sync vorrat-hassio-addon" workflow (#19).
-      # If/when #19 needs that, switch `token:` to a PAT stored as a repo
-      # secret instead.
+      # Uses the default GITHUB_TOKEN, which keeps this working with zero
+      # setup. Trade-off: pushes/tags made with GITHUB_TOKEN don't trigger
+      # *other* workflows (a GitHub Actions restriction) -- irrelevant here
+      # since everything that needs to react to a new release is a step
+      # below in this same job, not a separate tag-triggered workflow.
       - uses: googleapis/release-please-action@v4
         id: release
         with:
@@ -47,5 +46,37 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add backend/uv.lock
             git commit -m "chore: sync uv.lock with the $TAG_NAME release"
+            git push
+          fi
+
+      # Syncs the wrapper repo (vorrat-hassio-addon) that HA's add-on store
+      # actually points at (see README's "Installing on Home Assistant") --
+      # its config.yaml version and Dockerfile's VORRAT_REF pin both need to
+      # track this repo's new tag, or HA never notices a release exists (see
+      # #11's history) and Docker's build cache silently keeps serving
+      # whatever was cloned on the very first build (see #19's original bug
+      # report).
+      #
+      # Requires a `HASSIO_ADDON_PAT` repository secret: a PAT (classic or
+      # fine-grained) with write access to vorrat-hassio-addon. The default
+      # GITHUB_TOKEN can't be used for this step -- it's scoped to this repo
+      # only and has no access to push to a different repository. Until
+      # that secret is added, this step fails loudly rather than silently
+      # skipping, so a missing/expired token doesn't quietly reintroduce the
+      # exact bug this automates away.
+      - if: ${{ steps.release.outputs.release_created }}
+        env:
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+          HASSIO_ADDON_PAT: ${{ secrets.HASSIO_ADDON_PAT }}
+        run: |
+          git clone "https://x-access-token:${HASSIO_ADDON_PAT}@github.com/MarcelMuechler/vorrat-hassio-addon.git" /tmp/vorrat-hassio-addon
+          cd /tmp/vorrat-hassio-addon
+          sed -i "s/^version: .*/version: \"${TAG_NAME#v}\"/" vorrat/config.yaml
+          sed -i "s/^ARG VORRAT_REF=.*/ARG VORRAT_REF=${TAG_NAME}/" vorrat/Dockerfile
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add vorrat/config.yaml vorrat/Dockerfile
+            git commit -m "chore: bump to $TAG_NAME"
             git push
           fi

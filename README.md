@@ -59,18 +59,22 @@ any other PR, then merge:
 
 1. Merge the open "chore(main): release X.Y.Z" PR. This tags `vX.Y.Z` and cuts a GitHub
    Release.
-2. The Home Assistant add-on store only rechecks a repository's `config.yaml` for a new
-   `version` string — it never looks at this repo directly, and it never re-runs a Docker
-   build on its own. So in [`vorrat-hassio-addon`](https://github.com/MarcelMuechler/vorrat-hassio-addon),
-   bump `vorrat/config.yaml`'s `version` to match, and bump the `ARG VORRAT_REF` default in
-   `vorrat/Dockerfile` to the new tag. Commit and push.
+2. The same workflow run then automatically syncs
+   [`vorrat-hassio-addon`](https://github.com/MarcelMuechler/vorrat-hassio-addon) — bumping
+   `vorrat/config.yaml`'s `version` and `vorrat/Dockerfile`'s `ARG VORRAT_REF` to the new tag
+   and pushing — since the Home Assistant add-on store only rechecks *that* repo's
+   `config.yaml` for a new `version` string; it never looks at this repo directly, and never
+   re-runs a Docker build on its own.
+   - Requires a `HASSIO_ADDON_PAT` repository secret (a PAT with write access to
+     `vorrat-hassio-addon`) — the default `GITHUB_TOKEN` can't push to a different repo.
+     Without it, this step fails loudly rather than silently skipping.
    - `VORRAT_REF` must point at a tag, never `main` — Docker caches the `RUN git clone`
      layer by its literal command text, so a floating branch ref cache-hits forever and
      rebuilds silently keep serving whatever was cloned on the very first build.
-   - (Tracked in #19: automate this step too.)
 3. In Home Assistant: Settings → Add-ons → Add-on Store → ⋮ → **Check for updates** (a
    plain reinstall/rebuild does *not* refresh the store's cached repo metadata), then
-   update the Vorrat add-on.
+   update the Vorrat add-on. This last step is still manual — it happens on the HA instance,
+   outside GitHub's reach.
 
 ## Running standalone via Docker
 
