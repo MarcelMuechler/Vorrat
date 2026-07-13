@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'Add product manually'**
   String get addProductManuallyTooltip;
 
+  /// No description provided for @addNewBatchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new batch'**
+  String get addNewBatchTooltip;
+
   /// No description provided for @groupTotalAmount.
   ///
   /// In en, this message translates to:

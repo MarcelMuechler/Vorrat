@@ -124,6 +124,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addProductManuallyTooltip => 'Add product manually';
 
   @override
+  String get addNewBatchTooltip => 'Add new batch';
+
+  @override
   String groupTotalAmount(String amount) {
     return '$amount total';
   }
