@@ -512,6 +512,30 @@ abstract class AppLocalizations {
   /// **'Could not save: {error}'**
   String couldNotSave(String error);
 
+  /// No description provided for @duplicateProductTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar product exists'**
+  String get duplicateProductTitle;
+
+  /// No description provided for @duplicateProductMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A product named \"{name}\" already exists — use it instead?'**
+  String duplicateProductMessage(String name);
+
+  /// No description provided for @duplicateProductCreateNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new'**
+  String get duplicateProductCreateNew;
+
+  /// No description provided for @duplicateProductUseExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing'**
+  String get duplicateProductUseExisting;
+
   /// No description provided for @addToStockTitle.
   ///
   /// In en, this message translates to:
