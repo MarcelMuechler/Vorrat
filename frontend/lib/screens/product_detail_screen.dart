@@ -26,6 +26,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _loadingLocations = true;
   bool _saving = false;
 
+  String? get _imageUrl => widget.existingProduct?.imageUrl ?? widget.prefill?.imageUrl;
+
   @override
   void initState() {
     super.initState();
@@ -142,6 +144,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (widget.prefill != null) ...[
+                  Text(
+                    'From Open Food Facts — check before saving.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_imageUrl != null) ...[
+                  Center(
+                    child: Image.network(_imageUrl!, height: 120, errorBuilder: (_, _, _) => const SizedBox()),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (widget.barcode != null) ...[
                   Text('Barcode: ${widget.barcode}'),
                   const SizedBox(height: 12),
