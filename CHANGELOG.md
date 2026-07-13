@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/MarcelMuechler/vorrat/compare/v0.8.0...v0.9.0) (2026-07-13)
+
+
+### Features
+
+* add a setting to disable Open Food Facts category suggestions ([#79](https://github.com/MarcelMuechler/vorrat/issues/79)) ([493a2c2](https://github.com/MarcelMuechler/vorrat/commit/493a2c2fffb05f2c5d6349a9fe9c844429d6bebc))
+* category becomes a real entity with an autocomplete field ([#77](https://github.com/MarcelMuechler/vorrat/issues/77)) ([4b033bf](https://github.com/MarcelMuechler/vorrat/commit/4b033bfe8b6437c0c12b458e675d9c717d023af9))
+* choose the scan action up front instead of after each scan ([#82](https://github.com/MarcelMuechler/vorrat/issues/82)) ([c1e7211](https://github.com/MarcelMuechler/vorrat/commit/c1e7211ecc412fa1382bd39dc52f67d2b386124f))
+* prefill the OFF category suggestion instead of just hinting it ([#80](https://github.com/MarcelMuechler/vorrat/issues/80)) ([f0f4357](https://github.com/MarcelMuechler/vorrat/commit/f0f4357546791a1372256a2404ac9b3478fcf082))
+* quantity unit as a dropdown instead of free text ([#67](https://github.com/MarcelMuechler/vorrat/issues/67)) ([dcc33a3](https://github.com/MarcelMuechler/vorrat/commit/dcc33a3e6b3bcda3b0421be7e8a0a06732e7f5a0))
+* quick use/spoil buttons and swipe actions on stock items ([#81](https://github.com/MarcelMuechler/vorrat/issues/81)) ([002c291](https://github.com/MarcelMuechler/vorrat/commit/002c291a43b8721a4ab0ac5382a91b7c42fd52ef))
+* use a lock-open icon for the mark-as-opened action ([#76](https://github.com/MarcelMuechler/vorrat/issues/76)) ([b1784e6](https://github.com/MarcelMuechler/vorrat/commit/b1784e609969751454bb24cb4c8e96a3943ad3dd))
+
 ## [0.8.0](https://github.com/MarcelMuechler/vorrat/compare/v0.7.0...v0.8.0) (2026-07-13)
 
 
