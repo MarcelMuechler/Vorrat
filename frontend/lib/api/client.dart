@@ -113,6 +113,10 @@ class ApiClient {
     _checkOk(res);
   }
 
+  Future<void> consumeStock(int id, double amount) async {
+    await _postJson('/api/stock/$id/consume', {'amount': amount});
+  }
+
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
     final res = await http.get(_uri('/api/barcode/$code'));
     if (res.statusCode == 404) {

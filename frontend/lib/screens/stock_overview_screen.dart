@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/models.dart';
 import '../state/stock_provider.dart';
 
 Color _statusColor(String status) {
@@ -91,10 +92,42 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
               'BBD: ${item.bestBeforeDate!.toIso8601String().split('T').first}',
             '${item.amount}',
           ].join(' · ')),
+          onTap: () => _consumeDialog(context, stock, item),
           onLongPress: () => _confirmDelete(context, stock, item.id, item.productName),
         );
       },
     );
+  }
+
+  Future<void> _consumeDialog(BuildContext context, StockProvider stock, StockItem item) async {
+    final controller = TextEditingController(text: '1');
+    final amount = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Use some of "${item.productName}"'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(labelText: 'Amount (of ${item.amount} in stock)'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
+            child: const Text('Consume'),
+          ),
+        ],
+      ),
+    );
+    if (amount == null || amount <= 0 || !context.mounted) return;
+    try {
+      await stock.consume(item.id, amount);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not consume: $e')));
+      }
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, StockProvider stock, int id, String name) async {
