@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -17,6 +18,10 @@ def list_locations(db: Session = Depends(get_db)):
 def create_location(payload: LocationCreate, db: Session = Depends(get_db)):
     location = Location(name=payload.name)
     db.add(location)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A location with that name already exists")
     db.refresh(location)
     return location

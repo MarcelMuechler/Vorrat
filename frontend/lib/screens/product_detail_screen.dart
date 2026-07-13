@@ -72,12 +72,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
     if (name == null || name.isEmpty || !mounted) return;
     final api = context.read<ApiClient>();
-    final location = await api.createLocation(name);
-    if (!mounted) return;
-    setState(() {
-      _locations = [..._locations, location];
-      _selectedLocationId = location.id;
-    });
+    try {
+      final location = await api.createLocation(name);
+      if (!mounted) return;
+      setState(() {
+        _locations = [..._locations, location];
+        _selectedLocationId = location.id;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add location: $e')));
+      }
+    }
   }
 
   Future<void> _pickBestBeforeDate() async {
