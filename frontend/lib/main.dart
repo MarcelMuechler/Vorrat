@@ -8,6 +8,13 @@ import 'screens/stock_overview_screen.dart';
 import 'state/settings_provider.dart';
 import 'state/stock_provider.dart';
 
+/// Whether the device has a usable camera, per `ScanScreen`'s
+/// `MobileScanner.errorBuilder` (the only way mobile_scanner reports this —
+/// it has no standalone check). Starts true so the Scan tab shows until
+/// proven otherwise; flips false (and stays false) the first time starting
+/// the scanner fails with [MobileScannerErrorCode.unsupported].
+final ValueNotifier<bool> cameraAvailable = ValueNotifier<bool>(true);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = SettingsProvider();
@@ -36,11 +43,42 @@ class VorratApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Vorrat',
         theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal, brightness: Brightness.dark),
+        ),
         home: const HomeShell(),
       ),
     );
   }
 }
+
+enum _AppTab { stock, scan, settings }
+
+class _Tab {
+  final _AppTab id;
+  final Widget screen;
+  final NavigationDestination destination;
+
+  const _Tab({required this.id, required this.screen, required this.destination});
+}
+
+const _allTabs = [
+  _Tab(
+    id: _AppTab.stock,
+    screen: StockOverviewScreen(),
+    destination: NavigationDestination(icon: Icon(Icons.kitchen), label: 'Stock'),
+  ),
+  _Tab(
+    id: _AppTab.scan,
+    screen: ScanScreen(),
+    destination: NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
+  ),
+  _Tab(
+    id: _AppTab.settings,
+    screen: SettingsScreen(),
+    destination: NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
+  ),
+];
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -50,23 +88,25 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
-
-  static const _screens = [StockOverviewScreen(), ScanScreen(), SettingsScreen()];
+  _AppTab _selected = _AppTab.stock;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.kitchen), label: 'Stock'),
-          NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
-        ],
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: cameraAvailable,
+      builder: (context, hasCamera, _) {
+        final tabs = hasCamera ? _allTabs : _allTabs.where((t) => t.id != _AppTab.scan).toList();
+        var index = tabs.indexWhere((t) => t.id == _selected);
+        if (index == -1) index = 0; // the selected tab (Scan) just disappeared
+        return Scaffold(
+          body: tabs[index].screen,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: index,
+            onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
+            destinations: [for (final t in tabs) t.destination],
+          ),
+        );
+      },
     );
   }
 }

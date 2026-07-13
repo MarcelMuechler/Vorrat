@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../main.dart';
 import '../state/settings_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -44,6 +46,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  Future<void> _scanToConnect() async {
+    final url = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const _QrConnectScanner()),
+    );
+    if (url == null || !mounted) return;
+    _controller.text = url;
+    await _testConnection();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,10 +72,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _controller,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Server URL',
                 hintText: 'http://192.168.1.20:8099',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: ValueListenableBuilder<bool>(
+                  valueListenable: cameraAvailable,
+                  builder: (context, hasCamera, _) => hasCamera
+                      ? IconButton(
+                          icon: const Icon(Icons.qr_code_scanner),
+                          tooltip: 'Scan to connect',
+                          onPressed: _scanToConnect,
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
               keyboardType: TextInputType.url,
             ),
@@ -86,6 +107,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Scans a QR code (or any barcode) and pops with its decoded text, treated
+/// as a server URL by the caller. There's no in-app way yet to generate that
+/// QR code on the server side — see issue #12 — so today this expects one
+/// produced out-of-band (e.g. a label with the server's LAN address encoded
+/// as a URL).
+class _QrConnectScanner extends StatefulWidget {
+  const _QrConnectScanner();
+
+  @override
+  State<_QrConnectScanner> createState() => _QrConnectScannerState();
+}
+
+class _QrConnectScannerState extends State<_QrConnectScanner> {
+  bool _handled = false;
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_handled) return;
+    final value = capture.barcodes.isEmpty ? null : capture.barcodes.first.rawValue;
+    if (value == null) return;
+    _handled = true;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scan server QR code')),
+      body: MobileScanner(onDetect: _onDetect),
     );
   }
 }
