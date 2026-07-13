@@ -5,7 +5,7 @@ from app.db import get_db
 from app.models import Product, StockEntry
 from app.off_client import lookup_off
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
-from app.utils import escape_like
+from app.utils import escape_like, normalize_barcode
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 def list_products(search: str | None = None, barcode: str | None = None, db: Session = Depends(get_db)):
     query = db.query(Product)
     if barcode:
-        query = query.filter(Product.barcode == barcode)
+        query = query.filter(Product.barcode == normalize_barcode(barcode))
     if search:
         query = query.filter(Product.name.ilike(f"%{escape_like(search)}%", escape="\\"))
     return query.order_by(Product.name).all()

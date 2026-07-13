@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.utils import normalize_barcode
+
 
 class LocationCreate(BaseModel):
     name: str
@@ -36,6 +38,7 @@ class ProductCreate(BaseModel):
     default_open_shelf_life_days: int | None = None
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
+    _normalize_barcode = field_validator("barcode", mode="before")(normalize_barcode)
 
 
 class ProductUpdate(BaseModel):
@@ -50,6 +53,7 @@ class ProductUpdate(BaseModel):
     default_open_shelf_life_days: int | None = None
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
+    _normalize_barcode = field_validator("barcode", mode="before")(normalize_barcode)
 
 
 class ProductRead(BaseModel):
