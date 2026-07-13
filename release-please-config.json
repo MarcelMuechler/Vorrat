@@ -16,6 +16,10 @@
         {
           "type": "generic",
           "path": "vorrat/config.yaml"
+        },
+        {
+          "type": "generic",
+          "path": "backend/app/__init__.py"
         }
       ]
     }
