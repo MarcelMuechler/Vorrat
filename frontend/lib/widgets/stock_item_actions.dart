@@ -99,7 +99,8 @@ class _StockItemActionsState extends State<StockItemActions> {
               await widget.onConsume(widget.amount, 'used');
               return true;
             }
-            return widget.onDelete();
+            await widget.onConsume(widget.amount, 'spoiled');
+            return true;
           },
           child: ListTile(
             leading: widget.leading,

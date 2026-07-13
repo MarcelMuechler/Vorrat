@@ -149,9 +149,22 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
               decoration: InputDecoration(
                 labelText: l10n.searchLabel,
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          stock.setSearchFilter('');
+                          setState(() {});
+                        },
+                      ),
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),
+              textInputAction: TextInputAction.search,
+              onChanged: (_) => setState(() {}),
               onSubmitted: (value) => stock.setSearchFilter(value),
             ),
           ),
@@ -228,7 +241,15 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       );
     }
     if (stock.items.isEmpty) {
-      return Center(child: Text(l10n.noStockYet));
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.45,
+            child: Center(child: Text(l10n.noStockYet)),
+          ),
+        ],
+      );
     }
     switch (stock.viewMode) {
       case StockViewMode.grouped:

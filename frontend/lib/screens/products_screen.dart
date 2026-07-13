@@ -112,9 +112,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
               decoration: InputDecoration(
                 labelText: l10n.searchLabel,
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _refresh();
+                          setState(() {});
+                        },
+                      ),
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),
+              textInputAction: TextInputAction.search,
+              onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _refresh(),
             ),
           ),
