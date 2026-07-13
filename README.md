@@ -29,9 +29,32 @@ cd frontend && flutter build web && python3 -m http.server 8090 -d build/web
 
 ## Installing on Home Assistant
 
-In Home Assistant, go to Settings → Add-ons → Add-on Store → ⋮ → Repositories, and add this
-repo's URL. Install "Vorrat" from the store, start it, and open it from the sidebar. See
-[`vorrat/DOCS.md`](vorrat/DOCS.md) for mobile app setup.
+In Home Assistant, go to Settings → Add-ons → Add-on Store → ⋮ → Repositories, and add
+[`vorrat-hassio-addon`](https://github.com/MarcelMuechler/vorrat-hassio-addon) — a thin
+wrapper repo that clones this repo's tagged releases at build time (see "Releasing" below
+for why it's separate). Install "Vorrat" from the store, start it, and open it from the
+sidebar. See [`vorrat/DOCS.md`](vorrat/DOCS.md) for mobile app setup.
+
+## Releasing
+
+The Home Assistant add-on store only rechecks a repository's `config.yaml` for a new
+`version` string — it never looks at this repo directly, and it never re-runs a Docker
+build on its own. Cutting a release means touching both repos:
+
+1. In this repo, bump the version to the same value in all three places and push to `main`:
+   - `backend/pyproject.toml` (`version`)
+   - `frontend/pubspec.yaml` (`version`)
+   - `vorrat/config.yaml` (`version`)
+2. Tag the release and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. In [`vorrat-hassio-addon`](https://github.com/MarcelMuechler/vorrat-hassio-addon), bump
+   `vorrat/config.yaml`'s `version` to match, and bump the `ARG VORRAT_REF` default in
+   `vorrat/Dockerfile` to the new tag. Commit and push.
+   - `VORRAT_REF` must point at a tag, never `main` — Docker caches the `RUN git clone`
+     layer by its literal command text, so a floating branch ref cache-hits forever and
+     rebuilds silently keep serving whatever was cloned on the very first build.
+4. In Home Assistant: Settings → Add-ons → Add-on Store → ⋮ → **Check for updates** (a
+   plain reinstall/rebuild does *not* refresh the store's cached repo metadata), then
+   update the Vorrat add-on.
 
 ## Running standalone via Docker
 
