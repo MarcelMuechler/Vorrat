@@ -136,6 +136,22 @@ class ApiClient {
     await _postJson('/api/stock/$id/consume', {'amount': amount});
   }
 
+  Future<int> getExpiringSoonDays() async {
+    final res = await http.get(_uri('/api/settings'));
+    _checkOk(res);
+    return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
+  }
+
+  Future<int> setExpiringSoonDays(int days) async {
+    final res = await http.patch(
+      _uri('/api/settings'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'expiring_soon_days': days}),
+    );
+    _checkOk(res);
+    return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
+  }
+
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
     final res = await http.get(_uri('/api/barcode/$code'));
     if (res.statusCode == 404) {

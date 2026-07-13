@@ -47,7 +47,9 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StockProvider>().refresh();
+      context.read<StockProvider>()
+        ..loadExpiringSoonDays()
+        ..refresh();
     });
     _loadLocations();
   }
@@ -77,7 +79,8 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                 FilterChip(
                   label: const Text('Expiring soon'),
                   selected: stock.expiringWithinDaysFilter != null,
-                  onSelected: (selected) => stock.setExpiringFilter(selected ? 3 : null),
+                  onSelected: (selected) =>
+                      stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
                 ),
                 const SizedBox(width: 12),
                 if (_locations.isNotEmpty)

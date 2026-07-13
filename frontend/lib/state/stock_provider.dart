@@ -13,6 +13,18 @@ class StockProvider extends ChangeNotifier {
   String? error;
   int? expiringWithinDaysFilter;
   int? locationIdFilter;
+  int expiringSoonDays = 3;
+
+  Future<void> loadExpiringSoonDays() async {
+    try {
+      expiringSoonDays = await api.getExpiringSoonDays();
+      notifyListeners();
+    } catch (_) {
+      // Keep the built-in default (matches the backend's own fallback) --
+      // the stock list's own error state already surfaces connectivity
+      // issues, no need for a second one here.
+    }
+  }
 
   Future<void> refresh() async {
     loading = true;

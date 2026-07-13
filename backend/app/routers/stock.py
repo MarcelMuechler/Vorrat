@@ -3,9 +3,9 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
-from app.config import settings
 from app.db import get_db
 from app.models import Location, Product, StockEntry
+from app.routers.settings import get_app_settings
 from app.schemas import (
     StockEntryConsume,
     StockEntryCreate,
@@ -18,13 +18,13 @@ from app.utils import escape_like
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
 
-def _status(best_before_date: date | None) -> str:
+def _status(best_before_date: date | None, expiring_soon_days: int) -> str:
     if best_before_date is None:
         return "ok"
     today = date.today()
     if best_before_date < today:
         return "expired"
-    if best_before_date <= today + timedelta(days=settings.expiring_soon_days):
+    if best_before_date <= today + timedelta(days=expiring_soon_days):
         return "expiring_soon"
     return "ok"
 
@@ -54,6 +54,7 @@ def list_stock(
             StockEntry.best_before_date.isnot(None), StockEntry.best_before_date <= cutoff
         )
 
+    expiring_soon_days = get_app_settings(db).expiring_soon_days
     items = []
     for entry in query.order_by(StockEntry.best_before_date.asc().nullslast()).all():
         items.append(
@@ -62,7 +63,7 @@ def list_stock(
                 product_name=entry.product.name,
                 product_barcode=entry.product.barcode,
                 location_name=entry.location.name if entry.location else None,
-                status=_status(entry.best_before_date),
+                status=_status(entry.best_before_date, expiring_soon_days),
             )
         )
     return items

@@ -33,6 +33,17 @@ class Product(Base):
     default_location: Mapped[Location | None] = relationship()
 
 
+class AppSettings(Base):
+    """Single-row table for app-wide settings editable at runtime (as opposed
+    to config.py's env-var settings, fixed at process start) -- e.g. the
+    "expiring soon" threshold, previously only changeable via an env var."""
+
+    __tablename__ = "app_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    expiring_soon_days: Mapped[int] = mapped_column(default=3)
+
+
 class StockEntry(Base):
     __tablename__ = "stock_entries"
 

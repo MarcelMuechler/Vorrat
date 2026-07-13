@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../api/client.dart';
 import '../main.dart';
 import '../state/settings_provider.dart';
+import '../state/stock_provider.dart';
 import 'locations_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -18,19 +19,53 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _controller;
+  late final TextEditingController _expiringSoonController;
   String? _testResult;
   bool _testing = false;
+  bool _savingExpiringSoon = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: context.read<SettingsProvider>().serverUrl);
+    _expiringSoonController = TextEditingController(text: '${context.read<StockProvider>().expiringSoonDays}');
+    _loadExpiringSoonDays();
+  }
+
+  Future<void> _loadExpiringSoonDays() async {
+    final stock = context.read<StockProvider>();
+    await stock.loadExpiringSoonDays();
+    if (mounted) _expiringSoonController.text = '${stock.expiringSoonDays}';
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _expiringSoonController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveExpiringSoonDays() async {
+    final days = int.tryParse(_expiringSoonController.text);
+    if (days == null || days <= 0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter a whole number greater than 0.')));
+      return;
+    }
+    setState(() => _savingExpiringSoon = true);
+    final api = context.read<ApiClient>();
+    final stock = context.read<StockProvider>();
+    try {
+      await api.setExpiringSoonDays(days);
+      await stock.loadExpiringSoonDays();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _savingExpiringSoon = false);
+    }
   }
 
   Future<void> _testConnection() async {
@@ -108,6 +143,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(_testResult!),
             ],
             const SizedBox(height: 24),
+            const Divider(),
+            const Text('"Expiring soon" applies to items due within this many days.'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: _expiringSoonController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton(
+                  onPressed: _savingExpiringSoon ? null : _saveExpiringSoonDays,
+                  child: _savingExpiringSoon
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Save'),
+                ),
+              ],
+            ),
             const Divider(),
             ListTile(
               contentPadding: EdgeInsets.zero,

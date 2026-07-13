@@ -101,3 +101,13 @@ class StockOverviewItem(StockEntryRead):
     product_barcode: str | None
     location_name: str | None
     status: str
+
+
+class AppSettingsRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    expiring_soon_days: int
+
+
+class AppSettingsUpdate(BaseModel):
+    expiring_soon_days: int = Field(gt=0)
