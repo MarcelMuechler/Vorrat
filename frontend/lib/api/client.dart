@@ -107,6 +107,33 @@ class ApiClient {
     _checkOk(res);
   }
 
+  Future<List<Category>> listCategories() async {
+    final res = await http.get(_uri('/api/categories'));
+    _checkOk(res);
+    final list = jsonDecode(res.body) as List;
+    return list.map((e) => Category.fromJson(e)).toList();
+  }
+
+  Future<Category> createCategory(String name) async {
+    final res = await _postJson('/api/categories', {'name': name});
+    return Category.fromJson(jsonDecode(res.body));
+  }
+
+  Future<Category> renameCategory(int id, String name) async {
+    final res = await http.patch(
+      _uri('/api/categories/$id'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    _checkOk(res);
+    return Category.fromJson(jsonDecode(res.body));
+  }
+
+  Future<void> deleteCategory(int id) async {
+    final res = await http.delete(_uri('/api/categories/$id'));
+    _checkOk(res);
+  }
+
   Future<Product> createProduct(Map<String, dynamic> payload) async {
     final res = await _postJson('/api/products', payload);
     return Product.fromJson(jsonDecode(res.body));
@@ -150,14 +177,14 @@ class ApiClient {
     int? productId,
     String? search,
     int? expiringWithinDays,
-    String? category,
+    int? categoryId,
   }) async {
     final query = <String, String>{};
     if (locationId != null) query['location_id'] = '$locationId';
     if (productId != null) query['product_id'] = '$productId';
     if (search != null && search.isNotEmpty) query['search'] = search;
     if (expiringWithinDays != null) query['expiring_within_days'] = '$expiringWithinDays';
-    if (category != null) query['category'] = category;
+    if (categoryId != null) query['category_id'] = '$categoryId';
     final res = await http.get(_uri('/api/stock', query));
     _checkOk(res);
     final list = jsonDecode(res.body) as List;

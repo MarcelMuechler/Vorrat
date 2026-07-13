@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/open_url.dart';
+import 'categories_screen.dart';
 import 'locations_screen.dart';
 import 'products_screen.dart';
 
@@ -227,6 +228,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProductsScreen()),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.category_outlined),
+              title: Text(l10n.categoriesTitle),
+              subtitle: Text(l10n.categoriesSubtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
               ),
             ),
             ListTile(

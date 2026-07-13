@@ -27,10 +27,16 @@ echo "created product $PRODUCT_ID"
 echo "== products: get =="
 curl -sf "$BASE/api/products/$PRODUCT_ID" | jq .
 
+echo "== categories: create =="
+CATEGORY_ID=$(curl -sf -X POST "$BASE/api/categories" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Dairy"}' | jq -r .id)
+echo "created category $CATEGORY_ID"
+
 echo "== products: patch =="
 curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
   -H 'content-type: application/json' \
-  -d '{"category": "Dairy"}' | jq .
+  -d '{"category_id": '"$CATEGORY_ID"'}' | jq .
 
 echo "== products: search =="
 curl -sf "$BASE/api/products?search=milk" | jq .

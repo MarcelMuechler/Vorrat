@@ -22,6 +22,22 @@ class LocationRead(BaseModel):
     created_at: datetime
 
 
+class CategoryCreate(BaseModel):
+    name: str
+
+
+class CategoryUpdate(BaseModel):
+    name: str
+
+
+class CategoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    created_at: datetime
+
+
 def _strip_name(v: str | None) -> str | None:
     return v.strip() if isinstance(v, str) else v
 
@@ -30,7 +46,7 @@ class ProductCreate(BaseModel):
     barcode: str | None = None
     name: str = Field(min_length=1)
     image_url: str | None = None
-    category: str | None = None
+    category_id: int | None = None
     quantity_unit: str = "pcs"
     default_location_id: int | None = None
     default_best_before_days: int | None = None
@@ -45,7 +61,7 @@ class ProductUpdate(BaseModel):
     barcode: str | None = None
     name: str | None = Field(default=None, min_length=1)
     image_url: str | None = None
-    category: str | None = None
+    category_id: int | None = None
     quantity_unit: str | None = None
     default_location_id: int | None = None
     default_best_before_days: int | None = None
@@ -63,7 +79,8 @@ class ProductRead(BaseModel):
     barcode: str | None
     name: str
     image_url: str | None
-    category: str | None
+    category_id: int | None
+    category_name: str | None
     quantity_unit: str
     default_location_id: int | None
     default_best_before_days: int | None

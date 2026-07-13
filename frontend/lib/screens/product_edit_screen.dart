@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../widgets/category_field.dart';
 import '../widgets/quantity_unit_field.dart';
 
 class ProductEditScreen extends StatefulWidget {
@@ -17,7 +18,9 @@ class ProductEditScreen extends StatefulWidget {
 
 class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _nameController;
-  late final TextEditingController _categoryController;
+  final _categoryFieldKey = GlobalKey<CategoryFieldState>();
+  int? _categoryId;
+  String? _categoryName;
   late String _quantityUnit;
   late final TextEditingController _bestBeforeDaysController;
   late final TextEditingController _openShelfLifeDaysController;
@@ -34,7 +37,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     super.initState();
     final p = widget.product;
     _nameController = TextEditingController(text: p.name);
-    _categoryController = TextEditingController(text: p.category ?? '');
+    _categoryId = p.categoryId;
+    _categoryName = p.categoryName;
     _quantityUnit = p.quantityUnit;
     _bestBeforeDaysController = TextEditingController(
       text: p.defaultBestBeforeDays == null ? '' : '${p.defaultBestBeforeDays}',
@@ -53,7 +57,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _categoryController.dispose();
     _bestBeforeDaysController.dispose();
     _openShelfLifeDaysController.dispose();
     _lowStockThresholdController.dispose();
@@ -71,11 +74,16 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    // Force-resolve whatever's currently typed first -- tapping Save right
+    // after typing a brand-new category would otherwise race the field's
+    // own async create-category call.
+    await _categoryFieldKey.currentState?.resolve();
+    if (!mounted) return;
     final api = context.read<ApiClient>();
     try {
       await api.updateProduct(widget.product.id, {
         'name': _nameController.text,
-        'category': _categoryController.text.isEmpty ? null : _categoryController.text,
+        'category_id': _categoryId,
         'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
         'default_location_id': _selectedLocationId,
         'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
@@ -102,9 +110,17 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     try {
       final data = await api.refreshProductFromOff(widget.product.id);
       if (!mounted) return;
+      final offCategory = data['category'] as String?;
+      if (offCategory != null) {
+        // Matches/creates the category the same way typing it in and
+        // blurring would (#72/#73); updates _categoryId/_categoryName via
+        // the field's own onChanged callback.
+        _categoryFieldKey.currentState?.setText(offCategory);
+        await _categoryFieldKey.currentState?.resolve();
+        if (!mounted) return;
+      }
       setState(() {
         _nameController.text = data['name'] as String? ?? _nameController.text;
-        _categoryController.text = data['category'] as String? ?? _categoryController.text;
         _imageUrl = data['image_url'] as String? ?? _imageUrl;
       });
       ScaffoldMessenger.of(
@@ -158,9 +174,15 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _categoryController,
-                  decoration: InputDecoration(labelText: l10n.categoryLabel, border: const OutlineInputBorder()),
+                CategoryField(
+                  key: _categoryFieldKey,
+                  categoryId: _categoryId,
+                  categoryName: _categoryName,
+                  label: l10n.categoryLabel,
+                  onChanged: (category) => setState(() {
+                    _categoryId = category?.id;
+                    _categoryName = category?.name;
+                  }),
                 ),
                 const SizedBox(height: 12),
                 QuantityUnitField(

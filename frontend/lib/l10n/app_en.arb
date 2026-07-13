@@ -20,6 +20,7 @@
   "spoiledLabel": "Spoiled",
   "nameLabel": "Name",
   "categoryLabel": "Category",
+  "clearCategoryTooltip": "Clear category",
   "amountFieldLabel": "Amount",
   "unitLabel": "Unit",
   "quantityUnitLabel": "Quantity unit",
@@ -216,6 +217,34 @@
   "addLocationTooltip": "Add location",
   "locationsSubtitle": "Rename or delete storage locations",
   "productsSubtitle": "Browse, edit, or delete products",
+
+  "categoriesTitle": "Categories",
+  "categoriesSubtitle": "Add, rename, or delete categories",
+  "newCategoryTitle": "New category",
+  "couldNotAddCategory": "Could not add category: {error}",
+  "@couldNotAddCategory": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "renameCategoryTitle": "Rename category",
+  "couldNotRenameCategory": "Could not rename category: {error}",
+  "@couldNotRenameCategory": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "deleteCategoryTitle": "Delete category?",
+  "deleteCategoryConfirm": "This clears \"{name}\" from every product using it -- those products aren't deleted.",
+  "@deleteCategoryConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "couldNotDeleteCategory": "Could not delete category: {error}",
+  "@couldNotDeleteCategory": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotLoadCategories": "Could not load categories: {error}",
+  "@couldNotLoadCategories": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "noCategoriesYet": "No categories yet.",
+  "addCategoryTooltip": "Add category",
 
   "lookupsFailedPending": "{failures, plural, =1{1 lookup failed} other{{failures} lookups failed}}; {remaining} still pending.",
   "@lookupsFailedPending": {

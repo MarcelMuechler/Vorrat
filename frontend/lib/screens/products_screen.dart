@@ -17,22 +17,30 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   final _searchController = TextEditingController();
   List<Product> _products = [];
+  List<Category> _categories = [];
   bool _loading = true;
   String? _error;
-  String? _categoryFilter;
+  int? _categoryFilter;
 
   List<Product> get _visibleProducts => _categoryFilter == null
       ? _products
-      : _products.where((p) => p.category == _categoryFilter).toList();
-
-  List<String> get _categories =>
-      {for (final p in _products) if (p.category != null && p.category!.isNotEmpty) p.category!}.toList()
-        ..sort();
+      : _products.where((p) => p.categoryId == _categoryFilter).toList();
 
   @override
   void initState() {
     super.initState();
     _refresh();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await context.read<ApiClient>().listCategories();
+      if (mounted) setState(() => _categories = categories);
+    } catch (_) {
+      // Filter dropdown just stays hidden -- the products list's own error
+      // state already surfaces connectivity issues.
+    }
   }
 
   @override
@@ -115,12 +123,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: DropdownButton<String?>(
+                child: DropdownButton<int?>(
                   value: _categoryFilter,
                   hint: Text(l10n.allCategoriesLabel),
                   items: [
-                    DropdownMenuItem<String?>(value: null, child: Text(l10n.allCategoriesLabel)),
-                    for (final c in _categories) DropdownMenuItem(value: c, child: Text(c)),
+                    DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
+                    for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
                   ],
                   onChanged: (value) => setState(() => _categoryFilter = value),
                 ),

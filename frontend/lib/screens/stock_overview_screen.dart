@@ -62,7 +62,7 @@ class StockOverviewScreen extends StatefulWidget {
 
 class _StockOverviewScreenState extends State<StockOverviewScreen> {
   List<Location> _locations = [];
-  List<String> _categories = [];
+  List<Category> _categories = [];
   final _searchController = TextEditingController();
 
   @override
@@ -93,16 +93,10 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     }
   }
 
-  // No dedicated "distinct categories" endpoint -- category is free text
-  // maintained by the user (#57), so the full product list is the only
-  // source of the values actually in use.
   Future<void> _loadCategories() async {
     try {
-      final products = await context.read<ApiClient>().listProducts();
-      if (!mounted) return;
-      final categories = {for (final p in products) if (p.category != null && p.category!.isNotEmpty) p.category!}.toList()
-        ..sort();
-      setState(() => _categories = categories);
+      final categories = await context.read<ApiClient>().listCategories();
+      if (mounted) setState(() => _categories = categories);
     } catch (_) {
       // Filter dropdown just stays hidden, same as _loadLocations above.
     }
@@ -185,12 +179,12 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                     ),
                   if (_categories.isNotEmpty) ...[
                     const SizedBox(width: 12),
-                    DropdownButton<String?>(
-                      value: stock.categoryFilter,
+                    DropdownButton<int?>(
+                      value: stock.categoryIdFilter,
                       hint: Text(l10n.allCategoriesLabel),
                       items: [
-                        DropdownMenuItem<String?>(value: null, child: Text(l10n.allCategoriesLabel)),
-                        for (final c in _categories) DropdownMenuItem(value: c, child: Text(c)),
+                        DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
+                        for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
                       ],
                       onChanged: (value) => stock.setCategoryFilter(value),
                     ),

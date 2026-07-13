@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../widgets/category_field.dart';
 import '../widgets/quantity_unit_field.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -20,7 +21,8 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final TextEditingController _nameController;
-  late final TextEditingController _categoryController;
+  final _categoryFieldKey = GlobalKey<CategoryFieldState>();
+  int? _categoryId;
   late final TextEditingController _amountController;
   late String _quantityUnit;
   List<Location> _locations = [];
@@ -37,7 +39,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _nameController = TextEditingController(
       text: widget.existingProduct?.name ?? widget.prefill?.name ?? '',
     );
-    _categoryController = TextEditingController();
     _amountController = TextEditingController(
       text: widget.prefill?.amount != null ? '${widget.prefill!.amount}' : '1',
     );
@@ -121,6 +122,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return null;
   }
 
+  /// If the user picked/typed a category, use it -- force-resolving the
+  /// field's current text first (rather than trusting whatever onChanged
+  /// last reported), since tapping Save right after typing a brand-new
+  /// category would otherwise race the field's own async create-category
+  /// call. Otherwise fall back to OFF's suggested category name (#57's
+  /// "leave it blank to accept the suggestion" contract) -- resolved against
+  /// existing categories, or created if it doesn't match one yet (#72/#73).
+  Future<int?> _resolveCategoryId() async {
+    await _categoryFieldKey.currentState?.resolve();
+    if (_categoryId != null) return _categoryId;
+    final suggested = widget.prefill?.category?.trim();
+    if (suggested == null || suggested.isEmpty || !mounted) return null;
+    final api = context.read<ApiClient>();
+    final existing = await api.listCategories();
+    for (final c in existing) {
+      if (c.name.trim().toLowerCase() == suggested.toLowerCase()) return c.id;
+    }
+    final created = await api.createCategory(suggested);
+    return created.id;
+  }
+
   Future<bool> _confirmUseExisting(Product existing) async {
     final l10n = AppLocalizations.of(context)!;
     final useExisting = await showDialog<bool>(
@@ -166,9 +188,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             'barcode': widget.barcode,
             'name': _nameController.text,
             'image_url': widget.prefill?.imageUrl,
-            'category': _categoryController.text.trim().isEmpty
-                ? widget.prefill?.category
-                : _categoryController.text.trim(),
+            'category_id': await _resolveCategoryId(),
             'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
           });
           productId = created.id;
@@ -225,16 +245,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (widget.existingProduct == null) ...[
-                  TextField(
-                    controller: _categoryController,
-                    decoration: InputDecoration(
-                      labelText: l10n.categoryLabel,
-                      // OFF's suggestion shows as a hint rather than being
-                      // filled in outright -- leaving the field blank uses
-                      // it, typing anything overrides it (#57).
-                      hintText: widget.prefill?.category,
-                      border: const OutlineInputBorder(),
-                    ),
+                  CategoryField(
+                    key: _categoryFieldKey,
+                    categoryId: _categoryId,
+                    categoryName: null,
+                    label: l10n.categoryLabel,
+                    // OFF's suggestion shows as a hint rather than being
+                    // filled in outright -- leaving the field blank uses
+                    // it, typing anything overrides it (#57).
+                    hintText: widget.prefill?.category,
+                    onChanged: (category) => setState(() => _categoryId = category?.id),
                   ),
                   const SizedBox(height: 12),
                 ],

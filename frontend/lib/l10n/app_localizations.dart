@@ -200,6 +200,12 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get categoryLabel;
 
+  /// No description provided for @clearCategoryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear category'**
+  String get clearCategoryTooltip;
+
   /// No description provided for @amountFieldLabel.
   ///
   /// In en, this message translates to:
@@ -805,6 +811,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Browse, edit, or delete products'**
   String get productsSubtitle;
+
+  /// No description provided for @categoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categoriesTitle;
+
+  /// No description provided for @categoriesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add, rename, or delete categories'**
+  String get categoriesSubtitle;
+
+  /// No description provided for @newCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get newCategoryTitle;
+
+  /// No description provided for @couldNotAddCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add category: {error}'**
+  String couldNotAddCategory(String error);
+
+  /// No description provided for @renameCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename category'**
+  String get renameCategoryTitle;
+
+  /// No description provided for @couldNotRenameCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not rename category: {error}'**
+  String couldNotRenameCategory(String error);
+
+  /// No description provided for @deleteCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete category?'**
+  String get deleteCategoryTitle;
+
+  /// No description provided for @deleteCategoryConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This clears \"{name}\" from every product using it -- those products aren\'t deleted.'**
+  String deleteCategoryConfirm(String name);
+
+  /// No description provided for @couldNotDeleteCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete category: {error}'**
+  String couldNotDeleteCategory(String error);
+
+  /// No description provided for @couldNotLoadCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load categories: {error}'**
+  String couldNotLoadCategories(String error);
+
+  /// No description provided for @noCategoriesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories yet.'**
+  String get noCategoriesYet;
+
+  /// No description provided for @addCategoryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add category'**
+  String get addCategoryTooltip;
 
   /// No description provided for @lookupsFailedPending.
   ///

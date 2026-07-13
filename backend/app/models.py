@@ -14,6 +14,18 @@ class Location(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class Category(Base):
+    """A real entity (#72) rather than free text on Product -- renaming or
+    deleting one here is instantly reflected on every product that
+    references it, no bulk-update needed."""
+
+    __tablename__ = "categories"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -21,7 +33,7 @@ class Product(Base):
     barcode: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    category: Mapped[str | None] = mapped_column(String, nullable=True)
+    category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
     quantity_unit: Mapped[str] = mapped_column(String, default="pcs")
     default_location_id: Mapped[int | None] = mapped_column(
         ForeignKey("locations.id"), nullable=True
@@ -35,6 +47,11 @@ class Product(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     default_location: Mapped[Location | None] = relationship()
+    category: Mapped[Category | None] = relationship()
+
+    @property
+    def category_name(self) -> str | None:
+        return self.category.name if self.category else None
 
 
 class AppSettings(Base):

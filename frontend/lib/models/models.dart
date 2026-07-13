@@ -8,12 +8,23 @@ class Location {
       Location(id: json['id'], name: json['name']);
 }
 
+class Category {
+  final int id;
+  final String name;
+
+  Category({required this.id, required this.name});
+
+  factory Category.fromJson(Map<String, dynamic> json) =>
+      Category(id: json['id'], name: json['name']);
+}
+
 class Product {
   final int id;
   final String? barcode;
   final String name;
   final String? imageUrl;
-  final String? category;
+  final int? categoryId;
+  final String? categoryName;
   final String quantityUnit;
   final int? defaultLocationId;
   final int? defaultBestBeforeDays;
@@ -25,7 +36,8 @@ class Product {
     required this.name,
     this.barcode,
     this.imageUrl,
-    this.category,
+    this.categoryId,
+    this.categoryName,
     this.quantityUnit = 'pcs',
     this.defaultLocationId,
     this.defaultBestBeforeDays,
@@ -38,7 +50,8 @@ class Product {
         barcode: json['barcode'],
         name: json['name'],
         imageUrl: json['image_url'],
-        category: json['category'],
+        categoryId: json['category_id'],
+        categoryName: json['category_name'],
         quantityUnit: json['quantity_unit'] ?? 'pcs',
         defaultLocationId: json['default_location_id'],
         defaultBestBeforeDays: json['default_best_before_days'],

@@ -60,6 +60,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryLabel => 'Category';
 
   @override
+  String get clearCategoryTooltip => 'Clear category';
+
+  @override
   String get amountFieldLabel => 'Amount';
 
   @override
@@ -424,6 +427,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productsSubtitle => 'Browse, edit, or delete products';
+
+  @override
+  String get categoriesTitle => 'Categories';
+
+  @override
+  String get categoriesSubtitle => 'Add, rename, or delete categories';
+
+  @override
+  String get newCategoryTitle => 'New category';
+
+  @override
+  String couldNotAddCategory(String error) {
+    return 'Could not add category: $error';
+  }
+
+  @override
+  String get renameCategoryTitle => 'Rename category';
+
+  @override
+  String couldNotRenameCategory(String error) {
+    return 'Could not rename category: $error';
+  }
+
+  @override
+  String get deleteCategoryTitle => 'Delete category?';
+
+  @override
+  String deleteCategoryConfirm(String name) {
+    return 'This clears \"$name\" from every product using it -- those products aren\'t deleted.';
+  }
+
+  @override
+  String couldNotDeleteCategory(String error) {
+    return 'Could not delete category: $error';
+  }
+
+  @override
+  String couldNotLoadCategories(String error) {
+    return 'Could not load categories: $error';
+  }
+
+  @override
+  String get noCategoriesYet => 'No categories yet.';
+
+  @override
+  String get addCategoryTooltip => 'Add category';
 
   @override
   String lookupsFailedPending(int failures, int remaining) {

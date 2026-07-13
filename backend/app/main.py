@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
-from app.routers import barcode, consumption_log, locations, products, settings, stock
+from app.routers import barcode, categories, consumption_log, locations, products, settings, stock
 
 app = FastAPI(title="Vorrat", version=__version__)
 print(f"Vorrat backend v{__version__} starting", flush=True)
@@ -22,6 +22,7 @@ app.add_middleware(
 
 
 app.include_router(locations.router)
+app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(stock.router)
 app.include_router(barcode.router)

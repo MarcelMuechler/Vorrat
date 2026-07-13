@@ -46,7 +46,7 @@ def _query_stock(
     product_id: int | None = None,
     search: str | None = None,
     expiring_within_days: int | None = None,
-    category: str | None = None,
+    category_id: int | None = None,
 ) -> list[StockOverviewItem]:
     # join(Product) is already needed for filtering; contains_eager reuses
     # that same join to populate entry.product instead of lazy-loading it
@@ -54,7 +54,10 @@ def _query_stock(
     query = (
         db.query(StockEntry)
         .join(Product)
-        .options(contains_eager(StockEntry.product), joinedload(StockEntry.location))
+        .options(
+            contains_eager(StockEntry.product).joinedload(Product.category),
+            joinedload(StockEntry.location),
+        )
     )
     if location_id is not None:
         query = query.filter(StockEntry.location_id == location_id)
@@ -67,8 +70,8 @@ def _query_stock(
         query = query.filter(
             StockEntry.best_before_date.isnot(None), StockEntry.best_before_date <= cutoff
         )
-    if category is not None:
-        query = query.filter(Product.category == category)
+    if category_id is not None:
+        query = query.filter(Product.category_id == category_id)
 
     expiring_soon_days = get_app_settings(db).expiring_soon_days
     items = []
@@ -78,7 +81,7 @@ def _query_stock(
                 **StockEntryRead.model_validate(entry).model_dump(),
                 product_name=entry.product.name,
                 product_barcode=entry.product.barcode,
-                product_category=entry.product.category,
+                product_category=entry.product.category_name,
                 product_low_stock_threshold=entry.product.low_stock_threshold,
                 location_name=entry.location.name if entry.location else None,
                 status=_status(
@@ -98,10 +101,10 @@ def list_stock(
     product_id: int | None = None,
     search: str | None = None,
     expiring_within_days: int | None = None,
-    category: str | None = None,
+    category_id: int | None = None,
     db: Session = Depends(get_db),
 ):
-    return _query_stock(db, location_id, product_id, search, expiring_within_days, category)
+    return _query_stock(db, location_id, product_id, search, expiring_within_days, category_id)
 
 
 @router.get("/export.csv")
