@@ -16,7 +16,10 @@ async def lookup_off(barcode: str) -> dict | None:
             response = await client.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
-    except httpx.HTTPError:
+    except (httpx.HTTPError, ValueError):
+        # ValueError covers response.json() raising JSONDecodeError, e.g. OFF
+        # returning a 200 with an HTML rate-limit/maintenance page instead of
+        # JSON — should be treated as a miss too, not an unhandled 500.
         return None
 
     if data.get("status") != 1:
