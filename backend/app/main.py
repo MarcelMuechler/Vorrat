@@ -36,16 +36,22 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 if STATIC_DIR.exists():
 
+    # vorrat/Dockerfile builds with `flutter build web
+    # --base-href=/__INGRESS_BASE__/` — a stable, deliberate marker instead of
+    # Flutter's default "/", so this replace targets an exact token we chose
+    # rather than pattern-matching Flutter's default rendered output (which
+    # could change quote style/whitespace/default across SDK versions).
+    _BASE_HREF_MARKER = '<base href="/__INGRESS_BASE__/">'
+
     @app.get("/", include_in_schema=False)
     def index(request: Request):
-        # Flutter Web bakes <base href="/"> into index.html at build time, but
         # HA Ingress serves this app under a dynamic per-session path prefix
         # and sets X-Ingress-Path on proxied requests. The app keeps Flutter's
         # default hash-based routing, so this rewrite on the initial document
         # load is the only place ingress-awareness is needed.
         ingress_path = request.headers.get("X-Ingress-Path", "")
         html = (STATIC_DIR / "index.html").read_text()
-        html = html.replace('<base href="/">', f'<base href="{ingress_path}/">')
+        html = html.replace(_BASE_HREF_MARKER, f'<base href="{ingress_path}/">')
         return HTMLResponse(html)
 
     app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")

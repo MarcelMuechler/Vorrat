@@ -5,7 +5,10 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base:3.23
 
 FROM ghcr.io/cirruslabs/flutter:stable AS webbuilder
 COPY frontend/ /src
-RUN cd /src && flutter build web
+# A stable, greppable marker instead of the default "/" — main.py replaces
+# this exact token for HA Ingress instead of pattern-matching Flutter's
+# default rendered <base href> output, which could change across SDK versions.
+RUN cd /src && flutter build web --base-href=/__INGRESS_BASE__/
 
 FROM ${BUILD_FROM} AS runtime
 
