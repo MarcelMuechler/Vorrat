@@ -19,6 +19,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> _products = [];
   bool _loading = true;
   String? _error;
+  String? _categoryFilter;
+
+  List<Product> get _visibleProducts => _categoryFilter == null
+      ? _products
+      : _products.where((p) => p.category == _categoryFilter).toList();
+
+  List<String> get _categories =>
+      {for (final p in _products) if (p.category != null && p.category!.isNotEmpty) p.category!}.toList()
+        ..sort();
 
   @override
   void initState() {
@@ -101,6 +110,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
               onSubmitted: (_) => _refresh(),
             ),
           ),
+          if (_categories.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: DropdownButton<String?>(
+                  value: _categoryFilter,
+                  hint: Text(l10n.allCategoriesLabel),
+                  items: [
+                    DropdownMenuItem<String?>(value: null, child: Text(l10n.allCategoriesLabel)),
+                    for (final c in _categories) DropdownMenuItem(value: c, child: Text(c)),
+                  ],
+                  onChanged: (value) => setState(() => _categoryFilter = value),
+                ),
+              ),
+            ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -109,13 +134,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Text(l10n.couldNotLoadProducts('$_error')),
                       )
-                    : _products.isEmpty
+                    : _visibleProducts.isEmpty
                         ? Center(child: Text(l10n.noProductsYet))
                         : ListView.separated(
-                            itemCount: _products.length,
+                            itemCount: _visibleProducts.length,
                             separatorBuilder: (_, _) => const Divider(height: 1),
                             itemBuilder: (context, index) {
-                              final product = _products[index];
+                              final product = _visibleProducts[index];
                               return ListTile(
                                 title: Text(product.name),
                                 subtitle: product.barcode != null ? Text(product.barcode!) : null,

@@ -37,6 +37,7 @@
   "sortBestBeforeDateLabel": "Mindesthaltbarkeitsdatum",
   "expiringSoonChip": "Bald ablaufend",
   "allLocationsLabel": "Alle Standorte",
+  "allCategoriesLabel": "Alle Kategorien",
   "stockLoadError": "Bestand konnte nicht geladen werden: {error}\n\nServer-URL in den Einstellungen prüfen.",
   "noStockYet": "Noch kein Bestand. Scanne etwas, um es hinzuzufügen.",
   "addProductManuallyTooltip": "Produkt manuell hinzufügen",

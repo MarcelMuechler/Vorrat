@@ -107,6 +107,7 @@ class StockEntryRead(BaseModel):
 class StockOverviewItem(StockEntryRead):
     product_name: str
     product_barcode: str | None
+    product_category: str | None
     location_name: str | None
     status: str
 

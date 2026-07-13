@@ -19,6 +19,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final TextEditingController _nameController;
+  late final TextEditingController _categoryController;
   late final TextEditingController _amountController;
   late final TextEditingController _quantityUnitController;
   List<Location> _locations = [];
@@ -35,6 +36,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _nameController = TextEditingController(
       text: widget.existingProduct?.name ?? widget.prefill?.name ?? '',
     );
+    _categoryController = TextEditingController();
     _amountController = TextEditingController(
       text: widget.prefill?.amount != null ? '${widget.prefill!.amount}' : '1',
     );
@@ -165,7 +167,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             'barcode': widget.barcode,
             'name': _nameController.text,
             'image_url': widget.prefill?.imageUrl,
-            'category': widget.prefill?.category,
+            'category': _categoryController.text.trim().isEmpty
+                ? widget.prefill?.category
+                : _categoryController.text.trim(),
             'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
           });
           productId = created.id;
@@ -221,6 +225,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
+                if (widget.existingProduct == null) ...[
+                  TextField(
+                    controller: _categoryController,
+                    decoration: InputDecoration(
+                      labelText: l10n.categoryLabel,
+                      // OFF's suggestion shows as a hint rather than being
+                      // filled in outright -- leaving the field blank uses
+                      // it, typing anything overrides it (#57).
+                      hintText: widget.prefill?.category,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Row(
                   children: [
                     Expanded(

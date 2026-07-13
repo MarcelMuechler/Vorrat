@@ -296,6 +296,12 @@ abstract class AppLocalizations {
   /// **'All locations'**
   String get allLocationsLabel;
 
+  /// No description provided for @allCategoriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategoriesLabel;
+
   /// No description provided for @stockLoadError.
   ///
   /// In en, this message translates to:

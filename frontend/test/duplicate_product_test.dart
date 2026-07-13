@@ -37,6 +37,7 @@ class FakeApiClient extends ApiClient {
     int? productId,
     String? search,
     int? expiringWithinDays,
+    String? category,
   }) async => [];
 }
 

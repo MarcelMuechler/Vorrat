@@ -62,6 +62,7 @@ class StockOverviewScreen extends StatefulWidget {
 
 class _StockOverviewScreenState extends State<StockOverviewScreen> {
   List<Location> _locations = [];
+  List<String> _categories = [];
   final _searchController = TextEditingController();
 
   @override
@@ -73,6 +74,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         ..refresh();
     });
     _loadLocations();
+    _loadCategories();
   }
 
   @override
@@ -88,6 +90,21 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     } catch (_) {
       // Filter dropdown just stays hidden (see _locations.isNotEmpty below) --
       // the stock list's own error state already surfaces connectivity issues.
+    }
+  }
+
+  // No dedicated "distinct categories" endpoint -- category is free text
+  // maintained by the user (#57), so the full product list is the only
+  // source of the values actually in use.
+  Future<void> _loadCategories() async {
+    try {
+      final products = await context.read<ApiClient>().listProducts();
+      if (!mounted) return;
+      final categories = {for (final p in products) if (p.category != null && p.category!.isNotEmpty) p.category!}.toList()
+        ..sort();
+      setState(() => _categories = categories);
+    } catch (_) {
+      // Filter dropdown just stays hidden, same as _loadLocations above.
     }
   }
 
@@ -145,26 +162,41 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                FilterChip(
-                  label: Text(l10n.expiringSoonChip),
-                  selected: stock.expiringWithinDaysFilter != null,
-                  onSelected: (selected) =>
-                      stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
-                ),
-                const SizedBox(width: 12),
-                if (_locations.isNotEmpty)
-                  DropdownButton<int?>(
-                    value: stock.locationIdFilter,
-                    hint: Text(l10n.allLocationsLabel),
-                    items: [
-                      DropdownMenuItem<int?>(value: null, child: Text(l10n.allLocationsLabel)),
-                      for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
-                    ],
-                    onChanged: (value) => stock.setLocationFilter(value),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  FilterChip(
+                    label: Text(l10n.expiringSoonChip),
+                    selected: stock.expiringWithinDaysFilter != null,
+                    onSelected: (selected) =>
+                        stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
                   ),
-              ],
+                  const SizedBox(width: 12),
+                  if (_locations.isNotEmpty)
+                    DropdownButton<int?>(
+                      value: stock.locationIdFilter,
+                      hint: Text(l10n.allLocationsLabel),
+                      items: [
+                        DropdownMenuItem<int?>(value: null, child: Text(l10n.allLocationsLabel)),
+                        for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
+                      ],
+                      onChanged: (value) => stock.setLocationFilter(value),
+                    ),
+                  if (_categories.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    DropdownButton<String?>(
+                      value: stock.categoryFilter,
+                      hint: Text(l10n.allCategoriesLabel),
+                      items: [
+                        DropdownMenuItem<String?>(value: null, child: Text(l10n.allCategoriesLabel)),
+                        for (final c in _categories) DropdownMenuItem(value: c, child: Text(c)),
+                      ],
+                      onChanged: (value) => stock.setCategoryFilter(value),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           Expanded(

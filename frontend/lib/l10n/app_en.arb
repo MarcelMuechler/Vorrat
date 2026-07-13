@@ -40,6 +40,7 @@
   "sortBestBeforeDateLabel": "Best-before date",
   "expiringSoonChip": "Expiring soon",
   "allLocationsLabel": "All locations",
+  "allCategoriesLabel": "All categories",
   "stockLoadError": "Could not load stock: {error}\n\nCheck the server URL in Settings.",
   "@stockLoadError": {
     "placeholders": { "error": { "type": "String" } }

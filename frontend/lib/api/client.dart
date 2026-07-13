@@ -150,12 +150,14 @@ class ApiClient {
     int? productId,
     String? search,
     int? expiringWithinDays,
+    String? category,
   }) async {
     final query = <String, String>{};
     if (locationId != null) query['location_id'] = '$locationId';
     if (productId != null) query['product_id'] = '$productId';
     if (search != null && search.isNotEmpty) query['search'] = search;
     if (expiringWithinDays != null) query['expiring_within_days'] = '$expiringWithinDays';
+    if (category != null) query['category'] = category;
     final res = await http.get(_uri('/api/stock', query));
     _checkOk(res);
     final list = jsonDecode(res.body) as List;

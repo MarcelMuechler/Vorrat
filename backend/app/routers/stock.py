@@ -46,6 +46,7 @@ def _query_stock(
     product_id: int | None = None,
     search: str | None = None,
     expiring_within_days: int | None = None,
+    category: str | None = None,
 ) -> list[StockOverviewItem]:
     # join(Product) is already needed for filtering; contains_eager reuses
     # that same join to populate entry.product instead of lazy-loading it
@@ -66,6 +67,8 @@ def _query_stock(
         query = query.filter(
             StockEntry.best_before_date.isnot(None), StockEntry.best_before_date <= cutoff
         )
+    if category is not None:
+        query = query.filter(Product.category == category)
 
     expiring_soon_days = get_app_settings(db).expiring_soon_days
     items = []
@@ -75,6 +78,7 @@ def _query_stock(
                 **StockEntryRead.model_validate(entry).model_dump(),
                 product_name=entry.product.name,
                 product_barcode=entry.product.barcode,
+                product_category=entry.product.category,
                 location_name=entry.location.name if entry.location else None,
                 status=_status(
                     _effective_expiry(
@@ -93,9 +97,10 @@ def list_stock(
     product_id: int | None = None,
     search: str | None = None,
     expiring_within_days: int | None = None,
+    category: str | None = None,
     db: Session = Depends(get_db),
 ):
-    return _query_stock(db, location_id, product_id, search, expiring_within_days)
+    return _query_stock(db, location_id, product_id, search, expiring_within_days, category)
 
 
 @router.get("/export.csv")

@@ -110,6 +110,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allLocationsLabel => 'All locations';
 
   @override
+  String get allCategoriesLabel => 'All categories';
+
+  @override
   String stockLoadError(String error) {
     return 'Could not load stock: $error\n\nCheck the server URL in Settings.';
   }

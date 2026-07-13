@@ -83,6 +83,7 @@ class StockItem {
   final DateTime? openedAt;
   final String productName;
   final String? productBarcode;
+  final String? category;
   final String? locationName;
   final String status; // ok | expiring_soon | expired
 
@@ -97,6 +98,7 @@ class StockItem {
     this.purchasedDate,
     this.openedAt,
     this.productBarcode,
+    this.category,
     this.locationName,
   });
 
@@ -114,6 +116,7 @@ class StockItem {
         openedAt: json['opened_at'] != null ? DateTime.parse(json['opened_at']) : null,
         productName: json['product_name'],
         productBarcode: json['product_barcode'],
+        category: json['product_category'],
         locationName: json['location_name'],
         status: json['status'],
       );

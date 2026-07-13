@@ -47,6 +47,7 @@ class StockProvider extends ChangeNotifier {
   String? error;
   int? expiringWithinDaysFilter;
   int? locationIdFilter;
+  String? categoryFilter;
   String searchFilter = '';
   StockSort sort = StockSort.bestBeforeDate;
   StockViewMode viewMode = StockViewMode.flat;
@@ -157,6 +158,7 @@ class StockProvider extends ChangeNotifier {
       items = await api.listStock(
         expiringWithinDays: expiringWithinDaysFilter,
         locationId: locationIdFilter,
+        category: categoryFilter,
         search: searchFilter.isEmpty ? null : searchFilter,
       );
     } catch (e) {
@@ -174,6 +176,11 @@ class StockProvider extends ChangeNotifier {
 
   Future<void> setLocationFilter(int? locationId) async {
     locationIdFilter = locationId;
+    await refresh();
+  }
+
+  Future<void> setCategoryFilter(String? category) async {
+    categoryFilter = category;
     await refresh();
   }
 

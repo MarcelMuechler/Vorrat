@@ -110,6 +110,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get allLocationsLabel => 'Alle Standorte';
 
   @override
+  String get allCategoriesLabel => 'Alle Kategorien';
+
+  @override
   String stockLoadError(String error) {
     return 'Bestand konnte nicht geladen werden: $error\n\nServer-URL in den Einstellungen prüfen.';
   }
