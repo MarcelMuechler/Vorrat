@@ -6,7 +6,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
-import '../main.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/open_url.dart';
@@ -136,6 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final settings = context.watch<SettingsProvider>();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: Padding(
@@ -151,16 +151,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: l10n.serverUrlLabel,
                 hintText: 'http://192.168.1.20:8099',
                 border: const OutlineInputBorder(),
-                suffixIcon: ValueListenableBuilder<bool>(
-                  valueListenable: cameraAvailable,
-                  builder: (context, hasCamera, _) => hasCamera
-                      ? IconButton(
-                          icon: const Icon(Icons.qr_code_scanner),
-                          tooltip: l10n.scanToConnectTooltip,
-                          onPressed: _scanToConnect,
-                        )
-                      : const SizedBox.shrink(),
-                ),
+                suffixIcon: settings.scanEnabled
+                    ? IconButton(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        tooltip: l10n.scanToConnectTooltip,
+                        onPressed: _scanToConnect,
+                      )
+                    : null,
               ),
               keyboardType: TextInputType.url,
             ),
@@ -201,6 +198,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : Text(l10n.saveButton),
                 ),
               ],
+            ),
+            const Divider(),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.qr_code_scanner),
+              title: Text(l10n.barcodeScanningTitle),
+              subtitle: Text(l10n.barcodeScanningSubtitle),
+              value: settings.scanEnabled,
+              onChanged: settings.setScanEnabled,
             ),
             const Divider(),
             ListTile(

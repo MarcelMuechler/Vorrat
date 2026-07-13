@@ -11,13 +11,6 @@ import 'state/scan_queue.dart';
 import 'state/settings_provider.dart';
 import 'state/stock_provider.dart';
 
-/// Whether the device has a usable camera, per `ScanScreen`'s
-/// `MobileScanner.errorBuilder` (the only way mobile_scanner reports this —
-/// it has no standalone check). Starts true so the Scan tab shows until
-/// proven otherwise; flips false (and stays false) the first time starting
-/// the scanner fails with [MobileScannerErrorCode.unsupported].
-final ValueNotifier<bool> cameraAvailable = ValueNotifier<bool>(true);
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = SettingsProvider();
@@ -120,35 +113,31 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final pendingScans = context.watch<ScanQueue>().length;
+    final scanEnabled = context.watch<SettingsProvider>().scanEnabled;
     final l10n = AppLocalizations.of(context)!;
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: cameraAvailable,
-      builder: (context, hasCamera, _) {
-        final allTabs = _allTabs(context);
-        final tabs = hasCamera ? allTabs : allTabs.where((t) => t.id != _AppTab.scan).toList();
-        var index = tabs.indexWhere((t) => t.id == _selected);
-        if (index == -1) index = 0; // the selected tab (Scan) just disappeared
-        return Scaffold(
-          body: tabs[index].screen,
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: index,
-            onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
-            destinations: [
-              for (final t in tabs)
-                t.id == _AppTab.scan && pendingScans > 0
-                    ? NavigationDestination(
-                        icon: Badge(
-                          label: Text('$pendingScans'),
-                          child: const Icon(Icons.qr_code_scanner),
-                        ),
-                        label: l10n.scanTitle,
-                      )
-                    : t.destination,
-            ],
-          ),
-        );
-      },
+    final allTabs = _allTabs(context);
+    final tabs = scanEnabled ? allTabs : allTabs.where((t) => t.id != _AppTab.scan).toList();
+    var index = tabs.indexWhere((t) => t.id == _selected);
+    if (index == -1) index = 0; // the selected tab (Scan) just disappeared
+    return Scaffold(
+      body: tabs[index].screen,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
+        destinations: [
+          for (final t in tabs)
+            t.id == _AppTab.scan && pendingScans > 0
+                ? NavigationDestination(
+                    icon: Badge(
+                      label: Text('$pendingScans'),
+                      child: const Icon(Icons.qr_code_scanner),
+                    ),
+                    label: l10n.scanTitle,
+                  )
+                : t.destination,
+        ],
+      ),
     );
   }
 }

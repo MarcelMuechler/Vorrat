@@ -788,6 +788,18 @@ abstract class AppLocalizations {
   /// **'Server URL'**
   String get serverUrlLabel;
 
+  /// No description provided for @barcodeScanningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode scanning'**
+  String get barcodeScanningTitle;
+
+  /// No description provided for @barcodeScanningSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the Scan tab and camera scan buttons'**
+  String get barcodeScanningSubtitle;
+
   /// No description provided for @scanToConnectTooltip.
   ///
   /// In en, this message translates to:

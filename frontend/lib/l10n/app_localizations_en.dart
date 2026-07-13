@@ -431,6 +431,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverUrlLabel => 'Server URL';
 
   @override
+  String get barcodeScanningTitle => 'Barcode scanning';
+
+  @override
+  String get barcodeScanningSubtitle =>
+      'Show the Scan tab and camera scan buttons';
+
+  @override
   String get scanToConnectTooltip => 'Scan to connect';
 
   @override

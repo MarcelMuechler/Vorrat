@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
-import '../main.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
 import 'pending_scans_screen.dart';
@@ -183,17 +182,7 @@ class _ScanScreenState extends State<ScanScreen> {
         children: [
           MobileScanner(
             onDetect: _onDetect,
-            errorBuilder: (context, error) {
-              if (error.errorCode == MobileScannerErrorCode.unsupported) {
-                // Don't flip the notifier mid-build of this widget — it would
-                // trigger HomeShell's ValueListenableBuilder to rebuild (and
-                // remove this very tab) while this build is still in progress.
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  cameraAvailable.value = false;
-                });
-              }
-              return Center(child: Text(error.errorCode.message));
-            },
+            errorBuilder: (context, error) => Center(child: Text(error.errorCode.message)),
           ),
           if (_handling) const Center(child: CircularProgressIndicator()),
         ],
