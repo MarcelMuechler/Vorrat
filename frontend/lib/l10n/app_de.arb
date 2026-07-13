@@ -54,6 +54,7 @@
   "groupTotalAmount": "{amount} insgesamt",
   "markAsOpenedTooltip": "Als geöffnet markieren",
   "useSomeOfTitle": "Etwas von \"{name}\" verbrauchen",
+  "spoilSomeOfTitle": "Etwas von \"{name}\" als verdorben markieren",
   "amountInStockLabel": "Menge (von {amount} auf Lager)",
   "removeStockTitle": "Aus dem Bestand entfernen?",
   "deleteBatchConfirm": "Dies löscht diese Charge von \"{name}\".",

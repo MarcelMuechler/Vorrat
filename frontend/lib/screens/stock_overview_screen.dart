@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../widgets/stock_item_actions.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -297,8 +298,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   }
 
   Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
-    final l10n = AppLocalizations.of(context)!;
-    return ListTile(
+    return StockItemActions(
       leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
       title: Text(item.productName),
       subtitle: Text([
@@ -310,62 +310,28 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         if (item.openedAt != null) _relativeLabel(context, item.openedAt!, _RelativeKind.opened),
         '${item.amount}',
       ].join(' · ')),
-      trailing: item.openedAt == null
-          ? IconButton(
-              icon: const Icon(Icons.lock_open),
-              tooltip: l10n.markAsOpenedTooltip,
-              onPressed: () => stock.markOpened(item.id),
-            )
-          : null,
-      onTap: () => _consumeDialog(context, stock, item),
-      onLongPress: () => _confirmDelete(context, stock, item.id, item.productName),
+      amount: item.amount,
+      productName: item.productName,
+      canOpen: item.openedAt == null,
+      dismissibleKey: item.id,
+      onOpen: () => stock.markOpened(item.id),
+      onConsume: (amount, reason) => _consume(context, stock, item, amount, reason),
+      onDelete: () => _confirmDelete(context, stock, item.id, item.productName),
     );
   }
 
-  Future<void> _consumeDialog(BuildContext context, StockProvider stock, StockItem item) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: '1');
-    var reason = 'used';
-    final amount = await showDialog<double>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(l10n.useSomeOfTitle(item.productName)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: l10n.amountInStockLabel('${item.amount}')),
-              ),
-              const SizedBox(height: 12),
-              SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(value: 'used', label: Text(l10n.usedLabel)),
-                  ButtonSegment(value: 'spoiled', label: Text(l10n.spoiledLabel)),
-                ],
-                selected: {reason},
-                onSelectionChanged: (value) => setState(() => reason = value.first),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
-              child: Text(l10n.consumeButton),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (amount == null || amount <= 0 || !context.mounted) return;
+  Future<void> _consume(
+    BuildContext context,
+    StockProvider stock,
+    StockItem item,
+    double amount,
+    String reason,
+  ) async {
     try {
       await stock.consume(item.id, amount, reason: reason);
     } catch (e) {
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotConsume('$e'))));
@@ -373,7 +339,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, StockProvider stock, int id, String name) async {
+  Future<bool> _confirmDelete(BuildContext context, StockProvider stock, int id, String name) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -386,6 +352,8 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         ],
       ),
     );
-    if (confirmed == true) await stock.delete(id);
+    if (confirmed != true) return false;
+    await stock.delete(id);
+    return true;
   }
 }

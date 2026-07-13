@@ -66,6 +66,10 @@
   "@useSomeOfTitle": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "spoilSomeOfTitle": "Mark some of \"{name}\" as spoiled",
+  "@spoilSomeOfTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
   "amountInStockLabel": "Amount (of {amount} in stock)",
   "@amountInStockLabel": {
     "placeholders": { "amount": { "type": "String" } }

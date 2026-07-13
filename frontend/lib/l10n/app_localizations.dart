@@ -398,6 +398,12 @@ abstract class AppLocalizations {
   /// **'Use some of \"{name}\"'**
   String useSomeOfTitle(String name);
 
+  /// No description provided for @spoilSomeOfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark some of \"{name}\" as spoiled'**
+  String spoilSomeOfTitle(String name);
+
   /// No description provided for @amountInStockLabel.
   ///
   /// In en, this message translates to:

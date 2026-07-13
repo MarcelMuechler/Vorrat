@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../widgets/stock_item_actions.dart';
 import 'product_detail_screen.dart';
 
 Color _statusColor(String status) {
@@ -63,46 +64,8 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
     }
   }
 
-  Future<void> _consumeDialog(StockItem item) async {
+  Future<void> _consume(StockItem item, double amount, String reason) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: '1');
-    var reason = 'used';
-    final amount = await showDialog<double>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(l10n.useSomeOfTitle(widget.productName)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: l10n.amountInStockLabel('${item.amount}')),
-              ),
-              const SizedBox(height: 12),
-              SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(value: 'used', label: Text(l10n.usedLabel)),
-                  ButtonSegment(value: 'spoiled', label: Text(l10n.spoiledLabel)),
-                ],
-                selected: {reason},
-                onSelectionChanged: (value) => setState(() => reason = value.first),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, double.tryParse(controller.text)),
-              child: Text(l10n.consumeButton),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (amount == null || amount <= 0 || !mounted) return;
     try {
       await context.read<ApiClient>().consumeStock(item.id, amount, reason: reason);
       await _refresh();
@@ -116,7 +79,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
     }
   }
 
-  Future<void> _confirmDelete(StockItem item) async {
+  Future<bool> _confirmDelete(StockItem item) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -129,10 +92,11 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) return false;
     await context.read<ApiClient>().deleteStock(item.id);
     await _refresh();
     if (mounted) await context.read<StockProvider>().refresh();
+    return true;
   }
 
   Future<void> _markOpened(StockItem item) async {
@@ -181,7 +145,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final item = _items[index];
-                          return ListTile(
+                          return StockItemActions(
                             leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
                             title: Text('${item.amount}'),
                             subtitle: Text([
@@ -189,15 +153,13 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                               if (item.bestBeforeDate != null)
                                 l10n.bbdLabel(item.bestBeforeDate!.toIso8601String().split('T').first),
                             ].join(' · ')),
-                            trailing: item.openedAt == null
-                                ? IconButton(
-                                    icon: const Icon(Icons.lock_open),
-                                    tooltip: l10n.markAsOpenedTooltip,
-                                    onPressed: () => _markOpened(item),
-                                  )
-                                : null,
-                            onTap: () => _consumeDialog(item),
-                            onLongPress: () => _confirmDelete(item),
+                            amount: item.amount,
+                            productName: widget.productName,
+                            canOpen: item.openedAt == null,
+                            dismissibleKey: item.id,
+                            onOpen: () => _markOpened(item),
+                            onConsume: (amount, reason) => _consume(item, amount, reason),
+                            onDelete: () => _confirmDelete(item),
                           );
                         },
                       ),

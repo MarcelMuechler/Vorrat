@@ -167,6 +167,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String spoilSomeOfTitle(String name) {
+    return 'Mark some of \"$name\" as spoiled';
+  }
+
+  @override
   String amountInStockLabel(String amount) {
     return 'Amount (of $amount in stock)';
   }
