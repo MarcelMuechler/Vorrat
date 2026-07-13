@@ -30,7 +30,6 @@ async def lookup_off(barcode: str) -> dict | None:
     if not name:
         return None
 
-    brand = (off_product.get("brands") or "").split(",")[0].strip() or None
     category = (off_product.get("categories") or "").split(",")[0].strip() or None
     image_url = off_product.get("image_front_small_url") or off_product.get("image_url")
 
@@ -45,7 +44,6 @@ async def lookup_off(barcode: str) -> dict | None:
     return {
         "barcode": barcode,
         "name": name,
-        "brand": brand,
         "category": category,
         "image_url": image_url,
         "amount": float(amount) if amount else None,

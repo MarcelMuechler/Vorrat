@@ -194,12 +194,6 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get nameLabel;
 
-  /// No description provided for @brandLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Brand'**
-  String get brandLabel;
-
   /// No description provided for @categoryLabel.
   ///
   /// In en, this message translates to:

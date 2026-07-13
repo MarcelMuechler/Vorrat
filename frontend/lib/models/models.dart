@@ -12,7 +12,6 @@ class Product {
   final int id;
   final String? barcode;
   final String name;
-  final String? brand;
   final String? imageUrl;
   final String? category;
   final String quantityUnit;
@@ -24,7 +23,6 @@ class Product {
     required this.id,
     required this.name,
     this.barcode,
-    this.brand,
     this.imageUrl,
     this.category,
     this.quantityUnit = 'pcs',
@@ -37,7 +35,6 @@ class Product {
         id: json['id'],
         barcode: json['barcode'],
         name: json['name'],
-        brand: json['brand'],
         imageUrl: json['image_url'],
         category: json['category'],
         quantityUnit: json['quantity_unit'] ?? 'pcs',
@@ -52,7 +49,6 @@ class Product {
 class ProductPrefill {
   final String barcode;
   final String name;
-  final String? brand;
   final String? imageUrl;
   final String? category;
   final double? amount;
@@ -61,7 +57,6 @@ class ProductPrefill {
   ProductPrefill({
     required this.barcode,
     required this.name,
-    this.brand,
     this.imageUrl,
     this.category,
     this.amount,
@@ -71,7 +66,6 @@ class ProductPrefill {
   factory ProductPrefill.fromJson(Map<String, dynamic> json) => ProductPrefill(
         barcode: json['barcode'],
         name: json['name'],
-        brand: json['brand'],
         imageUrl: json['image_url'],
         category: json['category'],
         amount: (json['amount'] as num?)?.toDouble(),

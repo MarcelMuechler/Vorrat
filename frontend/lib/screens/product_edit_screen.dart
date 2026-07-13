@@ -16,7 +16,6 @@ class ProductEditScreen extends StatefulWidget {
 
 class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _nameController;
-  late final TextEditingController _brandController;
   late final TextEditingController _categoryController;
   late final TextEditingController _quantityUnitController;
   late final TextEditingController _bestBeforeDaysController;
@@ -33,7 +32,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     super.initState();
     final p = widget.product;
     _nameController = TextEditingController(text: p.name);
-    _brandController = TextEditingController(text: p.brand ?? '');
     _categoryController = TextEditingController(text: p.category ?? '');
     _quantityUnitController = TextEditingController(text: p.quantityUnit);
     _bestBeforeDaysController = TextEditingController(
@@ -50,7 +48,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _brandController.dispose();
     _categoryController.dispose();
     _quantityUnitController.dispose();
     _bestBeforeDaysController.dispose();
@@ -73,7 +70,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     try {
       await api.updateProduct(widget.product.id, {
         'name': _nameController.text,
-        'brand': _brandController.text.isEmpty ? null : _brandController.text,
         'category': _categoryController.text.isEmpty ? null : _categoryController.text,
         'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
         'default_location_id': _selectedLocationId,
@@ -102,7 +98,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       if (!mounted) return;
       setState(() {
         _nameController.text = data['name'] as String? ?? _nameController.text;
-        _brandController.text = data['brand'] as String? ?? _brandController.text;
         _categoryController.text = data['category'] as String? ?? _categoryController.text;
         _imageUrl = data['image_url'] as String? ?? _imageUrl;
       });
@@ -155,11 +150,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _brandController,
-                  decoration: InputDecoration(labelText: l10n.brandLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 TextField(

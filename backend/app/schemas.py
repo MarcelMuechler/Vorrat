@@ -29,7 +29,6 @@ def _strip_name(v: str | None) -> str | None:
 class ProductCreate(BaseModel):
     barcode: str | None = None
     name: str = Field(min_length=1)
-    brand: str | None = None
     image_url: str | None = None
     category: str | None = None
     quantity_unit: str = "pcs"
@@ -44,7 +43,6 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     barcode: str | None = None
     name: str | None = Field(default=None, min_length=1)
-    brand: str | None = None
     image_url: str | None = None
     category: str | None = None
     quantity_unit: str | None = None
@@ -62,7 +60,6 @@ class ProductRead(BaseModel):
     id: int
     barcode: str | None
     name: str
-    brand: str | None
     image_url: str | None
     category: str | None
     quantity_unit: str

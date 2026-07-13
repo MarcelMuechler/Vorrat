@@ -19,7 +19,6 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final TextEditingController _nameController;
-  late final TextEditingController _brandController;
   late final TextEditingController _amountController;
   late final TextEditingController _quantityUnitController;
   List<Location> _locations = [];
@@ -35,9 +34,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.initState();
     _nameController = TextEditingController(
       text: widget.existingProduct?.name ?? widget.prefill?.name ?? '',
-    );
-    _brandController = TextEditingController(
-      text: widget.existingProduct?.brand ?? widget.prefill?.brand ?? '',
     );
     _amountController = TextEditingController(
       text: widget.prefill?.amount != null ? '${widget.prefill!.amount}' : '1',
@@ -120,7 +116,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final created = await api.createProduct({
           'barcode': widget.barcode,
           'name': _nameController.text,
-          'brand': _brandController.text.isEmpty ? null : _brandController.text,
           'image_url': widget.prefill?.imageUrl,
           'category': widget.prefill?.category,
           'quantity_unit': _quantityUnitController.text.isEmpty ? 'pcs' : _quantityUnitController.text,
@@ -175,11 +170,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _brandController,
-                  decoration: InputDecoration(labelText: l10n.brandLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 Row(

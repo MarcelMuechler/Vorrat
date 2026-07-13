@@ -30,7 +30,7 @@ curl -sf "$BASE/api/products/$PRODUCT_ID" | jq .
 echo "== products: patch =="
 curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
   -H 'content-type: application/json' \
-  -d '{"brand": "Farm Fresh"}' | jq .
+  -d '{"category": "Dairy"}' | jq .
 
 echo "== products: search =="
 curl -sf "$BASE/api/products?search=milk" | jq .

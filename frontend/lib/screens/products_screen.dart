@@ -118,10 +118,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               final product = _products[index];
                               return ListTile(
                                 title: Text(product.name),
-                                subtitle: Text([
-                                  if (product.brand != null) product.brand!,
-                                  if (product.barcode != null) product.barcode!,
-                                ].join(' · ')),
+                                subtitle: product.barcode != null ? Text(product.barcode!) : null,
                                 onTap: () => _edit(product),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

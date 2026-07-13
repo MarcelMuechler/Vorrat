@@ -20,7 +20,6 @@ class Product(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     barcode: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String)
-    brand: Mapped[str | None] = mapped_column(String, nullable=True)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
     category: Mapped[str | None] = mapped_column(String, nullable=True)
     quantity_unit: Mapped[str] = mapped_column(String, default="pcs")

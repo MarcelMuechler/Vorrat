@@ -57,9 +57,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nameLabel => 'Name';
 
   @override
-  String get brandLabel => 'Brand';
-
-  @override
   String get categoryLabel => 'Category';
 
   @override
