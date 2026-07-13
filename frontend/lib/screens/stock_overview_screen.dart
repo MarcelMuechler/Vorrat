@@ -17,6 +17,22 @@ Color _statusColor(String status) {
   }
 }
 
+/// Relative day label ("today"/"tomorrow"/"in N days"/"N days ago"), so
+/// scanning the list doesn't require doing date math against a raw ISO
+/// string. [presentVerb] is used for today/future ("Expires"), [pastVerb]
+/// for anything already in the past ("Expired").
+String _relativeLabel(DateTime date, {required String presentVerb, required String pastVerb}) {
+  final today = DateTime.now();
+  final days = DateTime(date.year, date.month, date.day)
+      .difference(DateTime(today.year, today.month, today.day))
+      .inDays;
+  if (days == 0) return '$presentVerb today';
+  if (days == 1) return '$presentVerb tomorrow';
+  if (days == -1) return '$pastVerb yesterday';
+  if (days > 0) return '$presentVerb in $days days';
+  return '$pastVerb ${-days} days ago';
+}
+
 class StockOverviewScreen extends StatefulWidget {
   const StockOverviewScreen({super.key});
 
@@ -123,7 +139,9 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           subtitle: Text([
             if (item.locationName != null) item.locationName!,
             if (item.bestBeforeDate != null)
-              'BBD: ${item.bestBeforeDate!.toIso8601String().split('T').first}',
+              _relativeLabel(item.bestBeforeDate!, presentVerb: 'Expires', pastVerb: 'Expired'),
+            if (item.purchasedDate != null)
+              _relativeLabel(item.purchasedDate!, presentVerb: 'Purchased', pastVerb: 'Purchased'),
             '${item.amount}',
           ].join(' · ')),
           onTap: () => _consumeDialog(context, stock, item),

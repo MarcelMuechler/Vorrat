@@ -76,6 +76,7 @@ class StockItem {
   final int? locationId;
   final double amount;
   final DateTime? bestBeforeDate;
+  final DateTime? purchasedDate;
   final String productName;
   final String? productBarcode;
   final String? locationName;
@@ -89,6 +90,7 @@ class StockItem {
     required this.status,
     this.locationId,
     this.bestBeforeDate,
+    this.purchasedDate,
     this.productBarcode,
     this.locationName,
   });
@@ -100,6 +102,9 @@ class StockItem {
         amount: (json['amount'] as num).toDouble(),
         bestBeforeDate: json['best_before_date'] != null
             ? DateTime.parse(json['best_before_date'])
+            : null,
+        purchasedDate: json['purchased_date'] != null
+            ? DateTime.parse(json['purchased_date'])
             : null,
         productName: json['product_name'],
         productBarcode: json['product_barcode'],
