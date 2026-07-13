@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
 import 'pending_scans_screen.dart';
+import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 import 'scan_history_screen.dart';
 
@@ -121,13 +122,17 @@ class _ScanScreenState extends State<ScanScreen> {
       final name = result.localProduct?.name ?? result.prefill?.name;
       if (name != null) await history.add(code, name);
       if (!mounted) return;
+      final existing = result.localProduct;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => ProductDetailScreen(
-            barcode: code,
-            existingProduct: result.localProduct,
-            prefill: result.prefill,
-          ),
+          // A barcode that already matches a local product might have stock
+          // on hand to consume/discard/mark opened -- not just more to add
+          // (#56). ProductBatchesScreen covers all of that (plus adding a
+          // new batch via its own FAB) and degrades gracefully to an
+          // add-only empty state if this product currently has none.
+          builder: (_) => existing != null
+              ? ProductBatchesScreen(productId: existing.id, productName: existing.name)
+              : ProductDetailScreen(barcode: code, prefill: result.prefill),
         ),
       );
     } on http.ClientException catch (_) {

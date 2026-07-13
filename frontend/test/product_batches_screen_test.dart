@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:vorrat/api/client.dart';
+import 'package:vorrat/l10n/app_localizations.dart';
+import 'package:vorrat/models/models.dart';
+import 'package:vorrat/screens/product_batches_screen.dart';
+import 'package:vorrat/state/settings_provider.dart';
+import 'package:vorrat/state/stock_provider.dart';
+
+class FakeApiClient extends ApiClient {
+  FakeApiClient() : super(SettingsProvider());
+  bool opened = false;
+  bool addStockCalled = false;
+
+  @override
+  Future<List<StockItem>> listStock({
+    int? locationId,
+    int? productId,
+    String? search,
+    int? expiringWithinDays,
+    String? category,
+  }) async => [
+        StockItem(
+          id: 1,
+          productId: 1,
+          amount: 2,
+          productName: 'Jam',
+          status: 'ok',
+          openedAt: opened ? DateTime(2026, 1, 1) : null,
+        ),
+      ];
+
+  @override
+  Future<void> markStockOpened(int id) async {
+    opened = true;
+  }
+
+  @override
+  Future<List<Location>> listLocations() async => [];
+
+  @override
+  Future<void> addStock(Map<String, dynamic> payload) async {
+    addStockCalled = true;
+  }
+}
+
+void main() {
+  testWidgets('marking a batch opened hides the open button', (tester) async {
+    final api = FakeApiClient();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<ApiClient>.value(value: api),
+          ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ProductBatchesScreen(productId: 1, productName: 'Jam'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.open_in_full));
+    await tester.pumpAndSettle();
+
+    expect(api.opened, isTrue);
+    expect(find.byIcon(Icons.open_in_full), findsNothing);
+  });
+
+  testWidgets('the FAB adds a new batch to the same product', (tester) async {
+    final api = FakeApiClient();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<ApiClient>.value(value: api),
+          ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ProductBatchesScreen(productId: 1, productName: 'Jam'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add to stock'), findsOneWidget);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(api.addStockCalled, isTrue);
+    expect(find.text('Jam'), findsWidgets);
+  });
+}

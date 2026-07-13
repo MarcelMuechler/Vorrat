@@ -47,6 +47,7 @@
   },
   "noStockYet": "No stock yet. Scan something to add it.",
   "addProductManuallyTooltip": "Add product manually",
+  "addNewBatchTooltip": "Add new batch",
   "groupTotalAmount": "{amount} total",
   "@groupTotalAmount": {
     "placeholders": { "amount": { "type": "String" } }

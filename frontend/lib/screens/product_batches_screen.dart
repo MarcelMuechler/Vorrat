@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import 'product_detail_screen.dart';
 
 Color _statusColor(String status) {
   switch (status) {
@@ -18,7 +19,13 @@ Color _statusColor(String status) {
 }
 
 /// All batches of a single product -- the drill-in target once the Stock
-/// overview groups by product (#29), but useful to reach directly too.
+/// overview groups by product (#29), but useful to reach directly too, and
+/// also where scanning a barcode with existing stock lands (#56): tapping a
+/// batch consumes/discards it (existing dialog below already supports both
+/// reasons), the leading "Open" button marks it opened, and the FAB adds a
+/// new one. Batches are already listed soonest-best-before-date first (the
+/// API's default order), so that's the one a scan-triggered action should
+/// default to -- no separate "preselected batch" state needed.
 class ProductBatchesScreen extends StatefulWidget {
   final int productId;
   final String productName;
@@ -128,11 +135,32 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
     if (mounted) await context.read<StockProvider>().refresh();
   }
 
+  Future<void> _markOpened(StockItem item) async {
+    await context.read<StockProvider>().markOpened(item.id);
+    await _refresh();
+  }
+
+  Future<void> _addBatch() async {
+    final added = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(
+          existingProduct: Product(id: widget.productId, name: widget.productName),
+        ),
+      ),
+    );
+    if (added == true) await _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(widget.productName)),
+      floatingActionButton: FloatingActionButton(
+        tooltip: l10n.addNewBatchTooltip,
+        onPressed: _addBatch,
+        child: const Icon(Icons.add),
+      ),
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: _loading
@@ -161,6 +189,13 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                               if (item.bestBeforeDate != null)
                                 l10n.bbdLabel(item.bestBeforeDate!.toIso8601String().split('T').first),
                             ].join(' · ')),
+                            trailing: item.openedAt == null
+                                ? IconButton(
+                                    icon: const Icon(Icons.open_in_full),
+                                    tooltip: l10n.markAsOpenedTooltip,
+                                    onPressed: () => _markOpened(item),
+                                  )
+                                : null,
                             onTap: () => _consumeDialog(item),
                             onLongPress: () => _confirmDelete(item),
                           );
