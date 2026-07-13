@@ -318,7 +318,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       ].join(' · ')),
       trailing: item.openedAt == null
           ? IconButton(
-              icon: const Icon(Icons.open_in_full),
+              icon: const Icon(Icons.lock_open),
               tooltip: l10n.markAsOpenedTooltip,
               onPressed: () => stock.markOpened(item.id),
             )
