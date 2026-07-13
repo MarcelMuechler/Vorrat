@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models import Product, StockEntry
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
+from app.utils import escape_like
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -14,7 +15,7 @@ def list_products(search: str | None = None, barcode: str | None = None, db: Ses
     if barcode:
         query = query.filter(Product.barcode == barcode)
     if search:
-        query = query.filter(Product.name.ilike(f"%{search}%"))
+        query = query.filter(Product.name.ilike(f"%{escape_like(search)}%", escape="\\"))
     return query.order_by(Product.name).all()
 
 

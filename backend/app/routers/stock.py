@@ -13,6 +13,7 @@ from app.schemas import (
     StockEntryUpdate,
     StockOverviewItem,
 )
+from app.utils import escape_like
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
@@ -39,7 +40,7 @@ def list_stock(
     if location_id is not None:
         query = query.filter(StockEntry.location_id == location_id)
     if search:
-        query = query.filter(Product.name.ilike(f"%{search}%"))
+        query = query.filter(Product.name.ilike(f"%{escape_like(search)}%", escape="\\"))
     if expiring_within_days is not None:
         cutoff = date.today() + timedelta(days=expiring_within_days)
         query = query.filter(
