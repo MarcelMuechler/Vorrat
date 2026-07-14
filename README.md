@@ -147,6 +147,7 @@ The backend reads these environment variables to configure runtime behavior:
 |----------|---------|-------------|
 | `DATABASE_URL` | `sqlite:///./vorrat.db` | SQLAlchemy connection string for the database. For standalone Docker, the included volume mount handles this; for other deployments, set this if you need a different database path or connection string. |
 | `OFF_USER_AGENT` | `Vorrat/0.1 (+https://github.com/MarcelMuechler/vorrat)` | User-Agent header sent to Open Food Facts API when looking up unknown products by barcode. Customize only if requested by the Open Food Facts maintainers. |
+| `OFF_BASE_URL` | `https://world.openfoodfacts.org` | Base URL of the Open Food Facts API used for barcode lookups. Override to point at a self-hosted mirror, a regional OFF instance, or a test double. |
 | `EXPIRING_SOON_DAYS` | `3` | Number of days used to compute the "expiring soon" status: items with a best-before date within this many days are marked as expiring soon. This value seeds the database on first run; it can be changed at runtime via the settings API. |
 
 ## Home Assistant sensors

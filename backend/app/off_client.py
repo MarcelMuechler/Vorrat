@@ -9,7 +9,7 @@ async def lookup_off(barcode: str) -> dict | None:
     Never raises: any network error, timeout, or "not found" response from OFF
     is treated the same way as a genuine miss.
     """
-    url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
+    url = f"{settings.off_base_url}/api/v2/product/{barcode}.json"
     headers = {"User-Agent": settings.off_user_agent}
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
