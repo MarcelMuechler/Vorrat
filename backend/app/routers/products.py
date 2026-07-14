@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Category, ConsumptionLog, Location, Product, StockEntry
+from app.models import Category, ConsumptionLog, Location, Product, ShoppingListItem, StockEntry
 from app.off_client import lookup_off
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
 from app.utils import escape_like, normalize_barcode
@@ -109,6 +109,24 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     has_stock = db.query(StockEntry).filter(StockEntry.product_id == product_id).first()
     if has_stock:
         raise HTTPException(409, "Product still has stock entries; remove them first")
+    # ShoppingListItem rows reference this product too. Unlike StockEntry
+    # above, we don't block the delete on them -- a shopping-list item is a
+    # to-buy intent, not a physical stock record, and the model already has
+    # a free-text fallback (name/unit, resolved by shopping_list.py's
+    # _display_name/_display_unit when product_id is null) for exactly this
+    # case. So instead of blocking or losing the entry to an IntegrityError
+    # under PRAGMA foreign_keys=ON (db.py), snapshot the resolved name/unit
+    # onto the item (if not already overridden) and detach product_id,
+    # preserving it -- this covers both open and completed (done) items.
+    shopping_items = (
+        db.query(ShoppingListItem).filter(ShoppingListItem.product_id == product_id).all()
+    )
+    for item in shopping_items:
+        if item.name is None:
+            item.name = product.name
+        if item.unit is None:
+            item.unit = product.quantity_unit
+        item.product_id = None
     # ConsumptionLog rows reference this product too, but unlike StockEntry
     # above we don't block the delete on them -- with PRAGMA foreign_keys=ON
     # (db.py) a leftover row would otherwise turn this into a raw

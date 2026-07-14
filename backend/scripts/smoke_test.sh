@@ -386,6 +386,46 @@ AFTER_UNDO_TEST_COUNT=$(curl -sf "$BASE/api/stock?product_id=$UNDO_PRODUCT_ID" |
 [ "$AFTER_UNDO_TEST_COUNT" = "$BEFORE_UNDO_TEST_COUNT" ] \
   || { echo "FAIL: expected undo with unknown log id to change nothing, got $BEFORE_UNDO_TEST_COUNT -> $AFTER_UNDO_TEST_COUNT"; exit 1; }
 
+echo "== products: create a product to test shopping-list FK handling on delete (#157) =="
+FK_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "FK Test Product", "quantity_unit": "kg"}' | jq -r .id)
+echo "created product $FK_PRODUCT_ID"
+
+echo "== shopping-list: link it to an open item (no name/unit override) =="
+FK_OPEN_ITEM_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FK_PRODUCT_ID"'}' | jq -r .id)
+echo "created open shopping list item $FK_OPEN_ITEM_ID"
+
+echo "== shopping-list: link it to a second item, then mark that one done =="
+FK_DONE_ITEM_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FK_PRODUCT_ID"'}' | jq -r .id)
+curl -sf -X PATCH "$BASE/api/shopping-list/$FK_DONE_ITEM_ID" \
+  -H 'content-type: application/json' -d '{"done": true}' > /dev/null
+echo "created done shopping list item $FK_DONE_ITEM_ID"
+
+echo "== products: delete it despite still being referenced by shopping-list items (expect 204, not a raw 500 from the FK constraint) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/products/$FK_PRODUCT_ID")
+[ "$STATUS" = "204" ] || { echo "FAIL: expected 204 deleting product referenced by shopping-list items, got $STATUS"; exit 1; }
+
+echo "== shopping-list: both items (open and done) survive with product_id nulled and name/unit snapshotted from the deleted product =="
+FK_ITEMS=$(curl -sf "$BASE/api/shopping-list" | jq -c '[.[] | select(.id == '"$FK_OPEN_ITEM_ID"' or .id == '"$FK_DONE_ITEM_ID"')]')
+echo "$FK_ITEMS"
+[ "$(echo "$FK_ITEMS" | jq 'length')" = "2" ] \
+  || { echo "FAIL: expected both shopping-list items to survive product deletion, got $FK_ITEMS"; exit 1; }
+[ "$(echo "$FK_ITEMS" | jq '[.[] | select(.product_id == null)] | length')" = "2" ] \
+  || { echo "FAIL: expected product_id to be nulled on both surviving items, got $FK_ITEMS"; exit 1; }
+[ "$(echo "$FK_ITEMS" | jq '[.[] | select(.name == "FK Test Product")] | length')" = "2" ] \
+  || { echo "FAIL: expected name snapshotted to 'FK Test Product' on both surviving items, got $FK_ITEMS"; exit 1; }
+[ "$(echo "$FK_ITEMS" | jq '[.[] | select(.unit == "kg")] | length')" = "2" ] \
+  || { echo "FAIL: expected unit snapshotted to 'kg' on both surviving items, got $FK_ITEMS"; exit 1; }
+
+echo "== shopping-list: clean up the FK test items =="
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$FK_OPEN_ITEM_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$FK_DONE_ITEM_ID"
+
 echo "== consumption-log/export.csv: row count matches JSON list, header + Milk's 'used' entry present =="
 LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq 'length')
 EXPORTED_LOG_CSV=$(curl -sf "$BASE/api/consumption-log/export.csv")
