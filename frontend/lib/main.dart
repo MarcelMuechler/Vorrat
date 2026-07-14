@@ -69,45 +69,30 @@ enum _AppTab { stock, shopping, scan, settings }
 class _Tab {
   final _AppTab id;
   final Widget screen;
-  final NavigationDestination destination;
+  final IconData icon;
+  final String label;
 
-  const _Tab({required this.id, required this.screen, required this.destination});
+  const _Tab({required this.id, required this.screen, required this.icon, required this.label});
 }
 
 List<_Tab> _allTabs(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   return [
-    _Tab(
-      id: _AppTab.stock,
-      screen: const StockOverviewScreen(),
-      destination: NavigationDestination(icon: const Icon(Icons.kitchen), label: l10n.stockTitle),
-    ),
+    _Tab(id: _AppTab.stock, screen: const StockOverviewScreen(), icon: Icons.kitchen, label: l10n.stockTitle),
     _Tab(
       id: _AppTab.shopping,
       screen: const ShoppingListScreen(),
-      destination: NavigationDestination(
-        icon: const Icon(Icons.shopping_cart_outlined),
-        label: l10n.shoppingListTitle,
-      ),
+      icon: Icons.shopping_cart_outlined,
+      label: l10n.shoppingListTitle,
     ),
-    _Tab(
-      id: _AppTab.scan,
-      screen: const ScanScreen(),
-      destination: NavigationDestination(
-        icon: const Icon(Icons.qr_code_scanner),
-        label: l10n.scanTitle,
-      ),
-    ),
-    _Tab(
-      id: _AppTab.settings,
-      screen: const SettingsScreen(),
-      destination: NavigationDestination(
-        icon: const Icon(Icons.settings),
-        label: l10n.settingsTitle,
-      ),
-    ),
+    _Tab(id: _AppTab.scan, screen: const ScanScreen(), icon: Icons.qr_code_scanner, label: l10n.scanTitle),
+    _Tab(id: _AppTab.settings, screen: const SettingsScreen(), icon: Icons.settings, label: l10n.settingsTitle),
   ];
 }
+
+/// Below this width the shell uses the mobile bottom [NavigationBar]; at or
+/// above it, a side [NavigationRail] is used instead (#135).
+const double _wideLayoutBreakpoint = 700;
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -123,30 +108,49 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final pendingScans = context.watch<ScanQueue>().length;
     final scanEnabled = context.watch<SettingsProvider>().scanEnabled;
-    final l10n = AppLocalizations.of(context)!;
 
     final allTabs = _allTabs(context);
     final tabs = scanEnabled ? allTabs : allTabs.where((t) => t.id != _AppTab.scan).toList();
     var index = tabs.indexWhere((t) => t.id == _selected);
     if (index == -1) index = 0; // the selected tab (Scan) just disappeared
-    return Scaffold(
-      body: tabs[index].screen,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
-        destinations: [
-          for (final t in tabs)
-            t.id == _AppTab.scan && pendingScans > 0
-                ? NavigationDestination(
-                    icon: Badge(
-                      label: Text('$pendingScans'),
-                      child: const Icon(Icons.qr_code_scanner),
-                    ),
-                    label: l10n.scanTitle,
-                  )
-                : t.destination,
-        ],
-      ),
+
+    Widget iconFor(_Tab t) => t.id == _AppTab.scan && pendingScans > 0
+        ? Badge(label: Text('$pendingScans'), child: Icon(t.icon))
+        : Icon(t.icon);
+
+    final content = tabs[index].screen;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= _wideLayoutBreakpoint;
+        if (wide) {
+          return Scaffold(
+            body: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: index,
+                  onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: [
+                    for (final t in tabs)
+                      NavigationRailDestination(icon: iconFor(t), label: Text(t.label)),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: content),
+              ],
+            ),
+          );
+        }
+        return Scaffold(
+          body: content,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: index,
+            onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
+            destinations: [for (final t in tabs) NavigationDestination(icon: iconFor(t), label: t.label)],
+          ),
+        );
+      },
     );
   }
 }
