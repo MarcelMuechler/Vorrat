@@ -94,9 +94,10 @@ class ShoppingListItem(Base):
     Product (for a resolved display name/unit), but name is a free-text
     fallback/override so a one-off item ("birthday candles") doesn't need a
     Product created just to go on the list. Enforcing "product_id or name"
-    is left to the Pydantic create schema rather than a DB constraint, matching
-    how validation elsewhere in this codebase favors the API layer over
-    SQLite CHECK constraints."""
+    is left to the API layer (the create schema's model_validator, and the
+    PATCH route re-checking the merged result) rather than a DB constraint,
+    matching how validation elsewhere in this codebase favors the API layer
+    over SQLite CHECK constraints."""
 
     __tablename__ = "shopping_list_items"
 

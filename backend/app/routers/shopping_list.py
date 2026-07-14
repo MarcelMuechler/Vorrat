@@ -124,6 +124,15 @@ def update_shopping_list_item(
     if "product_id" in data and data["product_id"] is not None:
         if not db.get(Product, data["product_id"]):
             raise HTTPException(404, "Product not found")
+    # Validate the *merged* result (existing row + incoming fields) before
+    # touching the session -- a PATCH that only sets product_id to null (with
+    # name already null/blank) must not be allowed to drop both identities,
+    # even though neither field alone looks invalid in isolation. "Blank"
+    # matches the create schema: None or "" both count as absent.
+    merged_product_id = data.get("product_id", item.product_id)
+    merged_name = data.get("name", item.name)
+    if merged_product_id is None and not merged_name:
+        raise HTTPException(422, "Either product_id or name is required")
     for key, value in data.items():
         setattr(item, key, value)
     db.commit()
