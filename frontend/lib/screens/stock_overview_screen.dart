@@ -382,8 +382,8 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     String reason,
   ) async {
     try {
-      await stock.consume(item.id, amount, reason: reason);
-      if (context.mounted) _showUndoConsumeSnackBar(context, stock, item, amount, reason);
+      final logId = await stock.consume(item.id, amount, reason: reason);
+      if (context.mounted) _showUndoConsumeSnackBar(context, stock, item, amount, reason, logId);
       return true;
     } catch (e) {
       if (context.mounted) {
@@ -398,14 +398,14 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
 
   // A swipe (or the Use/Spoil buttons) consumes/discards a whole batch with
   // no confirmation dialog (#75/#137) -- give it an Undo instead, which
-  // re-adds the batch (see StockProvider.restoreConsumed for the exact
-  // semantics and its caveat).
+  // atomically reverses the consume via StockProvider.undoConsume (#160).
   void _showUndoConsumeSnackBar(
     BuildContext context,
     StockProvider stock,
     StockItem item,
     double amount,
     String reason,
+    int consumptionLogId,
   ) {
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -415,15 +415,21 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         ),
         action: SnackBarAction(
           label: l10n.undoButton,
-          onPressed: () => _undoConsume(context, stock, item, amount),
+          onPressed: () => _undoConsume(context, stock, item, amount, consumptionLogId),
         ),
       ),
     );
   }
 
-  Future<void> _undoConsume(BuildContext context, StockProvider stock, StockItem item, double amount) async {
+  Future<void> _undoConsume(
+    BuildContext context,
+    StockProvider stock,
+    StockItem item,
+    double amount,
+    int consumptionLogId,
+  ) async {
     try {
-      await stock.restoreConsumed(item, amount);
+      await stock.undoConsume(item, amount, consumptionLogId);
     } catch (e) {
       if (context.mounted) {
         final l10n = AppLocalizations.of(context)!;

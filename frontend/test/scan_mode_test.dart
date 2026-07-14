@@ -44,9 +44,10 @@ class FakeApiClient extends ApiClient {
   }) async => batches;
 
   @override
-  Future<void> consumeStock(int id, double amount, {String reason = 'used'}) async {
+  Future<int> consumeStock(int id, double amount, {String reason = 'used'}) async {
     consumeCalls.add({'id': id, 'amount': amount, 'reason': reason});
     batches = [];
+    return consumeCalls.length;
   }
 
   @override

@@ -205,9 +205,12 @@ class StockProvider extends ChangeNotifier {
     await refresh();
   }
 
-  Future<void> consume(int id, double amount, {String reason = 'used'}) async {
-    await api.consumeStock(id, amount, reason: reason);
+  /// Returns the ConsumptionLog id from the backend response, needed to
+  /// later call [undoConsume] if the caller offers an Undo action (#160).
+  Future<int> consume(int id, double amount, {String reason = 'used'}) async {
+    final logId = await api.consumeStock(id, amount, reason: reason);
     await refresh();
+    return logId;
   }
 
   Future<void> markOpened(int id) async {
@@ -215,20 +218,14 @@ class StockProvider extends ChangeNotifier {
     await refresh();
   }
 
-  /// "Undo" for [consume] (#137): re-adds a stock entry with the same
-  /// product/location/best-before/purchased-date as [item] and the amount
-  /// that was just consumed. This is a new batch, not a true reversal --
-  /// there's no backend endpoint to un-consume (or delete) a specific
-  /// ConsumptionLog row, so the log entry from the original consume is left
-  /// in place and will still count toward the waste/usage stats.
-  Future<void> restoreConsumed(StockItem item, double amount) async {
-    await api.addStock({
-      'product_id': item.productId,
-      'location_id': item.locationId,
-      'amount': amount,
-      'best_before_date': item.bestBeforeDate?.toIso8601String().split('T').first,
-      'purchased_date': item.purchasedDate?.toIso8601String().split('T').first,
-    });
+  /// True "Undo" for [consume] (#160): calls the backend's
+  /// /api/stock/undo/{log_id}, which atomically deletes the ConsumptionLog
+  /// row [consumptionLogId] (returned by [consume]) and recreates the
+  /// batch from [item]/[amount] in one transaction -- unlike the old
+  /// client-side-only recreate (#137), this also removes the log entry, so
+  /// usage/waste stats aren't left permanently overstated after an undo.
+  Future<void> undoConsume(StockItem item, double amount, int consumptionLogId) async {
+    await api.undoConsumeStock(consumptionLogId, item, amount);
     await refresh();
   }
 }
