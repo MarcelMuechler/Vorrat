@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import ConsumptionLog, Product, StockEntry
+from app.models import Category, ConsumptionLog, Location, Product, StockEntry
 from app.off_client import lookup_off
 from app.schemas import ProductCreate, ProductRead, ProductUpdate
 from app.utils import escape_like, normalize_barcode
@@ -39,11 +40,27 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 
+def _validate_product_references(db: Session, category_id: int | None, default_location_id: int | None) -> None:
+    """Mirrors add_stock's product_id/location_id validation in stock.py: a
+    bad FK should come back as a clean 404, not fall through to SQLite and
+    surface as a raw 500 (SQLite's own FK enforcement, turned on in db.py,
+    would otherwise be the only thing catching this)."""
+    if category_id is not None and not db.get(Category, category_id):
+        raise HTTPException(404, "Category not found")
+    if default_location_id is not None and not db.get(Location, default_location_id):
+        raise HTTPException(404, "Location not found")
+
+
 @router.post("", response_model=ProductRead, status_code=201)
 def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
+    _validate_product_references(db, payload.category_id, payload.default_location_id)
     product = Product(**payload.model_dump())
     db.add(product)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A product with this barcode already exists")
     db.refresh(product)
     return product
 
@@ -53,9 +70,15 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(404, "Product not found")
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    _validate_product_references(db, updates.get("category_id"), updates.get("default_location_id"))
+    for key, value in updates.items():
         setattr(product, key, value)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A product with this barcode already exists")
     db.refresh(product)
     return product
 

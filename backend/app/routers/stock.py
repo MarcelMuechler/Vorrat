@@ -377,7 +377,13 @@ def update_stock(entry_id: int, payload: StockEntryUpdate, db: Session = Depends
     entry = db.get(StockEntry, entry_id)
     if not entry:
         raise HTTPException(404, "Stock entry not found")
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    # Mirrors add_stock's location_id validation above -- PATCH previously
+    # skipped this check and let an unknown location_id fall through to a
+    # raw 500 from SQLite's FK enforcement.
+    if updates.get("location_id") is not None and not db.get(Location, updates["location_id"]):
+        raise HTTPException(404, "Location not found")
+    for key, value in updates.items():
         setattr(entry, key, value)
     db.commit()
     db.refresh(entry)

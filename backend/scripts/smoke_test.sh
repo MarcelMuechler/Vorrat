@@ -41,6 +41,37 @@ curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
 echo "== products: search =="
 curl -sf "$BASE/api/products?search=milk" | jq .
 
+echo "== products: create with nonexistent category_id (expect 404 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Bad Category Product", "category_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 creating product with unknown category_id, got $STATUS"; exit 1; }
+
+echo "== products: create with nonexistent default_location_id (expect 404 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Bad Location Product", "default_location_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 creating product with unknown default_location_id, got $STATUS"; exit 1; }
+
+echo "== products: patch with nonexistent category_id (expect 404 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/products/$PRODUCT_ID" \
+  -H 'content-type: application/json' -d '{"category_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 patching product with unknown category_id, got $STATUS"; exit 1; }
+
+echo "== products: create a second product with a duplicate barcode (expect 409 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Duplicate Barcode Product", "barcode": "1234567890123"}')
+[ "$STATUS" = "409" ] || { echo "FAIL: expected 409 creating product with duplicate barcode, got $STATUS"; exit 1; }
+
+echo "== products: patch another product to the same duplicate barcode (expect 409 not 500) =="
+OTHER_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "Barcode-less Product"}' | jq -r .id)
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/products/$OTHER_PRODUCT_ID" \
+  -H 'content-type: application/json' -d '{"barcode": "1234567890123"}')
+[ "$STATUS" = "409" ] || { echo "FAIL: expected 409 patching product to a duplicate barcode, got $STATUS"; exit 1; }
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$OTHER_PRODUCT_ID"
+
 PAST_DATE=$(date -d "yesterday" +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)
 SOON_DATE=$(date -d "+2 days" +%Y-%m-%d 2>/dev/null || date -v+2d +%Y-%m-%d)
 FAR_DATE=$(date -d "+30 days" +%Y-%m-%d 2>/dev/null || date -v+30d +%Y-%m-%d)
@@ -69,6 +100,11 @@ echo "== stock: expiring_within_days=3 (expect 2: expired + expiring_soon) =="
 COUNT=$(curl -sf "$BASE/api/stock?expiring_within_days=3" | jq 'length')
 echo "count=$COUNT"
 [ "$COUNT" = "2" ] || { echo "FAIL: expected 2 expiring entries, got $COUNT"; exit 1; }
+
+echo "== stock: patch entry with nonexistent location_id (expect 404 not 500) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/stock/$EXPIRED_ID" \
+  -H 'content-type: application/json' -d '{"location_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 patching stock entry with unknown location_id, got $STATUS"; exit 1; }
 
 echo "== stock: consume expired entry down to 0 (expect it to disappear) =="
 curl -sf -X POST "$BASE/api/stock/$EXPIRED_ID/consume" \
