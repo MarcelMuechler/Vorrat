@@ -117,8 +117,11 @@ The type determines the version bump, via [release-please](https://github.com/go
 release-please watches `main` and keeps a standing "Release PR" up to date, bumping
 `backend/pyproject.toml`, `frontend/pubspec.yaml`, `vorrat/config.yaml`, and `CHANGELOG.md`
 to whatever version the commits since the last release call for (see "Commit message
-convention" above). Nothing is tagged or released until you merge that PR — review it like
-any other PR, then merge:
+convention" above). The same workflow re-runs `uv lock` and pushes the result onto that PR's
+branch whenever the PR is created or updated, so `backend/uv.lock` is always in sync with
+`backend/pyproject.toml` *before* the PR is merged — CI's `uv lock --check` step rejects the
+PR (like any other PR) if the lock ever drifts. Nothing is tagged or released until you merge
+that PR — review it like any other PR, then merge:
 
 1. Merge the open "chore(main): release X.Y.Z" PR. This tags `vX.Y.Z` and cuts a GitHub
    Release.

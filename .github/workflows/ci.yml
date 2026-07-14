@@ -28,10 +28,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      # Rejects a PR (including the release-please PR) whose backend/uv.lock
+      # has drifted from backend/pyproject.toml -- e.g. a version bump that
+      # landed without a re-lock. See #164: this used to only be caught (and
+      # fixed) *after* a release was already tagged.
+      - working-directory: backend
+        run: uv lock --check
       - working-directory: backend
         run: uv sync --frozen
       - working-directory: backend
         run: uv run python -c "import app.main"
+      # release-please's extra-files config keeps these four version strings
+      # in lockstep within a single release-PR commit, but nothing enforces
+      # that the extra-files config itself stays correct -- so double-check
+      # explicitly that a release is never cut with them out of sync.
+      - name: Verify backend, lock, Flutter, and add-on versions match
+        run: |
+          backend=$(grep -m1 '^version = ' backend/pyproject.toml | cut -d'"' -f2)
+          lock=$(grep -A1 '^name = "vorrat-backend"' backend/uv.lock | grep '^version' | cut -d'"' -f2)
+          pubspec=$(grep -m1 '^version:' frontend/pubspec.yaml | awk '{print $2}')
+          addon=$(grep -m1 '^version:' vorrat/config.yaml | tr -d '"' | awk '{print $2}')
+          echo "backend=$backend lock=$lock pubspec=$pubspec addon=$addon"
+          if [ "$backend" != "$lock" ] || [ "$backend" != "$pubspec" ] || [ "$backend" != "$addon" ]; then
+            echo "::error::Version mismatch across release files (backend=$backend lock=$lock pubspec=$pubspec addon=$addon)"
+            exit 1
+          fi
 
   docker:
     runs-on: ubuntu-latest
