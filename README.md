@@ -139,6 +139,16 @@ docker compose up -d
 
 No authentication in v1 — intended for a trusted home network / Home Assistant Ingress.
 
+### Environment variables
+
+The backend reads these environment variables to configure runtime behavior:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `sqlite:///./vorrat.db` | SQLAlchemy connection string for the database. For standalone Docker, the included volume mount handles this; for other deployments, set this if you need a different database path or connection string. |
+| `OFF_USER_AGENT` | `Vorrat/0.1 (+https://github.com/MarcelMuechler/vorrat)` | User-Agent header sent to Open Food Facts API when looking up unknown products by barcode. Customize only if requested by the Open Food Facts maintainers. |
+| `EXPIRING_SOON_DAYS` | `3` | Number of days used to compute the "expiring soon" status: items with a best-before date within this many days are marked as expiring soon. This value seeds the database on first run; it can be changed at runtime via the settings API. |
+
 ## Home Assistant sensors
 
 `GET /api/stats` returns a summary of your stock — no MQTT or custom HA integration needed,
