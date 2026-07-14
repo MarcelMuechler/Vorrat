@@ -61,12 +61,23 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
   }
 
   Future<void> _loadLocations() async {
-    final locations = await context.read<ApiClient>().listLocations();
-    if (!mounted) return;
-    setState(() {
-      _locations = locations;
-      _loadingLocations = false;
-    });
+    try {
+      final locations = await context.read<ApiClient>().listLocations();
+      if (!mounted) return;
+      setState(() {
+        _locations = locations;
+        _loadingLocations = false;
+      });
+    } catch (e) {
+      // Don't leave the dropdown spinning forever on an unhandled error --
+      // location is optional on a stock entry, so degrade to an empty
+      // dropdown (saving without one is fine) and say what happened.
+      if (!mounted) return;
+      setState(() => _loadingLocations = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.couldNotLoadLocations('$e'))),
+      );
+    }
   }
 
   Future<void> _pickBestBeforeDate() async {
