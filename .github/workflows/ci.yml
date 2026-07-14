@@ -58,7 +58,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       - run: docker build -f vorrat/Dockerfile -t vorrat .
+
+      - name: Verify image dependencies match backend/uv.lock
+        run: uv run backend/scripts/check_image_deps.py vorrat
+      - name: Scan built image for known vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: vorrat
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
 
       # Run the actual production image the way README.md's "Running standalone via
       # Docker" section documents (-v ...:/data — the run script's `alembic upgrade
