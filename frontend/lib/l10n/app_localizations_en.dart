@@ -296,7 +296,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pendingScans => 'Pending scans';
 
   @override
-  String get nothingScannedYet => 'Nothing scanned yet.';
+  String get nothingScannedYet =>
+      'Nothing scanned yet. Scan a barcode to see it here.';
 
   @override
   String get scanModeAdd => 'Add';
@@ -433,7 +434,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noProductsYet => 'No products yet.';
+  String get noProductsYet => 'No products yet. Scan something to add one.';
 
   @override
   String get viewStockBatchesTooltip => 'View stock batches';
@@ -444,7 +445,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noBatchesLeft => 'No batches left.';
+  String get noBatchesLeft => 'No batches left. Tap + to add one.';
 
   @override
   String bbdLabel(String date) {
@@ -478,7 +479,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noLocationsYet => 'No locations yet.';
+  String get noLocationsYet => 'No locations yet. Tap + to add one.';
 
   @override
   String get renameTooltip => 'Rename';
@@ -533,7 +534,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noCategoriesYet => 'No categories yet.';
+  String get noCategoriesYet => 'No categories yet. Tap + to add one.';
 
   @override
   String get addCategoryTooltip => 'Add category';
@@ -572,7 +573,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncNowButton => 'Sync now';
 
   @override
-  String get nothingPending => 'Nothing pending.';
+  String get nothingPending =>
+      'Nothing pending. Offline scans will show up here automatically.';
 
   @override
   String queuedLabel(String date) {

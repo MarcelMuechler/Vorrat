@@ -141,7 +141,7 @@
   "enterManuallyTooltip": "Enter barcode manually",
   "recentlyScanned": "Recently scanned",
   "pendingScans": "Pending scans",
-  "nothingScannedYet": "Nothing scanned yet.",
+  "nothingScannedYet": "Nothing scanned yet. Scan a barcode to see it here.",
   "scanModeAdd": "Add",
   "scanModeOpen": "Open",
   "scanModeUse": "Use",
@@ -216,14 +216,14 @@
   "@couldNotLoadProducts": {
     "placeholders": { "error": { "type": "String" } }
   },
-  "noProductsYet": "No products yet.",
+  "noProductsYet": "No products yet. Scan something to add one.",
   "viewStockBatchesTooltip": "View stock batches",
 
   "couldNotLoadBatches": "Could not load batches: {error}",
   "@couldNotLoadBatches": {
     "placeholders": { "error": { "type": "String" } }
   },
-  "noBatchesLeft": "No batches left.",
+  "noBatchesLeft": "No batches left. Tap + to add one.",
   "bbdLabel": "BBD: {date}",
   "@bbdLabel": {
     "placeholders": { "date": { "type": "String" } }
@@ -247,7 +247,7 @@
   "@couldNotLoadLocations": {
     "placeholders": { "error": { "type": "String" } }
   },
-  "noLocationsYet": "No locations yet.",
+  "noLocationsYet": "No locations yet. Tap + to add one.",
   "renameTooltip": "Rename",
   "addLocationTooltip": "Add location",
   "locationsSubtitle": "Rename or delete storage locations",
@@ -278,7 +278,7 @@
   "@couldNotLoadCategories": {
     "placeholders": { "error": { "type": "String" } }
   },
-  "noCategoriesYet": "No categories yet.",
+  "noCategoriesYet": "No categories yet. Tap + to add one.",
   "addCategoryTooltip": "Add category",
 
   "lookupsFailedPending": "{failures, plural, =1{1 lookup failed} other{{failures} lookups failed}}; {remaining} still pending.",
@@ -298,7 +298,7 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "syncNowButton": "Sync now",
-  "nothingPending": "Nothing pending.",
+  "nothingPending": "Nothing pending. Offline scans will show up here automatically.",
   "queuedLabel": "Queued {date}",
   "@queuedLabel": {
     "placeholders": { "date": { "type": "String" } }

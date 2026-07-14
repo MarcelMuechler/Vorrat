@@ -605,7 +605,7 @@ abstract class AppLocalizations {
   /// No description provided for @nothingScannedYet.
   ///
   /// In en, this message translates to:
-  /// **'Nothing scanned yet.'**
+  /// **'Nothing scanned yet. Scan a barcode to see it here.'**
   String get nothingScannedYet;
 
   /// No description provided for @scanModeAdd.
@@ -821,7 +821,7 @@ abstract class AppLocalizations {
   /// No description provided for @noProductsYet.
   ///
   /// In en, this message translates to:
-  /// **'No products yet.'**
+  /// **'No products yet. Scan something to add one.'**
   String get noProductsYet;
 
   /// No description provided for @viewStockBatchesTooltip.
@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @noBatchesLeft.
   ///
   /// In en, this message translates to:
-  /// **'No batches left.'**
+  /// **'No batches left. Tap + to add one.'**
   String get noBatchesLeft;
 
   /// No description provided for @bbdLabel.
@@ -887,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @noLocationsYet.
   ///
   /// In en, this message translates to:
-  /// **'No locations yet.'**
+  /// **'No locations yet. Tap + to add one.'**
   String get noLocationsYet;
 
   /// No description provided for @renameTooltip.
@@ -977,7 +977,7 @@ abstract class AppLocalizations {
   /// No description provided for @noCategoriesYet.
   ///
   /// In en, this message translates to:
-  /// **'No categories yet.'**
+  /// **'No categories yet. Tap + to add one.'**
   String get noCategoriesYet;
 
   /// No description provided for @addCategoryTooltip.
@@ -1019,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @nothingPending.
   ///
   /// In en, this message translates to:
-  /// **'Nothing pending.'**
+  /// **'Nothing pending. Offline scans will show up here automatically.'**
   String get nothingPending;
 
   /// No description provided for @queuedLabel.
