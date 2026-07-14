@@ -287,7 +287,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         onChanged: (value) => setState(() => _selectedLocationId = value),
                       ),
                     ),
-                    IconButton(onPressed: _addLocation, icon: const Icon(Icons.add)),
+                    IconButton(
+                      onPressed: _addLocation,
+                      icon: const Icon(Icons.add),
+                      tooltip: l10n.addLocationTooltip,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
