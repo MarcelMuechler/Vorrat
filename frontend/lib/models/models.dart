@@ -197,3 +197,25 @@ class ConsumptionLogEntry {
         createdAt: DateTime.parse(json['created_at']),
       );
 }
+
+class StockImportRowError {
+  final int row;
+  final String error;
+
+  StockImportRowError({required this.row, required this.error});
+
+  factory StockImportRowError.fromJson(Map<String, dynamic> json) =>
+      StockImportRowError(row: json['row'], error: json['error']);
+}
+
+class StockImportResult {
+  final int imported;
+  final List<StockImportRowError> errors;
+
+  StockImportResult({required this.imported, required this.errors});
+
+  factory StockImportResult.fromJson(Map<String, dynamic> json) => StockImportResult(
+        imported: json['imported'],
+        errors: (json['errors'] as List).map((e) => StockImportRowError.fromJson(e)).toList(),
+      );
+}

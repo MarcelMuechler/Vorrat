@@ -238,6 +238,19 @@ class ApiClient {
     return uri.hasScheme ? uri : Uri.base.resolveUri(uri);
   }
 
+  /// Sends the raw CSV text as the request body -- matches how the backend
+  /// reads it (no multipart parsing needed there) and is the simplest thing
+  /// for `package:http` to send after reading a picked file as a string.
+  Future<StockImportResult> importStockCsv(String csv) async {
+    final res = await http.post(
+      _uri('/api/stock/import.csv'),
+      headers: {'content-type': 'text/csv'},
+      body: csv,
+    );
+    _checkOk(res);
+    return StockImportResult.fromJson(jsonDecode(res.body));
+  }
+
   Future<int> getExpiringSoonDays() async {
     final res = await http.get(_uri('/api/settings'));
     _checkOk(res);

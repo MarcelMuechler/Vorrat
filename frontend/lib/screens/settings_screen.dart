@@ -1,3 +1,4 @@
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -6,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
+import '../models/models.dart';
 import '../state/scan_queue.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
@@ -124,6 +126,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotExport('$e'))));
       }
     }
+  }
+
+  Future<void> _importStockCsv() async {
+    const typeGroup = XTypeGroup(label: 'csv', extensions: ['csv'], mimeTypes: ['text/csv']);
+    final file = await openFile(acceptedTypeGroups: [typeGroup]);
+    if (file == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final api = context.read<ApiClient>();
+    final stock = context.read<StockProvider>();
+    try {
+      final csv = await file.readAsString();
+      final result = await api.importStockCsv(csv);
+      if (!mounted) return;
+      await stock.refresh();
+      if (!mounted) return;
+      await _showImportResult(result);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotImport('$e'))));
+      }
+    }
+  }
+
+  Future<void> _showImportResult(StockImportResult result) {
+    final l10n = AppLocalizations.of(context)!;
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.importResultTitle),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.importedCount(result.imported)),
+              if (result.errors.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(l10n.importErrorsHeading(result.errors.length)),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 240),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: result.errors.length,
+                      itemBuilder: (context, index) {
+                        final error = result.errors[index];
+                        return Text(l10n.importRowError(error.row, error.error));
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(context), child: Text(l10n.closeButton)),
+        ],
+      ),
+    );
   }
 
   Future<void> _scanToConnect() async {
@@ -271,6 +337,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: Text(l10n.exportCsvTitle),
               subtitle: Text(l10n.exportCsvSubtitle),
               onTap: _exportStockCsv,
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.file_upload_outlined),
+              title: Text(l10n.importCsvTitle),
+              subtitle: Text(l10n.importCsvSubtitle),
+              onTap: _importStockCsv,
             ),
             if (_wastedThisMonth != null) ...[
               const Divider(),
