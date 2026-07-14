@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../util/format.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -308,7 +309,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               : null,
         ),
         subtitle: showAmount
-            ? Text('${item.amount}${item.unit != null ? ' ${item.unit}' : ''}')
+            ? Text('${formatAmount(item.amount)}${item.unit != null ? ' ${item.unit}' : ''}')
             : null,
       ),
     );

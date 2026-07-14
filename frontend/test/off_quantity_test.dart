@@ -41,7 +41,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('330.0'), findsOneWidget);
+    expect(find.text('330'), findsOneWidget);
     expect(find.text('ml'), findsOneWidget);
   });
 }

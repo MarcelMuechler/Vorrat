@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../util/format.dart';
 import '../widgets/stock_item_actions.dart';
 import 'product_detail_screen.dart';
 
@@ -150,7 +151,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                           return StockItemActions(
                             key: ValueKey(item.id),
                             leading: CircleAvatar(backgroundColor: _statusColor(item.status), radius: 6),
-                            title: Text('${item.amount}'),
+                            title: Text(formatAmount(item.amount)),
                             subtitle: Text([
                               if (item.locationName != null) item.locationName!,
                               if (item.bestBeforeDate != null)

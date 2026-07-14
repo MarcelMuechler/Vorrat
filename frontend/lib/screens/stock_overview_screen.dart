@@ -7,6 +7,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../util/format.dart';
 import '../widgets/stock_item_actions.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
@@ -318,7 +319,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       title: Text(group.productName),
       subtitle: Text([
         if (group.locationNames.isNotEmpty) group.locationNames.join(', '),
-        l10n.groupTotalAmount('${group.totalAmount}'),
+        l10n.groupTotalAmount(formatAmount(group.totalAmount)),
       ].join(' · ')),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -353,7 +354,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         if (item.purchasedDate != null)
           _relativeLabel(context, item.purchasedDate!, _RelativeKind.purchased),
         if (item.openedAt != null) _relativeLabel(context, item.openedAt!, _RelativeKind.opened),
-        '${item.amount}',
+        formatAmount(item.amount),
       ].join(' · ')),
       amount: item.amount,
       productName: item.productName,

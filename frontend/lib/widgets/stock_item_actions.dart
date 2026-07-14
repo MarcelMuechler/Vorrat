@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../util/format.dart';
 
 /// Wraps a stock batch's list tile with the shared interaction model (#75):
 /// tapping reveals Open/Use/Spoil buttons beneath it (Open only shown while
@@ -51,7 +52,7 @@ class _StockItemActionsState extends State<StockItemActions> {
 
   Future<double?> _promptAmount(String title) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: '${widget.amount}');
+    final controller = TextEditingController(text: formatAmount(widget.amount));
     return showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
@@ -60,7 +61,7 @@ class _StockItemActionsState extends State<StockItemActions> {
           controller: controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: l10n.amountInStockLabel('${widget.amount}')),
+          decoration: InputDecoration(labelText: l10n.amountInStockLabel(formatAmount(widget.amount))),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),

@@ -66,7 +66,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap the tile to reveal the Open/Use/Spoil buttons (#75).
-    await tester.tap(find.text('2.0'));
+    await tester.tap(find.text('2'));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.lock_open), findsOneWidget);
 
@@ -75,7 +75,7 @@ void main() {
     expect(api.opened, isTrue);
 
     // Re-expand -- Open is no longer offered once the batch is opened.
-    await tester.tap(find.text('2.0'));
+    await tester.tap(find.text('2'));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.lock_open), findsNothing);
   });

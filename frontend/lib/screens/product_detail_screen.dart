@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
+import '../util/format.dart';
 import '../widgets/category_field.dart';
 import '../widgets/quantity_unit_field.dart';
 
@@ -48,7 +49,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       text: widget.existingProduct?.name ?? widget.prefill?.name ?? '',
     );
     _amountController = TextEditingController(
-      text: widget.prefill?.amount != null ? '${widget.prefill!.amount}' : '1',
+      text: widget.prefill?.amount != null ? formatAmount(widget.prefill!.amount!) : '1',
     );
     _quantityUnit = widget.existingProduct?.quantityUnit ?? widget.prefill?.quantityUnit ?? 'pcs';
     _selectedLocationId = widget.existingProduct?.defaultLocationId;
