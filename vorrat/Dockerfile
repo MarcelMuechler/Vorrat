@@ -36,7 +36,10 @@ RUN uv sync --frozen --no-install-project --no-dev
 
 FROM ${BUILD_FROM} AS runtime
 
-RUN apk add --no-cache python3
+# Upgrade first so patched Alpine packages (e.g. libssl3, libcurl security
+# fixes released after this BUILD_FROM tag) land in the final image instead
+# of whatever was current when the base image was published.
+RUN apk upgrade --no-cache && apk add --no-cache python3
 
 # Run straight from the source tree (no package install step) so that
 # copying the Flutter web build into app/static below lands where main.py
