@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.12.0](https://github.com/MarcelMuechler/vorrat/compare/v0.11.0...v0.12.0) (2026-07-14)
+
+
+### Features
+
+* add bulk consume/delete/move endpoints for stock entries ([#123](https://github.com/MarcelMuechler/vorrat/issues/123)) ([ebf2cf8](https://github.com/MarcelMuechler/vorrat/commit/ebf2cf8b5f3bcc6d0ba0bfb55880e44c892fa925))
+* add bulkConsumeStock/bulkDeleteStock/bulkMoveStock to ApiClient ([#123](https://github.com/MarcelMuechler/vorrat/issues/123)) ([e69f1f6](https://github.com/MarcelMuechler/vorrat/commit/e69f1f6974b6f256056e2b1334c7f34f7855635f))
+* add consumption-log CSV export endpoint ([#127](https://github.com/MarcelMuechler/vorrat/issues/127)) ([191ae00](https://github.com/MarcelMuechler/vorrat/commit/191ae00a56983683b8aa23b8dda471e6d9d399d2))
+* add consumption-log CSV export to Settings ([#127](https://github.com/MarcelMuechler/vorrat/issues/127)) ([bb07cd1](https://github.com/MarcelMuechler/vorrat/commit/bb07cd185f29f9fcbdf81a52078a6432e3125d6d))
+* add NavigationRail for wide-screen layout ([#135](https://github.com/MarcelMuechler/vorrat/issues/135)) ([405ed94](https://github.com/MarcelMuechler/vorrat/commit/405ed949a59da230c95918a012468acebc461dd8))
+* add quantityUnit field to ConsumptionLogEntry model ([#118](https://github.com/MarcelMuechler/vorrat/issues/118)) ([da5ab2e](https://github.com/MarcelMuechler/vorrat/commit/da5ab2e532210fd8bcbad8e99f6793b289eed6ce))
+* add undo to swipe consume/spoil and shopping-list delete ([#137](https://github.com/MarcelMuechler/vorrat/issues/137)) ([f66a1bb](https://github.com/MarcelMuechler/vorrat/commit/f66a1bb465cb0ce950e8c95ec4b1a7762aa278ed))
+* **backend:** add limit/offset pagination to list endpoints ([#114](https://github.com/MarcelMuechler/vorrat/issues/114)) ([8524090](https://github.com/MarcelMuechler/vorrat/commit/8524090f72bc3f094cb0d839147a0ebc7f61fc67))
+* cap and center shell content width on wide screens ([#135](https://github.com/MarcelMuechler/vorrat/issues/135)) ([640d1fe](https://github.com/MarcelMuechler/vorrat/commit/640d1fe332e984a2079e6a891fd6a7e71e6366ba))
+* debounce live search on Products screen ([#140](https://github.com/MarcelMuechler/vorrat/issues/140)) ([d758528](https://github.com/MarcelMuechler/vorrat/commit/d758528f12d15fe1c5ba280c147111bbf384055a))
+* debounce live search on Stock screen ([#140](https://github.com/MarcelMuechler/vorrat/issues/140)) ([919f336](https://github.com/MarcelMuechler/vorrat/commit/919f33694af62358cd2f5af2283504df25dad240))
+* expose quantity_unit in consumption-log response and CSV export ([#118](https://github.com/MarcelMuechler/vorrat/issues/118)) ([3e45692](https://github.com/MarcelMuechler/vorrat/commit/3e456920bd7a2eea2aa7680d2cb4c883b8c1ca11))
+* expose the consumption-log until param in the API client ([#121](https://github.com/MarcelMuechler/vorrat/issues/121)) ([c10e507](https://github.com/MarcelMuechler/vorrat/commit/c10e507200f19c0c739adf8cd4de4cc0896e74d2))
+* **frontend:** add limit/offset params to paginated list client methods ([#114](https://github.com/MarcelMuechler/vorrat/issues/114)) ([cf2c0a5](https://github.com/MarcelMuechler/vorrat/commit/cf2c0a5c35e89b0429814bcb45865ada44a2a9c0))
+* generate/show QR labels for products ([#105](https://github.com/MarcelMuechler/vorrat/issues/105)) ([f47a9c7](https://github.com/MarcelMuechler/vorrat/commit/f47a9c72bce5aff713f971dd08086cf37bb4cde4))
+* retry off_client network calls with backoff ([#120](https://github.com/MarcelMuechler/vorrat/issues/120)) ([4f6db1d](https://github.com/MarcelMuechler/vorrat/commit/4f6db1d66c991ba0068b90a7e252c1a4746b0e07))
+* snapshot quantity_unit onto ConsumptionLog at write time ([#118](https://github.com/MarcelMuechler/vorrat/issues/118)) ([35d168c](https://github.com/MarcelMuechler/vorrat/commit/35d168cfd4f0c286d801eed5e906405f229b0572))
+
+
+### Bug Fixes
+
+* add missing tooltip to the add-location button ([#139](https://github.com/MarcelMuechler/vorrat/issues/139)) ([e3d9518](https://github.com/MarcelMuechler/vorrat/commit/e3d95187162fc9e17a771ab130feee836063ce9c))
+* add pull-to-refresh to Categories, Locations and Products screens ([#139](https://github.com/MarcelMuechler/vorrat/issues/139)) ([15bc40d](https://github.com/MarcelMuechler/vorrat/commit/15bc40ddc8cae6ab00f1e4bc30ecd5863ecf9deb))
+* make the Settings screen scrollable ([#134](https://github.com/MarcelMuechler/vorrat/issues/134)) ([72f9749](https://github.com/MarcelMuechler/vorrat/commit/72f9749b5f1fc4098d037feb667d29060f404ed9))
+* show inline validation instead of silently ignoring bad dialog input ([#139](https://github.com/MarcelMuechler/vorrat/issues/139)) ([b7fdee9](https://github.com/MarcelMuechler/vorrat/commit/b7fdee97f07b366671c1511a9c0561d8e5a2342e))
+* strip trailing .0 from whole-number amount displays ([#133](https://github.com/MarcelMuechler/vorrat/issues/133)) ([f8b2a56](https://github.com/MarcelMuechler/vorrat/commit/f8b2a56b57d389dd9fb2d77f7c1091551bdea9a7))
+* use decimal keyboard for the add-to-stock amount field ([#139](https://github.com/MarcelMuechler/vorrat/issues/139)) ([d591810](https://github.com/MarcelMuechler/vorrat/commit/d5918102be28371be244e0c2d2d3467eb2172b59))
+
 ## [0.11.0](https://github.com/MarcelMuechler/vorrat/compare/v0.10.0...v0.11.0) (2026-07-14)
 
 
