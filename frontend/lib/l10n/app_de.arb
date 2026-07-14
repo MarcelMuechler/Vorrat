@@ -19,6 +19,7 @@
   "consumeButton": "Verbrauchen",
   "lookUpButton": "Nachschlagen",
   "closeButton": "Schließen",
+  "undoButton": "Rückgängig",
   "usedLabel": "Verbraucht",
   "spoiledLabel": "Verdorben",
   "nameLabel": "Name",
@@ -71,6 +72,7 @@
   "deleteBatchConfirm": "Dies löscht diese Charge von \"{name}\".",
   "couldNotConsume": "Verbrauch fehlgeschlagen: {error}",
   "couldNotDeleteStockEntry": "Löschen fehlgeschlagen: {error}",
+  "couldNotUndo": "Rückgängig machen fehlgeschlagen: {error}",
 
   "expiryToday": "Läuft heute ab",
   "expiryTomorrow": "Läuft morgen ab",
@@ -210,6 +212,7 @@
   "couldNotAddShoppingListItem": "Konnte nicht hinzugefügt werden: {error}",
   "couldNotUpdateShoppingListItem": "Konnte nicht aktualisiert werden: {error}",
   "couldNotDeleteShoppingListItem": "Konnte nicht gelöscht werden: {error}",
+  "shoppingListItemDeleted": "\"{name}\" gelöscht.",
   "addLowStockTooltip": "Niedrigen Bestand hinzufügen",
   "lowStockAddedCount": "{count, plural, =0{Keine Artikel mit niedrigem Bestand hinzuzufügen.} =1{1 Artikel hinzugefügt.} other{{count} Artikel hinzugefügt.}}",
   "couldNotAddLowStock": "Artikel mit niedrigem Bestand konnten nicht hinzugefügt werden: {error}",
