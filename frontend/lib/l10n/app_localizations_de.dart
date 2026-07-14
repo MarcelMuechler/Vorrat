@@ -447,6 +447,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lowStockChip => 'Bestand niedrig';
 
   @override
+  String get targetStockLevelLabel => 'Ziel-Bestand';
+
+  @override
+  String get targetStockLevelHint =>
+      'z. B. 5 — beim Auffüllen der Einkaufsliste wird bis zu dieser Menge statt nur 1 aufgefüllt';
+
+  @override
   String get deleteProductTitle => 'Produkt löschen?';
 
   @override

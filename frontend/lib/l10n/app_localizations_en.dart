@@ -445,6 +445,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lowStockChip => 'Low stock';
 
   @override
+  String get targetStockLevelLabel => 'Target stock level';
+
+  @override
+  String get targetStockLevelHint =>
+      'e.g. 5 — add-low-stock restocks up to this amount instead of just 1';
+
+  @override
   String get deleteProductTitle => 'Delete product?';
 
   @override

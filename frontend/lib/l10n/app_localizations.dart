@@ -848,6 +848,18 @@ abstract class AppLocalizations {
   /// **'Low stock'**
   String get lowStockChip;
 
+  /// No description provided for @targetStockLevelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target stock level'**
+  String get targetStockLevelLabel;
+
+  /// No description provided for @targetStockLevelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 5 — add-low-stock restocks up to this amount instead of just 1'**
+  String get targetStockLevelHint;
+
   /// No description provided for @deleteProductTitle.
   ///
   /// In en, this message translates to:

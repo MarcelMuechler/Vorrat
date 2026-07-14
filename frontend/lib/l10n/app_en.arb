@@ -214,6 +214,8 @@
   "lowStockThresholdLabel": "Low stock threshold",
   "lowStockThresholdHint": "e.g. 0.2 — flag the Stock tab when total on hand drops to this or below",
   "lowStockChip": "Low stock",
+  "targetStockLevelLabel": "Target stock level",
+  "targetStockLevelHint": "e.g. 5 — add-low-stock restocks up to this amount instead of just 1",
 
   "deleteProductTitle": "Delete product?",
   "deleteProductConfirm": "This deletes \"{name}\". Products still in stock can't be deleted.",

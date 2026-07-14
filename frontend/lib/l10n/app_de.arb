@@ -133,6 +133,8 @@
   "lowStockThresholdLabel": "Mindestbestand",
   "lowStockThresholdHint": "z. B. 0,2 — markiert im Bestand, wenn die Gesamtmenge darauf oder darunter fällt",
   "lowStockChip": "Bestand niedrig",
+  "targetStockLevelLabel": "Ziel-Bestand",
+  "targetStockLevelHint": "z. B. 5 — beim Auffüllen der Einkaufsliste wird bis zu dieser Menge statt nur 1 aufgefüllt",
 
   "deleteProductTitle": "Produkt löschen?",
   "deleteProductConfirm": "Dies löscht \"{name}\". Produkte, die noch im Bestand sind, können nicht gelöscht werden.",

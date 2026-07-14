@@ -30,6 +30,7 @@ class Product {
   final int? defaultBestBeforeDays;
   final int? defaultOpenShelfLifeDays;
   final double? lowStockThreshold;
+  final double? targetStockLevel;
 
   Product({
     required this.id,
@@ -43,6 +44,7 @@ class Product {
     this.defaultBestBeforeDays,
     this.defaultOpenShelfLifeDays,
     this.lowStockThreshold,
+    this.targetStockLevel,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -57,6 +59,7 @@ class Product {
         defaultBestBeforeDays: json['default_best_before_days'],
         defaultOpenShelfLifeDays: json['default_open_shelf_life_days'],
         lowStockThreshold: (json['low_stock_threshold'] as num?)?.toDouble(),
+        targetStockLevel: (json['target_stock_level'] as num?)?.toDouble(),
       );
 }
 
