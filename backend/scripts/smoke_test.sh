@@ -352,4 +352,17 @@ SPOILED_LOG_COUNT=$(curl -sf "$BASE/api/consumption-log?reason=spoiled" \
   | jq --argjson pid "$BULK_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
 [ "$SPOILED_LOG_COUNT" = "3" ] || { echo "FAIL: expected 3 spoiled consumption-log rows for bulk product (2 consumed + 1 deleted), got $SPOILED_LOG_COUNT"; exit 1; }
 
+echo "== products: pagination (limit/offset) =="
+for name in "PagTest A" "PagTest B" "PagTest C"; do
+  curl -sf -X POST "$BASE/api/products" \
+    -H 'content-type: application/json' \
+    -d '{"name": "'"$name"'"}' > /dev/null
+done
+ALL_COUNT=$(curl -sf "$BASE/api/products?search=PagTest" | jq 'length')
+[ "$ALL_COUNT" = "3" ] || { echo "FAIL: expected 3 PagTest products with no limit/offset, got $ALL_COUNT"; exit 1; }
+LIMIT_COUNT=$(curl -sf "$BASE/api/products?search=PagTest&limit=2" | jq 'length')
+[ "$LIMIT_COUNT" = "2" ] || { echo "FAIL: expected limit=2 to return 2 products, got $LIMIT_COUNT"; exit 1; }
+OFFSET_COUNT=$(curl -sf "$BASE/api/products?search=PagTest&offset=2" | jq 'length')
+[ "$OFFSET_COUNT" = "1" ] || { echo "FAIL: expected offset=2 to return the remaining 1 product, got $OFFSET_COUNT"; exit 1; }
+
 echo "OK"
