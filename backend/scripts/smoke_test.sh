@@ -77,6 +77,11 @@ curl -sf -X POST "$BASE/api/stock/$EXPIRED_ID/consume" \
 COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
 [ "$COUNT" = "2" ] || { echo "FAIL: expected 2 remaining stock entries after consume, got $COUNT"; exit 1; }
 
+echo "== consumption-log: the consume above snapshotted Milk's quantity_unit (default 'pcs') onto the log row =="
+LOG_UNIT=$(curl -sf "$BASE/api/consumption-log?reason=used" \
+  | jq -r --argjson pid "$PRODUCT_ID" '[.[] | select(.product_id == $pid)][0].quantity_unit')
+[ "$LOG_UNIT" = "pcs" ] || { echo "FAIL: expected consumption-log quantity_unit=pcs, got $LOG_UNIT"; exit 1; }
+
 echo "== stats: summary for HA sensors (expect 1 product, 2 stock entries, 0 expired, 1 expiring_soon) =="
 STATS=$(curl -sf "$BASE/api/stats")
 echo "$STATS" | jq .
@@ -217,10 +222,10 @@ EXPORTED_LOG_CSV=$(curl -sf "$BASE/api/consumption-log/export.csv")
 LOG_CSV_LINES=$(echo "$EXPORTED_LOG_CSV" | wc -l)
 [ "$LOG_CSV_LINES" = "$((LOG_COUNT + 1))" ] \
   || { echo "FAIL: expected $((LOG_COUNT + 1)) CSV lines (header + $LOG_COUNT rows), got $LOG_CSV_LINES"; exit 1; }
-echo "$EXPORTED_LOG_CSV" | tr -d '\r' | head -1 | grep -qx 'created_at,product_name,amount,reason' \
+echo "$EXPORTED_LOG_CSV" | tr -d '\r' | head -1 | grep -qx 'created_at,product_name,amount,quantity_unit,reason' \
   || { echo "FAIL: unexpected export.csv header: $(echo "$EXPORTED_LOG_CSV" | head -1)"; exit 1; }
-echo "$EXPORTED_LOG_CSV" | tr -d '\r' | grep -q ',Milk,1.0,used$' \
-  || { echo "FAIL: expected a Milk/1.0/used row in consumption-log export.csv, got: $EXPORTED_LOG_CSV"; exit 1; }
+echo "$EXPORTED_LOG_CSV" | tr -d '\r' | grep -q ',Milk,1.0,pcs,used$' \
+  || { echo "FAIL: expected a Milk/1.0/pcs/used row in consumption-log export.csv, got: $EXPORTED_LOG_CSV"; exit 1; }
 
 echo "== consumption-log/export.csv: reason filter excludes it =="
 FILTERED_LOG_CSV=$(curl -sf "$BASE/api/consumption-log/export.csv?reason=spoiled")
