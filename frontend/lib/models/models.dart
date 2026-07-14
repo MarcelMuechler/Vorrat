@@ -177,6 +177,11 @@ class ConsumptionLogEntry {
   final String productName;
   final double amount;
   final String reason; // used | spoiled
+  // Snapshotted on the backend at write time, so it reflects the unit the
+  // product had *then* -- not its current quantityUnit, which may have
+  // changed since. Null for rows written before this field existed and
+  // never backfilled.
+  final String? quantityUnit;
   final DateTime createdAt;
 
   ConsumptionLogEntry({
@@ -185,6 +190,7 @@ class ConsumptionLogEntry {
     required this.productName,
     required this.amount,
     required this.reason,
+    this.quantityUnit,
     required this.createdAt,
   });
 
@@ -194,6 +200,7 @@ class ConsumptionLogEntry {
         productName: json['product_name'],
         amount: (json['amount'] as num).toDouble(),
         reason: json['reason'],
+        quantityUnit: json['quantity_unit'],
         createdAt: DateTime.parse(json['created_at']),
       );
 }
