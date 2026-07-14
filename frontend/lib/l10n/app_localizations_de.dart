@@ -297,7 +297,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pendingScans => 'Ausstehende Scans';
 
   @override
-  String get nothingScannedYet => 'Noch nichts gescannt.';
+  String get nothingScannedYet =>
+      'Noch nichts gescannt. Scanne einen Barcode, um ihn hier zu sehen.';
 
   @override
   String get scanModeAdd => 'Hinzufügen';
@@ -435,7 +436,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get noProductsYet => 'Noch keine Produkte.';
+  String get noProductsYet =>
+      'Noch keine Produkte. Scanne etwas, um eines hinzuzufügen.';
 
   @override
   String get viewStockBatchesTooltip => 'Bestandschargen anzeigen';
@@ -446,7 +448,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get noBatchesLeft => 'Keine Chargen mehr.';
+  String get noBatchesLeft =>
+      'Keine Chargen mehr. Tippe auf +, um eine hinzuzufügen.';
 
   @override
   String bbdLabel(String date) {
@@ -480,7 +483,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get noLocationsYet => 'Noch keine Standorte.';
+  String get noLocationsYet =>
+      'Noch keine Standorte. Tippe auf +, um einen hinzuzufügen.';
 
   @override
   String get renameTooltip => 'Umbenennen';
@@ -537,7 +541,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get noCategoriesYet => 'Noch keine Kategorien.';
+  String get noCategoriesYet =>
+      'Noch keine Kategorien. Tippe auf +, um eine hinzuzufügen.';
 
   @override
   String get addCategoryTooltip => 'Kategorie hinzufügen';
@@ -576,7 +581,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncNowButton => 'Jetzt synchronisieren';
 
   @override
-  String get nothingPending => 'Nichts ausstehend.';
+  String get nothingPending =>
+      'Nichts ausstehend. Offline-Scans erscheinen hier automatisch.';
 
   @override
   String queuedLabel(String date) {
