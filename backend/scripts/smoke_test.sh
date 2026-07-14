@@ -211,6 +211,22 @@ echo "== consumption-log: its rows should be gone along with the product =="
 COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson pid "$FLOAT_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
 [ "$COUNT" = "0" ] || { echo "FAIL: expected 0 consumption-log rows for deleted product, got $COUNT"; exit 1; }
 
+echo "== consumption-log/export.csv: row count matches JSON list, header + Milk's 'used' entry present =="
+LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq 'length')
+EXPORTED_LOG_CSV=$(curl -sf "$BASE/api/consumption-log/export.csv")
+LOG_CSV_LINES=$(echo "$EXPORTED_LOG_CSV" | wc -l)
+[ "$LOG_CSV_LINES" = "$((LOG_COUNT + 1))" ] \
+  || { echo "FAIL: expected $((LOG_COUNT + 1)) CSV lines (header + $LOG_COUNT rows), got $LOG_CSV_LINES"; exit 1; }
+echo "$EXPORTED_LOG_CSV" | tr -d '\r' | head -1 | grep -qx 'created_at,product_name,amount,reason' \
+  || { echo "FAIL: unexpected export.csv header: $(echo "$EXPORTED_LOG_CSV" | head -1)"; exit 1; }
+echo "$EXPORTED_LOG_CSV" | tr -d '\r' | grep -q ',Milk,1.0,used$' \
+  || { echo "FAIL: expected a Milk/1.0/used row in consumption-log export.csv, got: $EXPORTED_LOG_CSV"; exit 1; }
+
+echo "== consumption-log/export.csv: reason filter excludes it =="
+FILTERED_LOG_CSV=$(curl -sf "$BASE/api/consumption-log/export.csv?reason=spoiled")
+[ "$(echo "$FILTERED_LOG_CSV" | wc -l)" = "1" ] \
+  || { echo "FAIL: expected only the header row for reason=spoiled, got: $FILTERED_LOG_CSV"; exit 1; }
+
 echo "== stock/import.csv: import a mix of matched-by-barcode, new-product+new-location, and a broken row =="
 BEFORE_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
 IMPORT_CSV=$(cat <<EOF
