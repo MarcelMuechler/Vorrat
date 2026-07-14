@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.14.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.13.0...v0.14.0) (2026-07-14)
+
+
+### Features
+
+* **android:** wire release signing config for Play Store builds ([4320646](https://github.com/MarcelMuechler/Vorrat/commit/4320646861a890385d9e5b693bcd01f854178c20))
+* **backend:** add /api/stock/undo/{log_id} to reverse a consume atomically ([0cd9a43](https://github.com/MarcelMuechler/Vorrat/commit/0cd9a43097746ec3cebd64b8b93b469e528db8bc)), closes [#160](https://github.com/MarcelMuechler/Vorrat/issues/160)
+* **frontend:** wire Undo through the new atomic /stock/undo endpoint ([#160](https://github.com/MarcelMuechler/Vorrat/issues/160)) ([9135704](https://github.com/MarcelMuechler/Vorrat/commit/913570480dc765b6b4de8cbb1d7a75054e9e2763))
+
+
+### Bug Fixes
+
+* add NSCameraUsageDescription for iOS camera access ([#161](https://github.com/MarcelMuechler/Vorrat/issues/161)) ([c694840](https://github.com/MarcelMuechler/Vorrat/commit/c694840d5dfc70379693f08bd0366811284305ae))
+* **backend:** preserve shopping-list items when deleting a linked product ([0ab9b52](https://github.com/MarcelMuechler/Vorrat/commit/0ab9b525b03db1574b8c827c764779da9206e59d)), closes [#157](https://github.com/MarcelMuechler/Vorrat/issues/157)
+* **backend:** reject PATCH that would drop shopping-list item's product_id and name ([18160ba](https://github.com/MarcelMuechler/Vorrat/commit/18160ba524bedaacf6ca64a09104a655afa4ae53)), closes [#158](https://github.com/MarcelMuechler/Vorrat/issues/158)
+* **backend:** reject stock consumes that exceed an entry's remaining amount ([5b596c8](https://github.com/MarcelMuechler/Vorrat/commit/5b596c87ad2d31cb088cb83b581e1481d1a4c8bf)), closes [#156](https://github.com/MarcelMuechler/Vorrat/issues/156)
+* **backend:** return clean 4xx instead of 500 for bad FK refs and duplicate barcodes ([256a30c](https://github.com/MarcelMuechler/Vorrat/commit/256a30c9324a1b43ba9ab98ca09318306befce0b)), closes [#159](https://github.com/MarcelMuechler/Vorrat/issues/159)
+* **frontend:** validate consume amount against available stock ([7b226ad](https://github.com/MarcelMuechler/Vorrat/commit/7b226adb5dd873a04ca386cda0870e9d25a41a5c))
+* remove unsupported armv7 architecture ([#165](https://github.com/MarcelMuechler/Vorrat/issues/165)) ([58a8fe0](https://github.com/MarcelMuechler/Vorrat/commit/58a8fe09cadf9aaaaea1ff9eb719a1ec11f6419e))
+* update overconsume smoke test for the consume response shape from [#160](https://github.com/MarcelMuechler/Vorrat/issues/160) ([f58aa4c](https://github.com/MarcelMuechler/Vorrat/commit/f58aa4ce79d6efd855d48e2fc8419428bbf5283e))
+
 ## [0.13.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.12.0...v0.13.0) (2026-07-14)
 
 
