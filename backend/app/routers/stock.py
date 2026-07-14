@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.db import get_db
@@ -290,8 +290,25 @@ def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -
     ConsumptionLog row just written, needed by callers that let this be
     undone later (#160). Caller is responsible for commit/refresh -- kept
     out of here so bulk callers can batch a single commit across many
-    entries."""
-    entry.amount -= amount
+    entries.
+
+    Raises HTTPException(422) if `amount` exceeds what's actually left on
+    `entry`. The decrement is a single atomic UPDATE whose WHERE clause folds
+    in the "enough left" check (StockEntry.amount >= amount) rather than
+    comparing entry.amount in Python and writing separately -- so two
+    concurrent consumes racing on the same entry (e.g. both requesting 0.6 of
+    a 1.0 entry) can't both read "enough left" and together log more than was
+    ever there: SQLite serializes the two writes, the second one re-evaluates
+    the WHERE clause against the first's already-committed result, and its
+    UPDATE simply matches zero rows.
+    """
+    result = db.execute(
+        update(StockEntry)
+        .where(StockEntry.id == entry.id, StockEntry.amount >= amount)
+        .values(amount=StockEntry.amount - amount)
+    )
+    if result.rowcount == 0:
+        raise HTTPException(422, "Requested amount exceeds the entry's remaining stock")
     log = ConsumptionLog(
         product_id=entry.product_id,
         amount=amount,
@@ -303,6 +320,10 @@ def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -
     # though the transaction isn't final yet -- mirrors _resolve_location/
     # _resolve_product's use of flush() above for the same reason.
     db.flush()
+    # Re-read the amount the UPDATE above actually wrote (same transaction,
+    # so this sees that uncommitted write) rather than trusting the
+    # Python-side entry.amount, which may be stale.
+    db.refresh(entry)
     # Repeated float subtraction (e.g. ten 0.1 consumes) can leave a tiny
     # non-zero residue instead of an exact 0, so treat anything below this
     # epsilon as fully consumed rather than leaving a ghost entry behind.

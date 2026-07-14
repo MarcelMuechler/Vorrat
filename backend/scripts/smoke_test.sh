@@ -426,6 +426,83 @@ echo "== shopping-list: clean up the FK test items =="
 curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$FK_OPEN_ITEM_ID"
 curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$FK_DONE_ITEM_ID"
 
+echo "== products: create a third product for the over-consume guard (#156) =="
+OVERCONSUME_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Overconsume Guard Test"}' | jq -r .id)
+echo "created product $OVERCONSUME_PRODUCT_ID"
+
+echo "== stock: add a 1.0 unit entry =="
+OVERCONSUME_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$OVERCONSUME_PRODUCT_ID"', "amount": 1.0}' | jq -r .id)
+echo "created stock entry $OVERCONSUME_ENTRY_ID"
+
+echo "== consumption-log: baseline row count for this product (expect 0) =="
+LOG_COUNT_BEFORE=$(curl -sf "$BASE/api/consumption-log" \
+  | jq --argjson pid "$OVERCONSUME_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
+[ "$LOG_COUNT_BEFORE" = "0" ] || { echo "FAIL: expected 0 consumption-log rows before any consume, got $LOG_COUNT_BEFORE"; exit 1; }
+
+echo "== stock: attempt to consume 2 from a 1.0 entry (expect 4xx, no mutation) =="
+STATUS=$(curl -s -o /tmp/overconsume_response.json -w '%{http_code}' -X POST "$BASE/api/stock/$OVERCONSUME_ENTRY_ID/consume" \
+  -H 'content-type: application/json' \
+  -d '{"amount": 2}')
+cat /tmp/overconsume_response.json
+echo "status=$STATUS"
+case "$STATUS" in
+  4??) : ;;
+  *) echo "FAIL: expected a 4xx status consuming more than available, got $STATUS"; exit 1 ;;
+esac
+
+echo "== stock: entry must still exist with amount 1 (rejection left it untouched) =="
+ENTRY_AMOUNT=$(curl -sf "$BASE/api/stock?product_id=$OVERCONSUME_PRODUCT_ID" | jq -r '.[0].amount')
+[ "$ENTRY_AMOUNT" = "1.0" ] || { echo "FAIL: expected entry amount to stay 1.0 after rejected over-consume, got $ENTRY_AMOUNT"; exit 1; }
+
+echo "== consumption-log: no row should have been written by the rejected over-consume =="
+LOG_COUNT_AFTER=$(curl -sf "$BASE/api/consumption-log" \
+  | jq --argjson pid "$OVERCONSUME_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
+[ "$LOG_COUNT_AFTER" = "0" ] || { echo "FAIL: expected 0 consumption-log rows after rejected over-consume, got $LOG_COUNT_AFTER"; exit 1; }
+
+echo "== stock: partial consume (0.4 of 1.0) still works =="
+curl -sf -X POST "$BASE/api/stock/$OVERCONSUME_ENTRY_ID/consume" \
+  -H 'content-type: application/json' \
+  -d '{"amount": 0.4}' | jq .
+PARTIAL_AMOUNT=$(curl -sf "$BASE/api/stock?product_id=$OVERCONSUME_PRODUCT_ID" | jq -r '.[0].amount')
+[ "$PARTIAL_AMOUNT" = "0.6" ] || { echo "FAIL: expected 0.6 remaining after partial consume, got $PARTIAL_AMOUNT"; exit 1; }
+
+echo "== stock: exact consume of the remaining 0.6 clears the entry =="
+EXACT_RESPONSE=$(curl -sf -X POST "$BASE/api/stock/$OVERCONSUME_ENTRY_ID/consume" \
+  -H 'content-type: application/json' \
+  -d '{"amount": 0.6}')
+[ "$EXACT_RESPONSE" = "null" ] \
+  || { echo "FAIL: expected exact consume-to-zero to clear the entry (null response), got $EXACT_RESPONSE"; exit 1; }
+FINAL_COUNT=$(curl -sf "$BASE/api/stock?product_id=$OVERCONSUME_PRODUCT_ID" | jq 'length')
+[ "$FINAL_COUNT" = "0" ] || { echo "FAIL: expected 0 stock entries after exact consume, got $FINAL_COUNT"; exit 1; }
+
+echo "== stock: concurrent over-consume can't together log more than was ever there (#156) =="
+RACE_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$OVERCONSUME_PRODUCT_ID"', "amount": 1.0}' | jq -r .id)
+echo "created race entry $RACE_ENTRY_ID"
+curl -s -o /tmp/race_1.json -w '%{http_code}' -X POST "$BASE/api/stock/$RACE_ENTRY_ID/consume" \
+  -H 'content-type: application/json' -d '{"amount": 0.6}' > /tmp/race_1_status.txt &
+curl -s -o /tmp/race_2.json -w '%{http_code}' -X POST "$BASE/api/stock/$RACE_ENTRY_ID/consume" \
+  -H 'content-type: application/json' -d '{"amount": 0.6}' > /tmp/race_2_status.txt &
+wait
+echo "race #1 -> $(cat /tmp/race_1_status.txt): $(cat /tmp/race_1.json)"
+echo "race #2 -> $(cat /tmp/race_2_status.txt): $(cat /tmp/race_2.json)"
+RACE_STATUSES="$(cat /tmp/race_1_status.txt) $(cat /tmp/race_2_status.txt)"
+case "$RACE_STATUSES" in
+  "200 200") echo "FAIL: both concurrent 0.6-of-1.0 consumes succeeded -- over-consumed"; exit 1 ;;
+esac
+RACE_LOG_TOTAL=$(curl -sf "$BASE/api/consumption-log" \
+  | jq --argjson pid "$OVERCONSUME_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | map(.amount) | add')
+# 0.4 (partial) + 0.6 (exact-to-zero) from the checks above, plus exactly one
+# 0.6 from whichever of the two concurrent requests won the race -- never
+# both, which would double-log to 2.2.
+[ "$RACE_LOG_TOTAL" = "1.6" ] \
+  || { echo "FAIL: expected total logged consumption for this product to be 1.6 (0.4 + 0.6 from above, plus 0.6 from the race winner), got $RACE_LOG_TOTAL"; exit 1; }
+
 echo "== consumption-log/export.csv: row count matches JSON list, header + Milk's 'used' entry present =="
 LOG_COUNT=$(curl -sf "$BASE/api/consumption-log" | jq 'length')
 EXPORTED_LOG_CSV=$(curl -sf "$BASE/api/consumption-log/export.csv")
