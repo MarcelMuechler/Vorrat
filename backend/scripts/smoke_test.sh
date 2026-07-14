@@ -136,6 +136,39 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/shopping-lis
   -H 'content-type: application/json' -d '{"done": true}')
 [ "$STATUS" = "404" ] || { echo "FAIL: expected 404 patching missing item, got $STATUS"; exit 1; }
 
+echo "== shopping-list: create name-only item for merged-invariant patch checks =="
+INVARIANT_ITEM_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"name": "temporary"}' | jq -r .id)
+echo "created shopping list item $INVARIANT_ITEM_ID (name-only)"
+
+echo "== shopping-list: patch that would null out both product_id and name (expect 4xx, not 200) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/shopping-list/$INVARIANT_ITEM_ID" \
+  -H 'content-type: application/json' -d '{"product_id": null, "name": null}')
+case "$STATUS" in
+  4??) ;;
+  *) echo "FAIL: expected a 4xx nulling out both product_id and name, got $STATUS"; exit 1 ;;
+esac
+
+echo "== shopping-list: verify the rejected patch left the item unchanged =="
+UNCHANGED=$(curl -sf "$BASE/api/shopping-list" | jq -c --argjson id "$INVARIANT_ITEM_ID" '.[] | select(.id == $id)')
+echo "$UNCHANGED"
+[ "$(echo "$UNCHANGED" | jq -r .name)" = "temporary" ] \
+  || { echo "FAIL: expected name still 'temporary' after rejected patch, got $UNCHANGED"; exit 1; }
+[ "$(echo "$UNCHANGED" | jq -r .product_id)" = "null" ] \
+  || { echo "FAIL: expected product_id still null after rejected patch, got $UNCHANGED"; exit 1; }
+
+echo "== shopping-list: valid transition from name-based to product_id-based succeeds =="
+curl -sf -X PATCH "$BASE/api/shopping-list/$INVARIANT_ITEM_ID" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"', "name": null}' | jq .
+SWITCHED=$(curl -sf "$BASE/api/shopping-list" | jq -c --argjson id "$INVARIANT_ITEM_ID" '.[] | select(.id == $id)')
+[ "$(echo "$SWITCHED" | jq -r .product_id)" = "$PRODUCT_ID" ] \
+  || { echo "FAIL: expected product_id=$PRODUCT_ID after valid transition, got $SWITCHED"; exit 1; }
+
+echo "== shopping-list: clean up invariant-check item =="
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$INVARIANT_ITEM_ID"
+
 echo "== shopping-list: add-low-stock is a no-op while product already has an open item =="
 RESULT=$(curl -sf -X POST "$BASE/api/shopping-list/add-low-stock")
 echo "$RESULT" | jq .
