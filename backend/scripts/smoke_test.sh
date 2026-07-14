@@ -211,4 +211,44 @@ echo "== consumption-log: its rows should be gone along with the product =="
 COUNT=$(curl -sf "$BASE/api/consumption-log" | jq --argjson pid "$FLOAT_PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
 [ "$COUNT" = "0" ] || { echo "FAIL: expected 0 consumption-log rows for deleted product, got $COUNT"; exit 1; }
 
+echo "== stock/import.csv: import a mix of matched-by-barcode, new-product+new-location, and a broken row =="
+BEFORE_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
+IMPORT_CSV=$(cat <<EOF
+product_name,barcode,location,amount,best_before_date
+Milk,1234567890123,Fridge,5,$FAR_DATE
+New Import Product,,New Import Location,2,$SOON_DATE
+Broken Row,,Fridge,notanumber,$SOON_DATE
+EOF
+)
+IMPORT_RESULT=$(curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$IMPORT_CSV")
+echo "$IMPORT_RESULT" | jq .
+[ "$(echo "$IMPORT_RESULT" | jq -r .imported)" = "2" ] \
+  || { echo "FAIL: expected imported=2, got $IMPORT_RESULT"; exit 1; }
+[ "$(echo "$IMPORT_RESULT" | jq '.errors | length')" = "1" ] \
+  || { echo "FAIL: expected 1 error, got $IMPORT_RESULT"; exit 1; }
+[ "$(echo "$IMPORT_RESULT" | jq -r '.errors[0].row')" = "3" ] \
+  || { echo "FAIL: expected error on row 3, got $IMPORT_RESULT"; exit 1; }
+
+echo "== stock/import.csv: resulting stock reflects both imported rows =="
+AFTER_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
+[ "$AFTER_COUNT" = "$((BEFORE_COUNT + 2))" ] \
+  || { echo "FAIL: expected $((BEFORE_COUNT + 2)) stock entries after import, got $AFTER_COUNT"; exit 1; }
+MATCHED_COUNT=$(curl -sf "$BASE/api/stock?product_id=$PRODUCT_ID" | jq '[.[] | select(.amount == 5)] | length')
+[ "$MATCHED_COUNT" = "1" ] \
+  || { echo "FAIL: expected imported row matched Milk by barcode with amount 5"; exit 1; }
+NEW_PRODUCT_COUNT=$(curl -sf "$BASE/api/stock?search=New%20Import%20Product" \
+  | jq '[.[] | select(.location_name == "New Import Location" and .amount == 2)] | length')
+[ "$NEW_PRODUCT_COUNT" = "1" ] \
+  || { echo "FAIL: expected new product+location to be created from import"; exit 1; }
+
+echo "== stock/export.csv -> stock/import.csv: round-trip should re-import with zero errors =="
+EXPORT_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
+EXPORTED_CSV=$(curl -sf "$BASE/api/stock/export.csv")
+ROUNDTRIP_RESULT=$(curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$EXPORTED_CSV")
+echo "$ROUNDTRIP_RESULT" | jq .
+[ "$(echo "$ROUNDTRIP_RESULT" | jq -r .imported)" = "$EXPORT_COUNT" ] \
+  || { echo "FAIL: expected round-trip import=$EXPORT_COUNT, got $ROUNDTRIP_RESULT"; exit 1; }
+[ "$(echo "$ROUNDTRIP_RESULT" | jq '.errors | length')" = "0" ] \
+  || { echo "FAIL: expected zero errors round-tripping export.csv, got $ROUNDTRIP_RESULT"; exit 1; }
+
 echo "OK"
