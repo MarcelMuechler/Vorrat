@@ -166,7 +166,10 @@ def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depen
     db.add(
         ConsumptionLog(product_id=entry.product_id, amount=payload.amount, reason=payload.reason)
     )
-    if entry.amount <= 0:
+    # Repeated float subtraction (e.g. ten 0.1 consumes) can leave a tiny
+    # non-zero residue instead of an exact 0, so treat anything below this
+    # epsilon as fully consumed rather than leaving a ghost entry behind.
+    if entry.amount <= 1e-9:
         db.delete(entry)
         db.commit()
         return None
