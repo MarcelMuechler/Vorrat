@@ -9,8 +9,8 @@ import '../models/models.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
 import '../state/stock_provider.dart';
+import '../widgets/add_batch_sheet.dart';
 import 'pending_scans_screen.dart';
-import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 import 'scan_history_screen.dart';
 
@@ -133,18 +133,25 @@ class _ScanScreenState extends State<ScanScreen> {
       if (!mounted) return;
       if (_mode == ScanMode.add) {
         final existing = result.localProduct;
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            // A barcode that already matches a local product might have
-            // stock on hand to consume/discard/mark opened -- not just more
-            // to add (#56). ProductBatchesScreen covers all of that (plus
-            // adding a new batch via its own FAB) and degrades gracefully to
-            // an add-only empty state if this product currently has none.
-            builder: (_) => existing != null
-                ? ProductBatchesScreen(productId: existing.id, productName: existing.name)
-                : ProductDetailScreen(barcode: code, prefill: result.prefill),
-          ),
-        );
+        if (existing != null) {
+          // Known product: stay on this screen and add a batch inline via a
+          // bottom sheet (#98) instead of a full-screen round trip -- the
+          // other three modes already act in place, and Add was the odd one
+          // out for someone unloading a full grocery haul. Unknown barcodes
+          // still need the full ProductDetailScreen form below, since there's
+          // a whole product to create first.
+          final added = await AddBatchSheet.show(context, existing);
+          if (!mounted) return;
+          if (added == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context)!.addedToStockMessage(existing.name))),
+            );
+          }
+        } else {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => ProductDetailScreen(barcode: code, prefill: result.prefill)),
+          );
+        }
       } else {
         await _actOnScan(api, result);
       }
