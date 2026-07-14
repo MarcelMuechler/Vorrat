@@ -19,6 +19,7 @@
   "consumeButton": "Consume",
   "lookUpButton": "Look up",
   "closeButton": "Close",
+  "undoButton": "Undo",
   "usedLabel": "Used",
   "spoiledLabel": "Spoiled",
   "nameLabel": "Name",
@@ -96,6 +97,10 @@
   },
   "couldNotDeleteStockEntry": "Could not delete: {error}",
   "@couldNotDeleteStockEntry": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotUndo": "Could not undo: {error}",
+  "@couldNotUndo": {
     "placeholders": { "error": { "type": "String" } }
   },
 
@@ -380,6 +385,10 @@
   "couldNotDeleteShoppingListItem": "Could not delete: {error}",
   "@couldNotDeleteShoppingListItem": {
     "placeholders": { "error": { "type": "String" } }
+  },
+  "shoppingListItemDeleted": "Deleted \"{name}\".",
+  "@shoppingListItemDeleted": {
+    "placeholders": { "name": { "type": "String" } }
   },
   "addLowStockTooltip": "Add low stock",
   "lowStockAddedCount": "{count, plural, =0{No low-stock items to add.} =1{Added 1 item.} other{Added {count} items.}}",

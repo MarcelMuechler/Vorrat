@@ -194,6 +194,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get closeButton;
 
+  /// No description provided for @undoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undoButton;
+
   /// No description provided for @usedLabel.
   ///
   /// In en, this message translates to:
@@ -499,6 +505,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete: {error}'**
   String couldNotDeleteStockEntry(String error);
+
+  /// No description provided for @couldNotUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not undo: {error}'**
+  String couldNotUndo(String error);
 
   /// No description provided for @expiryToday.
   ///
@@ -1267,6 +1279,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete: {error}'**
   String couldNotDeleteShoppingListItem(String error);
+
+  /// No description provided for @shoppingListItemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted \"{name}\".'**
+  String shoppingListItemDeleted(String name);
 
   /// No description provided for @addLowStockTooltip.
   ///

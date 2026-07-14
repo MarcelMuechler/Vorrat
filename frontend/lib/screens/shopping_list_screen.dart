@@ -116,6 +116,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     try {
       await context.read<ApiClient>().deleteShoppingListItem(item.id);
       if (mounted) setState(() => _items.removeWhere((i) => i.id == item.id));
+      if (mounted) _showUndoDeleteSnackBar(item);
       return true;
     } catch (e) {
       if (mounted) {
@@ -125,6 +126,42 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteShoppingListItem('$e'))));
       }
       return false;
+    }
+  }
+
+  void _showUndoDeleteSnackBar(ShoppingListItem item) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.shoppingListItemDeleted(item.name)),
+        action: SnackBarAction(label: l10n.undoButton, onPressed: () => _undoDelete(item)),
+      ),
+    );
+  }
+
+  // Re-creates the item with its previous fields (#137) -- not a true undo:
+  // it gets a new id and lands wherever a freshly-created item sorts (newest
+  // open items first), so its position in the list may differ from before
+  // the swipe, and a product-linked item's amount/unit are re-sent
+  // explicitly even though they were originally inherited from the product.
+  Future<void> _undoDelete(ShoppingListItem item) async {
+    try {
+      final api = context.read<ApiClient>();
+      final restored = await api.createShoppingListItem(
+        productId: item.productId,
+        name: item.productId == null ? item.name : null,
+        amount: item.amount,
+        unit: item.unit,
+      );
+      if (item.done) {
+        await api.updateShoppingListItem(restored.id, {'done': true});
+      }
+      if (mounted) await _refresh();
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.couldNotUndo('$e'))));
+      }
     }
   }
 

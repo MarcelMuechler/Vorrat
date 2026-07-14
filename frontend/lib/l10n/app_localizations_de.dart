@@ -57,6 +57,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get closeButton => 'Schließen';
 
   @override
+  String get undoButton => 'Rückgängig';
+
+  @override
   String get usedLabel => 'Verbraucht';
 
   @override
@@ -226,6 +229,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String couldNotDeleteStockEntry(String error) {
     return 'Löschen fehlgeschlagen: $error';
+  }
+
+  @override
+  String couldNotUndo(String error) {
+    return 'Rückgängig machen fehlgeschlagen: $error';
   }
 
   @override
@@ -759,6 +767,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String couldNotDeleteShoppingListItem(String error) {
     return 'Konnte nicht gelöscht werden: $error';
+  }
+
+  @override
+  String shoppingListItemDeleted(String name) {
+    return '\"$name\" gelöscht.';
   }
 
   @override

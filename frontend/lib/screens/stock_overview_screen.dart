@@ -383,6 +383,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   ) async {
     try {
       await stock.consume(item.id, amount, reason: reason);
+      if (context.mounted) _showUndoConsumeSnackBar(context, stock, item, amount, reason);
       return true;
     } catch (e) {
       if (context.mounted) {
@@ -392,6 +393,42 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotConsume('$e'))));
       }
       return false;
+    }
+  }
+
+  // A swipe (or the Use/Spoil buttons) consumes/discards a whole batch with
+  // no confirmation dialog (#75/#137) -- give it an Undo instead, which
+  // re-adds the batch (see StockProvider.restoreConsumed for the exact
+  // semantics and its caveat).
+  void _showUndoConsumeSnackBar(
+    BuildContext context,
+    StockProvider stock,
+    StockItem item,
+    double amount,
+    String reason,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          reason == 'spoiled' ? l10n.scannedDiscarded(item.productName) : l10n.scannedUsed(item.productName),
+        ),
+        action: SnackBarAction(
+          label: l10n.undoButton,
+          onPressed: () => _undoConsume(context, stock, item, amount),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _undoConsume(BuildContext context, StockProvider stock, StockItem item, double amount) async {
+    try {
+      await stock.restoreConsumed(item, amount);
+    } catch (e) {
+      if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.couldNotUndo('$e'))));
+      }
     }
   }
 
