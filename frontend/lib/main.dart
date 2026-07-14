@@ -94,6 +94,10 @@ List<_Tab> _allTabs(BuildContext context) {
 /// above it, a side [NavigationRail] is used instead (#135).
 const double _wideLayoutBreakpoint = 700;
 
+/// Main content is centered and capped at this width on wide screens so text
+/// and lists don't stretch uncomfortably far (#135).
+const double _contentMaxWidth = 900;
+
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -118,7 +122,12 @@ class _HomeShellState extends State<HomeShell> {
         ? Badge(label: Text('$pendingScans'), child: Icon(t.icon))
         : Icon(t.icon);
 
-    final content = tabs[index].screen;
+    final content = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+        child: tabs[index].screen,
+      ),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
