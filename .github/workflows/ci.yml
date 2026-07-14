@@ -70,6 +70,15 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: '1'
+          # tempio is bashio's Go templating binary, bundled by the upstream
+          # ghcr.io/home-assistant/base image itself (not something vorrat's
+          # Dockerfile installs or can independently patch/upgrade). Its
+          # findings are all in golang.org/x/crypto/ssh, an SSH *client*
+          # library — vorrat's container never invokes tempio's SSH code
+          # path, so these findings aren't reachable through anything this
+          # image actually does. Everything else in the image (our own
+          # Python deps, Alpine packages) stays fully scanned.
+          skip-files: /usr/bin/tempio
 
       # Run the actual production image the way README.md's "Running standalone via
       # Docker" section documents (-v ...:/data — the run script's `alembic upgrade
