@@ -2,8 +2,9 @@ import csv
 import io
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.db import get_db
@@ -14,9 +15,10 @@ from app.schemas import (
     StockEntryCreate,
     StockEntryRead,
     StockEntryUpdate,
+    StockImportResult,
     StockOverviewItem,
 )
-from app.utils import escape_like
+from app.utils import escape_like, normalize_barcode
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
@@ -130,6 +132,119 @@ def export_stock_csv(db: Session = Depends(get_db)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=stock.csv"},
     )
+
+
+def _resolve_location(db: Session, name: str, cache: dict[str, Location]) -> Location:
+    key = name.lower()
+    if key in cache:
+        return cache[key]
+    location = db.query(Location).filter(func.lower(Location.name) == key).first()
+    if location is None:
+        location = Location(name=name)
+        db.add(location)
+        db.flush()
+    cache[key] = location
+    return location
+
+
+def _resolve_product(
+    db: Session, name: str, barcode: str | None, cache: dict[str, Product]
+) -> Product:
+    # Barcode wins when present (it's the more precise match); a cache keyed
+    # by barcode/name is required in addition to the DB lookup so that two
+    # rows in the same import that both introduce the same new product don't
+    # each try to INSERT it and collide on the unique barcode/violate intent.
+    if barcode:
+        key = f"barcode:{barcode}"
+        if key in cache:
+            return cache[key]
+        product = db.query(Product).filter(Product.barcode == barcode).first()
+        if product is None:
+            product = Product(name=name, barcode=barcode)
+            db.add(product)
+            db.flush()
+        cache[key] = product
+        return product
+
+    key = f"name:{name.lower()}"
+    if key in cache:
+        return cache[key]
+    product = db.query(Product).filter(func.lower(Product.name) == name.lower()).first()
+    if product is None:
+        product = Product(name=name)
+        db.add(product)
+        db.flush()
+    cache[key] = product
+    return product
+
+
+@router.post("/import.csv", response_model=StockImportResult)
+async def import_stock_csv(request: Request, db: Session = Depends(get_db)):
+    """Accepts the CSV as a raw request body (not multipart) -- the simplest
+    shape for both `curl --data-binary @file.csv` and Flutter's `http.post`.
+    Column shape matches export_stock_csv above so export -> import
+    round-trips; the trailing `status` column from the export is derived and
+    simply ignored on the way back in.
+
+    Every row is attempted independently: a bad row is recorded in `errors`
+    (row numbers are 1-based over the data rows, i.e. excluding the header)
+    and does not stop the rest of the file from importing."""
+    body = await request.body()
+    text = body.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+
+    location_cache: dict[str, Location] = {}
+    product_cache: dict[str, Product] = {}
+    imported = 0
+    errors = []
+
+    for row_number, row in enumerate(reader, start=1):
+        try:
+            name = (row.get("product_name") or "").strip()
+            if not name:
+                raise ValueError("product_name is required")
+
+            barcode = normalize_barcode(row.get("barcode"))
+
+            amount_raw = (row.get("amount") or "").strip()
+            if not amount_raw:
+                raise ValueError("amount is required")
+            try:
+                amount = float(amount_raw)
+            except ValueError:
+                raise ValueError(f"invalid amount: {amount_raw!r}") from None
+            if amount <= 0:
+                raise ValueError(f"amount must be greater than 0: {amount_raw!r}")
+
+            best_before_raw = (row.get("best_before_date") or "").strip()
+            best_before_date = None
+            if best_before_raw:
+                try:
+                    best_before_date = date.fromisoformat(best_before_raw)
+                except ValueError:
+                    raise ValueError(f"invalid best_before_date: {best_before_raw!r}") from None
+
+            location_raw = (row.get("location") or "").strip()
+            location_id = None
+            if location_raw:
+                location_id = _resolve_location(db, location_raw, location_cache).id
+
+            product = _resolve_product(db, name, barcode, product_cache)
+
+            entry = StockEntry(
+                product_id=product.id,
+                location_id=location_id,
+                amount=amount,
+                best_before_date=best_before_date,
+            )
+            db.add(entry)
+            db.flush()
+            imported += 1
+        except ValueError as exc:
+            errors.append({"row": row_number, "error": str(exc)})
+
+    db.commit()
+    return {"imported": imported, "errors": errors}
 
 
 @router.post("", response_model=StockEntryRead, status_code=201)

@@ -137,6 +137,16 @@ class StockOverviewItem(StockEntryRead):
     status: str
 
 
+class StockImportRowError(BaseModel):
+    row: int
+    error: str
+
+
+class StockImportResult(BaseModel):
+    imported: int
+    errors: list[StockImportRowError]
+
+
 class ConsumptionLogRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
