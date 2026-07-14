@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'Look up'**
   String get lookUpButton;
 
+  /// No description provided for @closeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeButton;
+
   /// No description provided for @usedLabel.
   ///
   /// In en, this message translates to:
@@ -1022,6 +1028,12 @@ abstract class AppLocalizations {
   /// **'Could not export: {error}'**
   String couldNotExport(String error);
 
+  /// No description provided for @couldNotImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import: {error}'**
+  String couldNotImport(String error);
+
   /// No description provided for @serverUrlDescription.
   ///
   /// In en, this message translates to:
@@ -1087,6 +1099,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download current stock as a spreadsheet'**
   String get exportCsvSubtitle;
+
+  /// No description provided for @importCsvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import stock (CSV)'**
+  String get importCsvTitle;
+
+  /// No description provided for @importCsvSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add stock from a spreadsheet in the same format as the export'**
+  String get importCsvSubtitle;
+
+  /// No description provided for @importResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import complete'**
+  String get importResultTitle;
+
+  /// No description provided for @importedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No rows imported.} =1{1 row imported.} other{{count} rows imported.}}'**
+  String importedCount(int count);
+
+  /// No description provided for @importErrorsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 row could not be imported:} other{{count} rows could not be imported:}}'**
+  String importErrorsHeading(int count);
+
+  /// No description provided for @importRowError.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {row}: {error}'**
+  String importRowError(int row, String error);
 
   /// No description provided for @spoiledThisMonth.
   ///

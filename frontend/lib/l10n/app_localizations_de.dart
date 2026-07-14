@@ -48,6 +48,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lookUpButton => 'Nachschlagen';
 
   @override
+  String get closeButton => 'Schließen';
+
+  @override
   String get usedLabel => 'Verbraucht';
 
   @override
@@ -585,6 +588,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String couldNotImport(String error) {
+    return 'Import fehlgeschlagen: $error';
+  }
+
+  @override
   String get serverUrlDescription =>
       'Server-URL. Leer lassen, wenn innerhalb von Home Assistant (gleicher Ursprung via Ingress) ausgeführt. Native Apps und lokale Entwicklung benötigen die vollständige URL, z. B. http://192.168.1.20:8099';
 
@@ -621,6 +629,44 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exportCsvSubtitle => 'Aktuellen Bestand als Tabelle herunterladen';
+
+  @override
+  String get importCsvTitle => 'Bestand importieren (CSV)';
+
+  @override
+  String get importCsvSubtitle =>
+      'Bestand aus einer Tabelle im Format des Exports hinzufügen';
+
+  @override
+  String get importResultTitle => 'Import abgeschlossen';
+
+  @override
+  String importedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Zeilen importiert.',
+      one: '1 Zeile importiert.',
+      zero: 'Keine Zeilen importiert.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importErrorsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Zeilen konnten nicht importiert werden:',
+      one: '1 Zeile konnte nicht importiert werden:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importRowError(int row, String error) {
+    return 'Zeile $row: $error';
+  }
 
   @override
   String spoiledThisMonth(int count) {

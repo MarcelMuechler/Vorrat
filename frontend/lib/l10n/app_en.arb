@@ -16,6 +16,7 @@
   "removeButton": "Remove",
   "consumeButton": "Consume",
   "lookUpButton": "Look up",
+  "closeButton": "Close",
   "usedLabel": "Used",
   "spoiledLabel": "Spoiled",
   "nameLabel": "Name",
@@ -309,6 +310,10 @@
   "@couldNotExport": {
     "placeholders": { "error": { "type": "String" } }
   },
+  "couldNotImport": "Could not import: {error}",
+  "@couldNotImport": {
+    "placeholders": { "error": { "type": "String" } }
+  },
   "serverUrlDescription": "Server URL. Leave blank when running inside Home Assistant (same-origin via Ingress). Native apps and local dev need the full URL, e.g. http://192.168.1.20:8099",
   "serverUrlLabel": "Server URL",
   "barcodeScanningTitle": "Barcode scanning",
@@ -320,6 +325,24 @@
   "expiringSoonDescription": "\"Expiring soon\" applies to items due within this many days.",
   "exportCsvTitle": "Export stock (CSV)",
   "exportCsvSubtitle": "Download current stock as a spreadsheet",
+  "importCsvTitle": "Import stock (CSV)",
+  "importCsvSubtitle": "Add stock from a spreadsheet in the same format as the export",
+  "importResultTitle": "Import complete",
+  "importedCount": "{count, plural, =0{No rows imported.} =1{1 row imported.} other{{count} rows imported.}}",
+  "@importedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "importErrorsHeading": "{count, plural, =1{1 row could not be imported:} other{{count} rows could not be imported:}}",
+  "@importErrorsHeading": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "importRowError": "Row {row}: {error}",
+  "@importRowError": {
+    "placeholders": {
+      "row": { "type": "int" },
+      "error": { "type": "String" }
+    }
+  },
   "spoiledThisMonth": "{count, plural, =0{Nothing marked spoiled this month.} =1{1 batch marked spoiled this month.} other{{count} batches marked spoiled this month.}}",
   "@spoiledThisMonth": {
     "placeholders": { "count": { "type": "int" } }
