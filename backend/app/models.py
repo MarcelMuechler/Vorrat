@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, String, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -82,6 +82,28 @@ class StockEntry(Base):
 
     product: Mapped[Product] = relationship()
     location: Mapped[Location | None] = relationship()
+
+
+class ShoppingListItem(Base):
+    """A to-buy list, separate from stock -- product_id links back to a known
+    Product (for a resolved display name/unit), but name is a free-text
+    fallback/override so a one-off item ("birthday candles") doesn't need a
+    Product created just to go on the list. Enforcing "product_id or name"
+    is left to the Pydantic create schema rather than a DB constraint, matching
+    how validation elsewhere in this codebase favors the API layer over
+    SQLite CHECK constraints."""
+
+    __tablename__ = "shopping_list_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"), nullable=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    amount: Mapped[float] = mapped_column(Float, default=1)
+    unit: Mapped[str | None] = mapped_column(String, nullable=True)
+    done: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    product: Mapped[Product | None] = relationship()
 
 
 class ConsumptionLog(Base):
