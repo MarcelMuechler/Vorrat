@@ -206,9 +206,10 @@ class ApiClient {
 
   /// Batches removed via [consumeStock] or [deleteStock] since [since] (if
   /// given), most-recent-first -- used for the "N wasted this month" summary.
-  Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, String? reason}) async {
+  Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, DateTime? until, String? reason}) async {
     final query = <String, String>{};
     if (since != null) query['since'] = since.toIso8601String().split('T').first;
+    if (until != null) query['until'] = until.toIso8601String().split('T').first;
     if (reason != null) query['reason'] = reason;
     final res = await http.get(_uri('/api/consumption-log', query));
     _checkOk(res);

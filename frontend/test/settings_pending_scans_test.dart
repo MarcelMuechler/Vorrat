@@ -18,7 +18,7 @@ class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
 
   @override
-  Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, String? reason}) async => [];
+  Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, DateTime? until, String? reason}) async => [];
 
   @override
   Future<int> getExpiringSoonDays() async => 3;
