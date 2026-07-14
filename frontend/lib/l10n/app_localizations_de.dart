@@ -539,6 +539,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get allSynced => 'Alle ausstehenden Scans synchronisiert.';
 
   @override
+  String pendingScansSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Barcodes warten auf Abgleich',
+      one: '1 Barcode wartet auf Abgleich',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get syncNowButton => 'Jetzt synchronisieren';
 
   @override

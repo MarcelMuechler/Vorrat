@@ -6,11 +6,13 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
+import '../state/scan_queue.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/open_url.dart';
 import 'categories_screen.dart';
 import 'locations_screen.dart';
+import 'pending_scans_screen.dart';
 import 'products_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -137,6 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final settings = context.watch<SettingsProvider>();
+    final pendingScans = context.watch<ScanQueue>().length;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: Padding(
@@ -217,6 +220,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: settings.offCategorySuggestionsEnabled,
               onChanged: settings.setOffCategorySuggestionsEnabled,
             ),
+            if (pendingScans > 0)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.pending_actions),
+                title: Text(l10n.pendingScans),
+                subtitle: Text(l10n.pendingScansSubtitle(pendingScans)),
+                trailing: Badge(
+                  label: Text('$pendingScans'),
+                  child: const Icon(Icons.chevron_right),
+                ),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PendingScansScreen()),
+                ),
+              ),
             const Divider(),
             ListTile(
               contentPadding: EdgeInsets.zero,

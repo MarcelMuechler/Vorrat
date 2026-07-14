@@ -283,6 +283,10 @@
     "placeholders": { "remaining": { "type": "int" } }
   },
   "allSynced": "All pending scans synced.",
+  "pendingScansSubtitle": "{count, plural, =1{1 barcode waiting to be looked up} other{{count} barcodes waiting to be looked up}}",
+  "@pendingScansSubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "syncNowButton": "Sync now",
   "nothingPending": "Nothing pending.",
   "queuedLabel": "Queued {date}",

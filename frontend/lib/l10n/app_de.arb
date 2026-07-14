@@ -157,6 +157,7 @@
   "lookupsFailedPending": "{failures, plural, =1{1 Abfrage fehlgeschlagen} other{{failures} Abfragen fehlgeschlagen}}; {remaining} noch ausstehend.",
   "stoppedStillOffline": "Angehalten -- weiterhin offline. {remaining} noch ausstehend.",
   "allSynced": "Alle ausstehenden Scans synchronisiert.",
+  "pendingScansSubtitle": "{count, plural, =1{1 Barcode wartet auf Abgleich} other{{count} Barcodes warten auf Abgleich}}",
   "syncNowButton": "Jetzt synchronisieren",
   "nothingPending": "Nichts ausstehend.",
   "queuedLabel": "Eingereiht am {date}",

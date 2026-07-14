@@ -962,6 +962,12 @@ abstract class AppLocalizations {
   /// **'All pending scans synced.'**
   String get allSynced;
 
+  /// No description provided for @pendingScansSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 barcode waiting to be looked up} other{{count} barcodes waiting to be looked up}}'**
+  String pendingScansSubtitle(int count);
+
   /// No description provided for @syncNowButton.
   ///
   /// In en, this message translates to:
