@@ -17,11 +17,20 @@ class FakeApiClient extends ApiClient {
     StockItem(id: 1, productId: 1, amount: 5, productName: 'Jam', status: 'ok'),
   ];
   List<Map<String, dynamic>> consumeCalls = [];
+  List<Map<String, dynamic>> addStockCalls = [];
   bool markedOpened = false;
 
   @override
   Future<BarcodeLookupResult> lookupBarcode(String code) async =>
       BarcodeLookupResult(source: 'local', localProduct: Product(id: 1, name: 'Jam', barcode: code));
+
+  @override
+  Future<List<Location>> listLocations() async => [];
+
+  @override
+  Future<void> addStock(Map<String, dynamic> payload) async {
+    addStockCalls.add(payload);
+  }
 
   @override
   Future<List<StockItem>> listStock({
@@ -147,5 +156,48 @@ void main() {
     // Mode selector is still showing "Use" as an available option -- the
     // scan screen itself, not some other flow, is still active.
     expect(find.text('Use'), findsOneWidget);
+  });
+
+  testWidgets('Add mode shows an inline sheet for a known product, no navigation', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    // Add is the default mode -- no need to switch segments first.
+    await _enterBarcode(tester, '1234567890123');
+
+    // The sheet appeared over the scan screen instead of pushing a route.
+    expect(find.text('Jam'), findsOneWidget);
+    expect(find.text('Scan'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Amount'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(api.addStockCalls, [
+      {'product_id': 1, 'location_id': null, 'amount': 1.0, 'best_before_date': null},
+    ]);
+    // Sheet dismissed, snackbar confirms, still on the Scan screen.
+    expect(find.text('Added "Jam" to stock.'), findsOneWidget);
+    expect(find.text('Scan'), findsOneWidget);
+  });
+
+  testWidgets('Cancelling the add-batch sheet saves nothing', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await _enterBarcode(tester, '1234567890123');
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(api.addStockCalls, isEmpty);
+    expect(find.text('Scan'), findsOneWidget);
   });
 }
