@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
@@ -11,13 +11,24 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 
 
 @router.get("", response_model=list[ProductRead])
-def list_products(search: str | None = None, barcode: str | None = None, db: Session = Depends(get_db)):
+def list_products(
+    search: str | None = None,
+    barcode: str | None = None,
+    limit: int | None = Query(None, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
     query = db.query(Product).options(joinedload(Product.category))
     if barcode:
         query = query.filter(Product.barcode == normalize_barcode(barcode))
     if search:
         query = query.filter(Product.name.ilike(f"%{escape_like(search)}%", escape="\\"))
-    return query.order_by(Product.name).all()
+    # Product.name isn't unique, so order by id as a tiebreaker to keep
+    # pagination stable across pages when multiple products share a name.
+    query = query.order_by(Product.name, Product.id).offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 @router.get("/{product_id}", response_model=ProductRead)

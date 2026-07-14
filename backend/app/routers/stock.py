@@ -2,7 +2,7 @@ import csv
 import io
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, contains_eager, joinedload
@@ -55,6 +55,8 @@ def _query_stock(
     search: str | None = None,
     expiring_within_days: int | None = None,
     category_id: int | None = None,
+    limit: int | None = None,
+    offset: int = 0,
 ) -> list[StockOverviewItem]:
     # join(Product) is already needed for filtering; contains_eager reuses
     # that same join to populate entry.product instead of lazy-loading it
@@ -82,8 +84,16 @@ def _query_stock(
         query = query.filter(Product.category_id == category_id)
 
     expiring_soon_days = get_app_settings(db).expiring_soon_days
+    # id is a tiebreaker so pagination stays stable across pages when
+    # multiple entries share the same best_before_date (or are all null).
+    # The joins above (Product, Location) are both to-one from StockEntry's
+    # side, so they never multiply rows -- OFFSET/LIMIT on this query paginate
+    # stock entries correctly without needing a subquery-on-ids workaround.
+    query = query.order_by(StockEntry.best_before_date.asc().nullslast(), StockEntry.id).offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
     items = []
-    for entry in query.order_by(StockEntry.best_before_date.asc().nullslast()).all():
+    for entry in query.all():
         items.append(
             StockOverviewItem(
                 **StockEntryRead.model_validate(entry).model_dump(),
@@ -110,9 +120,13 @@ def list_stock(
     search: str | None = None,
     expiring_within_days: int | None = None,
     category_id: int | None = None,
+    limit: int | None = Query(None, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    return _query_stock(db, location_id, product_id, search, expiring_within_days, category_id)
+    return _query_stock(
+        db, location_id, product_id, search, expiring_within_days, category_id, limit, offset
+    )
 
 
 @router.get("/export.csv")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -19,8 +19,17 @@ def _find_by_name_ci(db: Session, name: str) -> Category | None:
 
 
 @router.get("", response_model=list[CategoryRead])
-def list_categories(db: Session = Depends(get_db)):
-    return db.query(Category).order_by(Category.name).all()
+def list_categories(
+    limit: int | None = Query(None, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    # Category.name is unique (see _find_by_name_ci), so no tiebreaker is
+    # needed for stable ordering.
+    query = db.query(Category).order_by(Category.name).offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 @router.post("", response_model=CategoryRead, status_code=201)
