@@ -313,6 +313,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String addedToStockMessage(String name) {
+    return '\"$name\" zum Bestand hinzugefügt.';
+  }
+
+  @override
   String get newLocationTitle => 'Neuer Standort';
 
   @override

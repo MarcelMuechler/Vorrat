@@ -620,6 +620,12 @@ abstract class AppLocalizations {
   /// **'Discarded \"{name}\".'**
   String scannedDiscarded(String name);
 
+  /// No description provided for @addedToStockMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Added \"{name}\" to stock.'**
+  String addedToStockMessage(String name);
+
   /// No description provided for @newLocationTitle.
   ///
   /// In en, this message translates to:

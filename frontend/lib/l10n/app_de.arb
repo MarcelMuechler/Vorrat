@@ -93,6 +93,7 @@
   "scannedOpened": "\"{name}\" als geöffnet markiert.",
   "scannedUsed": "\"{name}\" verbraucht.",
   "scannedDiscarded": "\"{name}\" verworfen.",
+  "addedToStockMessage": "\"{name}\" zum Bestand hinzugefügt.",
 
   "newLocationTitle": "Neuer Standort",
   "couldNotAddLocation": "Standort konnte nicht hinzugefügt werden: {error}",

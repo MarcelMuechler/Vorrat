@@ -153,6 +153,10 @@
   "@scannedDiscarded": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "addedToStockMessage": "Added \"{name}\" to stock.",
+  "@addedToStockMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
 
   "newLocationTitle": "New location",
   "couldNotAddLocation": "Could not add location: {error}",
