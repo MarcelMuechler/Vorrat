@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.10.0](https://github.com/MarcelMuechler/vorrat/compare/v0.9.0...v0.10.0) (2026-07-14)
+
+
+### Features
+
+* add /api/stats summary endpoint for HA sensors ([#35](https://github.com/MarcelMuechler/vorrat/issues/35)) ([e6f5692](https://github.com/MarcelMuechler/vorrat/commit/e6f56921e7ecf491c8f72b90fe57d1dbf60b466d))
+* add shopping list CRUD router ([#88](https://github.com/MarcelMuechler/vorrat/issues/88)) ([fdd0752](https://github.com/MarcelMuechler/vorrat/commit/fdd07529c55e57002953e0e211157a0895012f20))
+* add shopping list model and API client methods ([#88](https://github.com/MarcelMuechler/vorrat/issues/88)) ([06250b7](https://github.com/MarcelMuechler/vorrat/commit/06250b74cb2a0d31e24d059774cb42af8a19c764))
+* add shopping list screen and tab ([#88](https://github.com/MarcelMuechler/vorrat/issues/88)) ([c6eaa8a](https://github.com/MarcelMuechler/vorrat/commit/c6eaa8af5ec5f6f02a7c12587f22059a6cc469d4))
+* add ShoppingListItem model and migration ([#88](https://github.com/MarcelMuechler/vorrat/issues/88)) ([de930c0](https://github.com/MarcelMuechler/vorrat/commit/de930c0cf78aa7205415ec0366cb0817a0bda001))
+
+
+### Bug Fixes
+
+* harden category resolution, swipe-consume, and scan-open against silent failures ([#84](https://github.com/MarcelMuechler/vorrat/issues/84)) ([385f53b](https://github.com/MarcelMuechler/vorrat/commit/385f53ba20fb3bbb4fd98cb92b5df1c48dd2c892))
+* tolerate concurrent seeding of the singleton app_settings row ([#78](https://github.com/MarcelMuechler/vorrat/issues/78)) ([#86](https://github.com/MarcelMuechler/vorrat/issues/86)) ([8a432d9](https://github.com/MarcelMuechler/vorrat/commit/8a432d9f7b581a4d72e52c6317d587537ced79a2))
+
 ## [0.9.0](https://github.com/MarcelMuechler/vorrat/compare/v0.8.0...v0.9.0) (2026-07-13)
 
 
