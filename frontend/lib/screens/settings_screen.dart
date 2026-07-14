@@ -420,7 +420,10 @@ class _QrConnectScannerState extends State<_QrConnectScanner> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.scanQrTitle)),
-      body: MobileScanner(onDetect: _onDetect),
+      body: MobileScanner(
+        onDetect: _onDetect,
+        errorBuilder: (context, error) => Center(child: Text(error.errorCode.message)),
+      ),
     );
   }
 }
