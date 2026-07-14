@@ -5,6 +5,7 @@ import 'api/client.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/scan_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/shopping_list_screen.dart';
 import 'screens/stock_overview_screen.dart';
 import 'state/scan_history.dart';
 import 'state/scan_queue.dart';
@@ -63,7 +64,7 @@ class VorratApp extends StatelessWidget {
   }
 }
 
-enum _AppTab { stock, scan, settings }
+enum _AppTab { stock, shopping, scan, settings }
 
 class _Tab {
   final _AppTab id;
@@ -80,6 +81,14 @@ List<_Tab> _allTabs(BuildContext context) {
       id: _AppTab.stock,
       screen: const StockOverviewScreen(),
       destination: NavigationDestination(icon: const Icon(Icons.kitchen), label: l10n.stockTitle),
+    ),
+    _Tab(
+      id: _AppTab.shopping,
+      screen: const ShoppingListScreen(),
+      destination: NavigationDestination(
+        icon: const Icon(Icons.shopping_cart_outlined),
+        label: l10n.shoppingListTitle,
+      ),
     ),
     _Tab(
       id: _AppTab.scan,
