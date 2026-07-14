@@ -1087,6 +1087,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan server QR code'**
   String get scanQrTitle;
+
+  /// No description provided for @shoppingListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping list'**
+  String get shoppingListTitle;
+
+  /// No description provided for @shoppingListAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item…'**
+  String get shoppingListAddHint;
+
+  /// No description provided for @shoppingListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shopping list is empty. Add an item using the field above.'**
+  String get shoppingListEmpty;
+
+  /// No description provided for @couldNotLoadShoppingList.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load shopping list: {error}'**
+  String couldNotLoadShoppingList(String error);
+
+  /// No description provided for @couldNotAddShoppingListItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add: {error}'**
+  String couldNotAddShoppingListItem(String error);
+
+  /// No description provided for @couldNotUpdateShoppingListItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update: {error}'**
+  String couldNotUpdateShoppingListItem(String error);
+
+  /// No description provided for @couldNotDeleteShoppingListItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete: {error}'**
+  String couldNotDeleteShoppingListItem(String error);
+
+  /// No description provided for @addLowStockTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add low stock'**
+  String get addLowStockTooltip;
+
+  /// No description provided for @lowStockAddedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No low-stock items to add.} =1{Added 1 item.} other{Added {count} items.}}'**
+  String lowStockAddedCount(int count);
+
+  /// No description provided for @couldNotAddLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add low-stock items: {error}'**
+  String couldNotAddLowStock(String error);
+
+  /// No description provided for @clearDoneTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear done'**
+  String get clearDoneTooltip;
+
+  /// No description provided for @clearedDoneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing to clear.} =1{Cleared 1 item.} other{Cleared {count} items.}}'**
+  String clearedDoneCount(int count);
+
+  /// No description provided for @couldNotClearDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear done items: {error}'**
+  String couldNotClearDone(Object error);
 }
 
 class _AppLocalizationsDelegate

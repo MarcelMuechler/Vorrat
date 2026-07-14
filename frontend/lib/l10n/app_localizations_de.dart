@@ -619,4 +619,74 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get scanQrTitle => 'Server-QR-Code scannen';
+
+  @override
+  String get shoppingListTitle => 'Einkaufsliste';
+
+  @override
+  String get shoppingListAddHint => 'Artikel hinzufügen…';
+
+  @override
+  String get shoppingListEmpty =>
+      'Die Einkaufsliste ist leer. Über das Feld oben einen Artikel hinzufügen.';
+
+  @override
+  String couldNotLoadShoppingList(String error) {
+    return 'Einkaufsliste konnte nicht geladen werden: $error';
+  }
+
+  @override
+  String couldNotAddShoppingListItem(String error) {
+    return 'Konnte nicht hinzugefügt werden: $error';
+  }
+
+  @override
+  String couldNotUpdateShoppingListItem(String error) {
+    return 'Konnte nicht aktualisiert werden: $error';
+  }
+
+  @override
+  String couldNotDeleteShoppingListItem(String error) {
+    return 'Konnte nicht gelöscht werden: $error';
+  }
+
+  @override
+  String get addLowStockTooltip => 'Niedrigen Bestand hinzufügen';
+
+  @override
+  String lowStockAddedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Artikel hinzugefügt.',
+      one: '1 Artikel hinzugefügt.',
+      zero: 'Keine Artikel mit niedrigem Bestand hinzuzufügen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String couldNotAddLowStock(String error) {
+    return 'Artikel mit niedrigem Bestand konnten nicht hinzugefügt werden: $error';
+  }
+
+  @override
+  String get clearDoneTooltip => 'Erledigte entfernen';
+
+  @override
+  String clearedDoneCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Artikel entfernt.',
+      one: '1 Artikel entfernt.',
+      zero: 'Nichts zu entfernen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String couldNotClearDone(Object error) {
+    return 'Erledigte Artikel konnten nicht entfernt werden: $error';
+  }
 }

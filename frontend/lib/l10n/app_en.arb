@@ -313,5 +313,40 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "pairDeviceHint": "Pair another device: open Settings → Scan to connect on it, then scan this code.",
-  "scanQrTitle": "Scan server QR code"
+  "scanQrTitle": "Scan server QR code",
+
+  "shoppingListTitle": "Shopping list",
+  "shoppingListAddHint": "Add an item…",
+  "shoppingListEmpty": "Your shopping list is empty. Add an item using the field above.",
+  "couldNotLoadShoppingList": "Could not load shopping list: {error}",
+  "@couldNotLoadShoppingList": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotAddShoppingListItem": "Could not add: {error}",
+  "@couldNotAddShoppingListItem": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotUpdateShoppingListItem": "Could not update: {error}",
+  "@couldNotUpdateShoppingListItem": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotDeleteShoppingListItem": "Could not delete: {error}",
+  "@couldNotDeleteShoppingListItem": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "addLowStockTooltip": "Add low stock",
+  "lowStockAddedCount": "{count, plural, =0{No low-stock items to add.} =1{Added 1 item.} other{Added {count} items.}}",
+  "@lowStockAddedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "couldNotAddLowStock": "Could not add low-stock items: {error}",
+  "@couldNotAddLowStock": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "clearDoneTooltip": "Clear done",
+  "clearedDoneCount": "{count, plural, =0{Nothing to clear.} =1{Cleared 1 item.} other{Cleared {count} items.}}",
+  "@clearedDoneCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "couldNotClearDone": "Could not clear done items: {error}"
 }

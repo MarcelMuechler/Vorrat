@@ -7,6 +7,7 @@ Self-hosted household stock/inventory management — a Grocy alternative.
 - Stock overview with best-before-date tracking
 - Barcode scanning (Android, iOS, Web)
 - Open Food Facts lookup for unknown products
+- Shopping list, with a one-tap "add low stock" shortcut
 - Deployable as a Home Assistant app, or standalone via Docker
 
 ## Layout

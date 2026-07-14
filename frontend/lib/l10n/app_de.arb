@@ -178,5 +178,19 @@
   "exportCsvSubtitle": "Aktuellen Bestand als Tabelle herunterladen",
   "spoiledThisMonth": "{count, plural, =0{Nichts als verdorben markiert diesen Monat.} =1{1 Charge diesen Monat als verdorben markiert.} other{{count} Chargen diesen Monat als verdorben markiert.}}",
   "pairDeviceHint": "Weiteres Gerät koppeln: Einstellungen → Scannen zum Verbinden öffnen und diesen Code scannen.",
-  "scanQrTitle": "Server-QR-Code scannen"
+  "scanQrTitle": "Server-QR-Code scannen",
+
+  "shoppingListTitle": "Einkaufsliste",
+  "shoppingListAddHint": "Artikel hinzufügen…",
+  "shoppingListEmpty": "Die Einkaufsliste ist leer. Über das Feld oben einen Artikel hinzufügen.",
+  "couldNotLoadShoppingList": "Einkaufsliste konnte nicht geladen werden: {error}",
+  "couldNotAddShoppingListItem": "Konnte nicht hinzugefügt werden: {error}",
+  "couldNotUpdateShoppingListItem": "Konnte nicht aktualisiert werden: {error}",
+  "couldNotDeleteShoppingListItem": "Konnte nicht gelöscht werden: {error}",
+  "addLowStockTooltip": "Niedrigen Bestand hinzufügen",
+  "lowStockAddedCount": "{count, plural, =0{Keine Artikel mit niedrigem Bestand hinzuzufügen.} =1{1 Artikel hinzugefügt.} other{{count} Artikel hinzugefügt.}}",
+  "couldNotAddLowStock": "Artikel mit niedrigem Bestand konnten nicht hinzugefügt werden: {error}",
+  "clearDoneTooltip": "Erledigte entfernen",
+  "clearedDoneCount": "{count, plural, =0{Nichts zu entfernen.} =1{1 Artikel entfernt.} other{{count} Artikel entfernt.}}",
+  "couldNotClearDone": "Erledigte Artikel konnten nicht entfernt werden: {error}"
 }

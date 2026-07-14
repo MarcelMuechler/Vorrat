@@ -615,4 +615,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanQrTitle => 'Scan server QR code';
+
+  @override
+  String get shoppingListTitle => 'Shopping list';
+
+  @override
+  String get shoppingListAddHint => 'Add an item…';
+
+  @override
+  String get shoppingListEmpty =>
+      'Your shopping list is empty. Add an item using the field above.';
+
+  @override
+  String couldNotLoadShoppingList(String error) {
+    return 'Could not load shopping list: $error';
+  }
+
+  @override
+  String couldNotAddShoppingListItem(String error) {
+    return 'Could not add: $error';
+  }
+
+  @override
+  String couldNotUpdateShoppingListItem(String error) {
+    return 'Could not update: $error';
+  }
+
+  @override
+  String couldNotDeleteShoppingListItem(String error) {
+    return 'Could not delete: $error';
+  }
+
+  @override
+  String get addLowStockTooltip => 'Add low stock';
+
+  @override
+  String lowStockAddedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count items.',
+      one: 'Added 1 item.',
+      zero: 'No low-stock items to add.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String couldNotAddLowStock(String error) {
+    return 'Could not add low-stock items: $error';
+  }
+
+  @override
+  String get clearDoneTooltip => 'Clear done';
+
+  @override
+  String clearedDoneCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Cleared $count items.',
+      one: 'Cleared 1 item.',
+      zero: 'Nothing to clear.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String couldNotClearDone(Object error) {
+    return 'Could not clear done items: $error';
+  }
 }
