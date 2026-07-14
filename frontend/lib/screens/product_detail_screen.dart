@@ -286,7 +286,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           labelText: l10n.amountFieldLabel,
                           border: const OutlineInputBorder(),
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       ),
                     ),
                     // The unit belongs to the Product, not this stock entry --
