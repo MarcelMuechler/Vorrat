@@ -129,3 +129,65 @@ docker run -d -p 8099:8099 -v vorrat-data:/data vorrat
 ```
 
 No authentication in v1 — intended for a trusted home network / Home Assistant Ingress.
+
+## Home Assistant sensors
+
+`GET /api/stats` returns a summary of your stock — no MQTT or custom HA integration needed,
+just Home Assistant's built-in [`rest:`](https://www.home-assistant.io/integrations/rest/)
+integration polling that one endpoint:
+
+```json
+{
+  "total_products": 42,
+  "total_stock_entries": 57,
+  "expired": 1,
+  "expiring_soon": 3,
+  "low_stock_products": 2,
+  "earliest_expiry": "2025-01-20"
+}
+```
+
+Ingress URLs aren't stable (Home Assistant mints a new per-session path each time), so point
+the sensor at the add-on's host:port instead — e.g. `http://homeassistant.local:8099` if
+you're running the HA add-on, or whatever host/port you published with `docker run -p`. For
+the add-on, the `8099/tcp` port must be exposed under the add-on's Network configuration
+(Settings → Add-ons → Vorrat → Configuration → Network) for this to be reachable — it's
+enabled by default in `vorrat/config.yaml`, but check it hasn't been turned off.
+
+Add this to `configuration.yaml` (or a package file), swapping in your own URL:
+
+```yaml
+rest:
+  - resource: http://homeassistant.local:8099/api/stats
+    scan_interval: 300
+    sensor:
+      - name: "Vorrat expired items"
+        value_template: "{{ value_json.expired }}"
+        unit_of_measurement: "items"
+      - name: "Vorrat expiring soon"
+        value_template: "{{ value_json.expiring_soon }}"
+        unit_of_measurement: "items"
+      - name: "Vorrat low stock products"
+        value_template: "{{ value_json.low_stock_products }}"
+        unit_of_measurement: "products"
+```
+
+And an example automation that notifies your phone when something has expired:
+
+```yaml
+automation:
+  - alias: "Notify on expired stock"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.vorrat_expired_items
+        above: 0
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          message: >
+            {{ states('sensor.vorrat_expired_items') }} item(s) in Vorrat have expired.
+```
+
+MQTT and a custom HA integration were both considered and rejected for v1 — `rest:` covers
+the "show a number, fire an automation" use case with nothing to run or maintain beyond this
+one endpoint.
