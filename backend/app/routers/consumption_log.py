@@ -58,9 +58,11 @@ def export_consumption_log_csv(
 ):
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["created_at", "product_name", "amount", "reason"])
+    writer.writerow(["created_at", "product_name", "amount", "quantity_unit", "reason"])
     for item in _query_consumption_log(db, since, until, reason):
-        writer.writerow([item.created_at, item.product_name, item.amount, item.reason])
+        writer.writerow(
+            [item.created_at, item.product_name, item.amount, item.quantity_unit or "", item.reason]
+        )
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",

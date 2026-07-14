@@ -154,6 +154,7 @@ class ConsumptionLogRead(BaseModel):
     product_id: int
     amount: float
     reason: str
+    quantity_unit: str | None = None
     created_at: datetime
 
 
