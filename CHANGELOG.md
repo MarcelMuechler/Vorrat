@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.11.0](https://github.com/MarcelMuechler/vorrat/compare/v0.10.0...v0.11.0) (2026-07-14)
+
+
+### Features
+
+* add AddBatchSheet widget for inline batch entry ([#98](https://github.com/MarcelMuechler/vorrat/issues/98)) ([241d177](https://github.com/MarcelMuechler/vorrat/commit/241d17718e77ab764efa156683794fb88ea377e4))
+* add CSV bulk import endpoint for stock ([#95](https://github.com/MarcelMuechler/vorrat/issues/95)) ([4432718](https://github.com/MarcelMuechler/vorrat/commit/443271848f8c14669b2d446e8b150025a4998744))
+* cache Open Food Facts lookups with a TTL ([#96](https://github.com/MarcelMuechler/vorrat/issues/96)) ([de774ff](https://github.com/MarcelMuechler/vorrat/commit/de774ffc214f66fea91f14b38b7c41c6a7e38dfd))
+* import stock from CSV on the Settings screen ([#95](https://github.com/MarcelMuechler/vorrat/issues/95)) ([44221a9](https://github.com/MarcelMuechler/vorrat/commit/44221a9bf4c58ebb30e850eae6ef5158955801ea))
+* keep Add mode on the scan screen for known products ([#98](https://github.com/MarcelMuechler/vorrat/issues/98)) ([44e212b](https://github.com/MarcelMuechler/vorrat/commit/44e212bab811d7258005a8d4384cb64894e31019))
+* make the Open Food Facts base URL configurable ([#97](https://github.com/MarcelMuechler/vorrat/issues/97)) ([94e4565](https://github.com/MarcelMuechler/vorrat/commit/94e4565c453b2b7c4ee78adb37eb32d04f820029))
+
+
+### Bug Fixes
+
+* clamp float residue when consuming stock to zero ([#92](https://github.com/MarcelMuechler/vorrat/issues/92)) ([47c22cd](https://github.com/MarcelMuechler/vorrat/commit/47c22cd6c493ed1c7667a9bfe81929286772ac45))
+* delete consumption log rows with their product ([#91](https://github.com/MarcelMuechler/vorrat/issues/91)) ([d9533c7](https://github.com/MarcelMuechler/vorrat/commit/d9533c759009bfab33e4b4f320e6ae7de40f3f89))
+* don't cache OFF network errors as not-found ([#96](https://github.com/MarcelMuechler/vorrat/issues/96)) ([9c04959](https://github.com/MarcelMuechler/vorrat/commit/9c049590e6b3e0ad328fa8d5592f3104b49ea4de))
+* handle location-load failure in the add-batch sheet ([#98](https://github.com/MarcelMuechler/vorrat/issues/98)) ([f95e43f](https://github.com/MarcelMuechler/vorrat/commit/f95e43f5c5a70448be5ccd2ded7b8133f59b8ab7))
+* keep pending scans reachable when the Scan tab is hidden ([#94](https://github.com/MarcelMuechler/vorrat/issues/94)) ([d283368](https://github.com/MarcelMuechler/vorrat/commit/d283368525848f7068935ed50ce48c5f3c63051d))
+* surface errors when deleting a stock entry ([#93](https://github.com/MarcelMuechler/vorrat/issues/93)) ([3adda0e](https://github.com/MarcelMuechler/vorrat/commit/3adda0ef972976946dcb445cf572cd5a9ba23ed3))
+
 ## [0.10.0](https://github.com/MarcelMuechler/vorrat/compare/v0.9.0...v0.10.0) (2026-07-14)
 
 
