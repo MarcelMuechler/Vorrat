@@ -6,7 +6,16 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
-from app.routers import barcode, categories, consumption_log, locations, products, settings, stock
+from app.routers import (
+    barcode,
+    categories,
+    consumption_log,
+    locations,
+    products,
+    settings,
+    stats,
+    stock,
+)
 
 app = FastAPI(title="Vorrat", version=__version__)
 print(f"Vorrat backend v{__version__} starting", flush=True)
@@ -28,6 +37,7 @@ app.include_router(stock.router)
 app.include_router(barcode.router)
 app.include_router(settings.router)
 app.include_router(consumption_log.router)
+app.include_router(stats.router)
 
 
 @app.get("/api/health")

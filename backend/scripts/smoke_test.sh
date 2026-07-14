@@ -77,4 +77,17 @@ curl -sf -X POST "$BASE/api/stock/$EXPIRED_ID/consume" \
 COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
 [ "$COUNT" = "2" ] || { echo "FAIL: expected 2 remaining stock entries after consume, got $COUNT"; exit 1; }
 
+echo "== stats: summary for HA sensors (expect 1 product, 2 stock entries, 0 expired, 1 expiring_soon) =="
+STATS=$(curl -sf "$BASE/api/stats")
+echo "$STATS" | jq .
+for key in total_products total_stock_entries expired expiring_soon low_stock_products earliest_expiry; do
+  echo "$STATS" | jq -e "has(\"$key\")" > /dev/null \
+    || { echo "FAIL: /api/stats response missing key $key"; exit 1; }
+done
+[ "$(echo "$STATS" | jq -r .total_products)" = "1" ] || { echo "FAIL: expected total_products=1"; exit 1; }
+[ "$(echo "$STATS" | jq -r .total_stock_entries)" = "2" ] || { echo "FAIL: expected total_stock_entries=2"; exit 1; }
+[ "$(echo "$STATS" | jq -r .expired)" = "0" ] || { echo "FAIL: expected expired=0"; exit 1; }
+[ "$(echo "$STATS" | jq -r .expiring_soon)" = "1" ] || { echo "FAIL: expected expiring_soon=1"; exit 1; }
+[ "$(echo "$STATS" | jq -r .earliest_expiry)" = "$SOON_DATE" ] || { echo "FAIL: expected earliest_expiry=$SOON_DATE"; exit 1; }
+
 echo "OK"

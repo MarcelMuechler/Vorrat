@@ -159,3 +159,12 @@ class AppSettingsRead(BaseModel):
 
 class AppSettingsUpdate(BaseModel):
     expiring_soon_days: int = Field(gt=0)
+
+
+class StatsRead(BaseModel):
+    total_products: int
+    total_stock_entries: int
+    expired: int
+    expiring_soon: int
+    low_stock_products: int
+    earliest_expiry: date | None
