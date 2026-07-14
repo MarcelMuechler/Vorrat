@@ -1,0 +1,13 @@
+services:
+  vorrat:
+    build:
+      context: .
+      dockerfile: vorrat/Dockerfile
+    ports:
+      - "8099:8099"
+    volumes:
+      - vorrat-data:/data
+    restart: unless-stopped
+
+volumes:
+  vorrat-data:

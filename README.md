@@ -129,6 +129,14 @@ docker build -f vorrat/Dockerfile -t vorrat .
 docker run -d -p 8099:8099 -v vorrat-data:/data vorrat
 ```
 
+Or with Docker Compose:
+
+```sh
+docker compose up -d
+```
+
+(See `docker-compose.yml` at the repo root for the compose configuration.)
+
 No authentication in v1 — intended for a trusted home network / Home Assistant Ingress.
 
 ## Home Assistant sensors
