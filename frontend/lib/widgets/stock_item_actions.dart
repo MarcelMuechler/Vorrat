@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../util/format.dart';
 import '../util/status.dart';
+import 'prompt_validated.dart';
 
 /// Wraps a stock batch's list tile with the shared interaction model (#75):
 /// tapping reveals Open/Use/Spoil buttons beneath it (Open only shown while
@@ -53,38 +54,18 @@ class _StockItemActionsState extends State<StockItemActions> {
 
   Future<double?> _promptAmount(String title) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: formatAmount(widget.amount));
-    String? errorText;
-    return showDialog<double>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(title),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: l10n.amountInStockLabel(formatAmount(widget.amount)),
-              errorText: errorText,
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-            FilledButton(
-              onPressed: () {
-                final amount = double.tryParse(controller.text);
-                if (amount == null || amount <= 0) {
-                  setState(() => errorText = l10n.amountInvalid);
-                  return;
-                }
-                Navigator.pop(context, amount);
-              },
-              child: Text(l10n.saveButton),
-            ),
-          ],
-        ),
-      ),
+    return promptValidated<double>(
+      context,
+      title: title,
+      actionLabel: l10n.saveButton,
+      initialText: formatAmount(widget.amount),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      labelText: l10n.amountInStockLabel(formatAmount(widget.amount)),
+      parse: (text) {
+        final amount = double.tryParse(text);
+        return (amount == null || amount <= 0) ? null : amount;
+      },
+      invalidMessage: l10n.amountInvalid,
     );
   }
 

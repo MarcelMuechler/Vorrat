@@ -8,6 +8,7 @@ import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
 import '../widgets/category_field.dart';
+import '../widgets/prompt_validated.dart';
 import '../widgets/quantity_unit_field.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -72,34 +73,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _addLocation() async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    String? errorText;
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(l10n.newLocationTitle),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(errorText: errorText),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-            FilledButton(
-              onPressed: () {
-                final name = controller.text.trim();
-                if (name.isEmpty) {
-                  setState(() => errorText = l10n.nameRequired);
-                  return;
-                }
-                Navigator.pop(context, name);
-              },
-              child: Text(l10n.addButton),
-            ),
-          ],
-        ),
-      ),
+    final name = await promptValidated<String>(
+      context,
+      title: l10n.newLocationTitle,
+      actionLabel: l10n.addButton,
+      parse: (text) => text.trim().isEmpty ? null : text.trim(),
+      invalidMessage: l10n.nameRequired,
     );
     if (name == null || !mounted) return;
     final api = context.read<ApiClient>();

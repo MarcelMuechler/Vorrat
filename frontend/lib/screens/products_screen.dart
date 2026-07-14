@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../widgets/refreshable_list.dart';
 import 'product_batches_screen.dart';
 import 'product_edit_screen.dart';
 
@@ -160,66 +161,39 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
             ),
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _refresh,
-                    child: _error != null
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(l10n.couldNotLoadProducts('$_error')),
-                              ),
-                            ],
-                          )
-                        : _visibleProducts.isEmpty
-                            ? ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                children: [
-                                  SizedBox(
-                                    height: MediaQuery.sizeOf(context).height * 0.45,
-                                    child: Center(child: Text(l10n.noProductsYet)),
-                                  ),
-                                ],
-                              )
-                            : ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                itemCount: _visibleProducts.length,
-                                separatorBuilder: (_, _) => const Divider(height: 1),
-                                itemBuilder: (context, index) {
-                                  final product = _visibleProducts[index];
-                                  return ListTile(
-                                    title: Text(product.name),
-                                    subtitle: product.barcode != null ? Text(product.barcode!) : null,
-                                    onTap: () => _edit(product),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.inventory_2_outlined),
-                                          tooltip: l10n.viewStockBatchesTooltip,
-                                          onPressed: () => Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) => ProductBatchesScreen(
-                                                productId: product.id,
-                                                productName: product.name,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete_outline),
-                                          tooltip: l10n.deleteButton,
-                                          onPressed: () => _delete(product),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                  ),
+            child: RefreshableList<Product>(
+              loading: _loading,
+              error: _error,
+              errorText: (e) => l10n.couldNotLoadProducts('$e'),
+              emptyText: l10n.noProductsYet,
+              items: _visibleProducts,
+              onRefresh: _refresh,
+              itemBuilder: (context, product) => ListTile(
+                title: Text(product.name),
+                subtitle: product.barcode != null ? Text(product.barcode!) : null,
+                onTap: () => _edit(product),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.inventory_2_outlined),
+                      tooltip: l10n.viewStockBatchesTooltip,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ProductBatchesScreen(productId: product.id, productName: product.name),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: l10n.deleteButton,
+                      onPressed: () => _delete(product),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),

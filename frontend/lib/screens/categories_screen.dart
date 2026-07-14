@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../widgets/prompt_validated.dart';
+import '../widgets/refreshable_list.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -42,7 +44,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Future<void> _addCategory() async {
     final l10n = AppLocalizations.of(context)!;
     final name = await _promptName(context, title: l10n.newCategoryTitle);
-    if (name == null || name.isEmpty || !mounted) return;
+    if (name == null || !mounted) return;
     try {
       await context.read<ApiClient>().createCategory(name);
       await _refresh();
@@ -58,7 +60,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Future<void> _rename(Category category) async {
     final l10n = AppLocalizations.of(context)!;
     final name = await _promptName(context, title: l10n.renameCategoryTitle, initialValue: category.name);
-    if (name == null || name.isEmpty || !mounted) return;
+    if (name == null || !mounted) return;
     try {
       await context.read<ApiClient>().renameCategory(category.id, name);
       await _refresh();
@@ -99,34 +101,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   static Future<String?> _promptName(BuildContext context, {required String title, String? initialValue}) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: initialValue);
-    String? errorText;
-    return showDialog<String>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(title),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(errorText: errorText),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancelButton)),
-            FilledButton(
-              onPressed: () {
-                final name = controller.text.trim();
-                if (name.isEmpty) {
-                  setState(() => errorText = l10n.nameRequired);
-                  return;
-                }
-                Navigator.pop(context, name);
-              },
-              child: Text(l10n.saveButton),
-            ),
-          ],
-        ),
-      ),
+    return promptValidated<String>(
+      context,
+      title: title,
+      actionLabel: l10n.saveButton,
+      initialText: initialValue,
+      parse: (text) => text.trim().isEmpty ? null : text.trim(),
+      invalidMessage: l10n.nameRequired,
     );
   }
 
@@ -135,57 +116,32 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.categoriesTitle)),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refresh,
-              child: _error != null
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(l10n.couldNotLoadCategories('$_error')),
-                        ),
-                      ],
-                    )
-                  : _categories.isEmpty
-                      ? ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            SizedBox(
-                              height: MediaQuery.sizeOf(context).height * 0.45,
-                              child: Center(child: Text(l10n.noCategoriesYet)),
-                            ),
-                          ],
-                        )
-                      : ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: _categories.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final category = _categories[index];
-                            return ListTile(
-                              title: Text(category.name),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    tooltip: l10n.renameTooltip,
-                                    onPressed: () => _rename(category),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    tooltip: l10n.deleteButton,
-                                    onPressed: () => _delete(category),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-            ),
+      body: RefreshableList<Category>(
+        loading: _loading,
+        error: _error,
+        errorText: (e) => l10n.couldNotLoadCategories('$e'),
+        emptyText: l10n.noCategoriesYet,
+        items: _categories,
+        onRefresh: _refresh,
+        itemBuilder: (context, category) => ListTile(
+          title: Text(category.name),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: l10n.renameTooltip,
+                onPressed: () => _rename(category),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: l10n.deleteButton,
+                onPressed: () => _delete(category),
+              ),
+            ],
+          ),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: l10n.addCategoryTooltip,
         onPressed: _addCategory,
