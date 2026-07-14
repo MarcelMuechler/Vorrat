@@ -90,4 +90,91 @@ done
 [ "$(echo "$STATS" | jq -r .expiring_soon)" = "1" ] || { echo "FAIL: expected expiring_soon=1"; exit 1; }
 [ "$(echo "$STATS" | jq -r .earliest_expiry)" = "$SOON_DATE" ] || { echo "FAIL: expected earliest_expiry=$SOON_DATE"; exit 1; }
 
+echo "== shopping-list: create by product_id =="
+ITEM_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRODUCT_ID"'}' | jq -r .id)
+echo "created shopping list item $ITEM_PRODUCT_ID (product-linked)"
+
+echo "== shopping-list: create by free text =="
+ITEM_TEXT_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Birthday candles", "amount": 2, "unit": "pcs"}' | jq -r .id)
+echo "created shopping list item $ITEM_TEXT_ID (free-text)"
+
+echo "== shopping-list: create with neither product_id nor name (expect 422) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' -d '{}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 creating item without product_id/name, got $STATUS"; exit 1; }
+
+echo "== shopping-list: create with unknown product_id (expect 404) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/shopping-list" \
+  -H 'content-type: application/json' -d '{"product_id": 999999}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 creating item with unknown product_id, got $STATUS"; exit 1; }
+
+echo "== shopping-list: patch free-text item done=true =="
+curl -sf -X PATCH "$BASE/api/shopping-list/$ITEM_TEXT_ID" \
+  -H 'content-type: application/json' -d '{"done": true}' | jq .
+
+echo "== shopping-list: list order (open items first, then done; newest-first within each) =="
+ORDER=$(curl -sf "$BASE/api/shopping-list" | jq -c '[.[] | {id, done}]')
+echo "$ORDER"
+[ "$(echo "$ORDER" | jq -r '.[0].id')" = "$ITEM_PRODUCT_ID" ] \
+  || { echo "FAIL: expected open item $ITEM_PRODUCT_ID first, got $ORDER"; exit 1; }
+[ "$(echo "$ORDER" | jq -r '.[0].done')" = "false" ] || { echo "FAIL: expected first item to be open"; exit 1; }
+[ "$(echo "$ORDER" | jq -r '.[-1].id')" = "$ITEM_TEXT_ID" ] \
+  || { echo "FAIL: expected done item $ITEM_TEXT_ID last, got $ORDER"; exit 1; }
+[ "$(echo "$ORDER" | jq -r '.[-1].done')" = "true" ] || { echo "FAIL: expected last item to be done"; exit 1; }
+
+echo "== shopping-list: patch missing item (expect 404) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/shopping-list/999999" \
+  -H 'content-type: application/json' -d '{"done": true}')
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 patching missing item, got $STATUS"; exit 1; }
+
+echo "== shopping-list: add-low-stock is a no-op while product already has an open item =="
+RESULT=$(curl -sf -X POST "$BASE/api/shopping-list/add-low-stock")
+echo "$RESULT" | jq .
+[ "$(echo "$RESULT" | jq 'length')" = "0" ] \
+  || { echo "FAIL: expected no items added (product already has an open item), got $RESULT"; exit 1; }
+
+echo "== shopping-list: set low_stock_threshold so product qualifies as low-stock =="
+curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
+  -H 'content-type: application/json' -d '{"low_stock_threshold": 10}' | jq -c '{id, low_stock_threshold}'
+
+echo "== shopping-list: mark the existing open item done, then add-low-stock should create a new one =="
+curl -sf -X PATCH "$BASE/api/shopping-list/$ITEM_PRODUCT_ID" \
+  -H 'content-type: application/json' -d '{"done": true}' > /dev/null
+RESULT=$(curl -sf -X POST "$BASE/api/shopping-list/add-low-stock")
+echo "$RESULT" | jq .
+[ "$(echo "$RESULT" | jq 'length')" = "1" ] \
+  || { echo "FAIL: expected 1 item added by add-low-stock, got $RESULT"; exit 1; }
+NEW_ITEM_ID=$(echo "$RESULT" | jq -r '.[0].id')
+[ "$(echo "$RESULT" | jq -r '.[0].product_id')" = "$PRODUCT_ID" ] \
+  || { echo "FAIL: expected add-low-stock item to link product $PRODUCT_ID"; exit 1; }
+
+echo "== shopping-list: add-low-stock again is now a no-op (no duplicate) =="
+RESULT=$(curl -sf -X POST "$BASE/api/shopping-list/add-low-stock")
+echo "$RESULT" | jq .
+[ "$(echo "$RESULT" | jq 'length')" = "0" ] \
+  || { echo "FAIL: expected no duplicate item on second add-low-stock call, got $RESULT"; exit 1; }
+
+echo "== shopping-list: clear done items =="
+CLEARED=$(curl -sf -X DELETE "$BASE/api/shopping-list/done")
+echo "$CLEARED" | jq .
+[ "$(echo "$CLEARED" | jq -r .deleted)" = "2" ] \
+  || { echo "FAIL: expected 2 done items cleared, got $CLEARED"; exit 1; }
+
+echo "== shopping-list: list after clearing done (expect only the add-low-stock item) =="
+COUNT=$(curl -sf "$BASE/api/shopping-list" | jq 'length')
+[ "$COUNT" = "1" ] || { echo "FAIL: expected 1 remaining shopping list item, got $COUNT"; exit 1; }
+
+echo "== shopping-list: delete remaining item =="
+curl -sf -o /dev/null -w '%{http_code}\n' -X DELETE "$BASE/api/shopping-list/$NEW_ITEM_ID"
+COUNT=$(curl -sf "$BASE/api/shopping-list" | jq 'length')
+[ "$COUNT" = "0" ] || { echo "FAIL: expected 0 shopping list items after delete, got $COUNT"; exit 1; }
+
+echo "== shopping-list: delete missing item (expect 404) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/shopping-list/999999")
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 deleting missing item, got $STATUS"; exit 1; }
+
 echo "OK"
