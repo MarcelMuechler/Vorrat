@@ -279,7 +279,12 @@ def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depen
         raise HTTPException(404, "Stock entry not found")
     entry.amount -= payload.amount
     db.add(
-        ConsumptionLog(product_id=entry.product_id, amount=payload.amount, reason=payload.reason)
+        ConsumptionLog(
+            product_id=entry.product_id,
+            amount=payload.amount,
+            reason=payload.reason,
+            quantity_unit=entry.product.quantity_unit,
+        )
     )
     # Repeated float subtraction (e.g. ten 0.1 consumes) can leave a tiny
     # non-zero residue instead of an exact 0, so treat anything below this
@@ -300,6 +305,13 @@ def delete_stock(entry_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Stock entry not found")
     # Removed without going through consume -- there's no "used" amount to
     # attribute, so this counts as spoiled/discarded for the waste summary.
-    db.add(ConsumptionLog(product_id=entry.product_id, amount=entry.amount, reason="spoiled"))
+    db.add(
+        ConsumptionLog(
+            product_id=entry.product_id,
+            amount=entry.amount,
+            reason="spoiled",
+            quantity_unit=entry.product.quantity_unit,
+        )
+    )
     db.delete(entry)
     db.commit()

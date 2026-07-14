@@ -117,6 +117,12 @@ class ConsumptionLog(Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
     amount: Mapped[float] = mapped_column(Float)
     reason: Mapped[str] = mapped_column(String)  # "used" | "spoiled"
+    # Snapshotted from Product.quantity_unit at write time (not read live via
+    # the relationship) so a later unit change on the product doesn't
+    # retroactively reinterpret historic log rows. Nullable because rows
+    # written before this column existed have no snapshot to backfill beyond
+    # the product's *current* unit (see the migration).
+    quantity_unit: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     product: Mapped[Product] = relationship()
