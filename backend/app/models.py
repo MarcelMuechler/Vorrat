@@ -44,6 +44,11 @@ class Product(Base):
     # (0.2kg of flour vs. 1 jar of jam mean very different things). Null means
     # the low-stock feature is simply off for that product.
     low_stock_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # How much add-low-stock (shopping_list.py) should restock up to, once a
+    # product dips to/below low_stock_threshold. Null keeps the old
+    # behavior -- queue exactly 1 unit -- so this is opt-in per product, not
+    # a backfilled default.
+    target_stock_level: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     default_location: Mapped[Location | None] = relationship()
