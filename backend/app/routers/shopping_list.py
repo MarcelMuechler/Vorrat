@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Product, ShoppingListItem
+from app.models import Product, ShoppingListItem, StockEntry
 from app.routers.stats import low_stock_products_query
 from app.schemas import ShoppingListItemCreate, ShoppingListItemRead, ShoppingListItemUpdate
 
@@ -78,18 +79,32 @@ def add_low_stock_items(db: Session = Depends(get_db)):
     """Adds one shopping list item per low-stock product (same definition as
     /api/stats' low_stock_products) that doesn't already have an open
     (not-done) item on the list, so calling this repeatedly is a no-op for
-    products already queued."""
+    products already queued. The queued amount restocks up to
+    target_stock_level when the product has one set (never less than 1, in
+    case stock rose between the low-stock check and this deficit
+    computation); products without a target keep the old flat "queue 1"
+    behavior."""
     already_listed = {
         product_id
         for (product_id,) in db.query(ShoppingListItem.product_id)
         .filter(ShoppingListItem.product_id.isnot(None), ShoppingListItem.done.is_(False))
         .all()
     }
+    products = [p for p in low_stock_products_query(db).all() if p.id not in already_listed]
+    current_stock = dict(
+        db.query(StockEntry.product_id, func.sum(StockEntry.amount))
+        .filter(StockEntry.product_id.in_([p.id for p in products]))
+        .group_by(StockEntry.product_id)
+        .all()
+    )
     created: list[ShoppingListItem] = []
-    for product in low_stock_products_query(db).all():
-        if product.id in already_listed:
-            continue
-        item = ShoppingListItem(product_id=product.id, amount=1, unit=product.quantity_unit)
+    for product in products:
+        if product.target_stock_level is not None:
+            deficit = product.target_stock_level - current_stock.get(product.id, 0)
+            amount = max(deficit, 1)
+        else:
+            amount = 1
+        item = ShoppingListItem(product_id=product.id, amount=amount, unit=product.quantity_unit)
         db.add(item)
         created.append(item)
     db.commit()
