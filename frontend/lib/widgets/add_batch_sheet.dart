@@ -185,7 +185,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: TextButton(
                     onPressed: _saving ? null : () => Navigator.of(context).pop(),
                     child: Text(l10n.cancelButton),
                   ),

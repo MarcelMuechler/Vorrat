@@ -193,7 +193,7 @@ void main() {
 
     await _enterBarcode(tester, '1234567890123');
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
