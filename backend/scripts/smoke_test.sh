@@ -163,6 +163,38 @@ echo "$RESULT" | jq .
 [ "$(echo "$RESULT" | jq 'length')" = "0" ] \
   || { echo "FAIL: expected no duplicate item on second add-low-stock call, got $RESULT"; exit 1; }
 
+echo "== shopping-list: target_stock_level -- product with threshold+target and some stock queues the deficit =="
+TARGET_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Target Stock Product", "low_stock_threshold": 3, "target_stock_level": 5}' | jq -r .id)
+curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$TARGET_PRODUCT_ID"', "amount": 2}' > /dev/null
+RESULT=$(curl -sf -X POST "$BASE/api/shopping-list/add-low-stock")
+echo "$RESULT" | jq .
+MATCHED_COUNT=$(echo "$RESULT" | jq --argjson pid "$TARGET_PRODUCT_ID" '[.[] | select(.product_id == $pid and .amount == 3)] | length')
+[ "$MATCHED_COUNT" = "1" ] \
+  || { echo "FAIL: expected target_stock_level product to queue amount=3 (5 target - 2 stock), got $RESULT"; exit 1; }
+TARGET_ITEM_ID=$(echo "$RESULT" | jq -r --argjson pid "$TARGET_PRODUCT_ID" '[.[] | select(.product_id == $pid)][0].id')
+
+echo "== shopping-list: target_stock_level -- product without a target keeps queuing exactly 1 (existing behavior) =="
+NO_TARGET_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "No Target Stock Product", "low_stock_threshold": 3}' | jq -r .id)
+curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$NO_TARGET_PRODUCT_ID"', "amount": 1}' > /dev/null
+RESULT=$(curl -sf -X POST "$BASE/api/shopping-list/add-low-stock")
+echo "$RESULT" | jq .
+MATCHED_COUNT=$(echo "$RESULT" | jq --argjson pid "$NO_TARGET_PRODUCT_ID" '[.[] | select(.product_id == $pid and .amount == 1)] | length')
+[ "$MATCHED_COUNT" = "1" ] \
+  || { echo "FAIL: expected no-target product to queue amount=1, got $RESULT"; exit 1; }
+NO_TARGET_ITEM_ID=$(echo "$RESULT" | jq -r --argjson pid "$NO_TARGET_PRODUCT_ID" '[.[] | select(.product_id == $pid)][0].id')
+
+echo "== shopping-list: clean up the target_stock_level test items =="
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$TARGET_ITEM_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/shopping-list/$NO_TARGET_ITEM_ID"
+
 echo "== shopping-list: clear done items =="
 CLEARED=$(curl -sf -X DELETE "$BASE/api/shopping-list/done")
 echo "$CLEARED" | jq .
