@@ -11,6 +11,12 @@ from app.db import get_db
 from app.models import ConsumptionLog, Location, Product, StockEntry
 from app.routers.settings import get_app_settings
 from app.schemas import (
+    BulkStockConsume,
+    BulkStockConsumeResult,
+    BulkStockDeleteResult,
+    BulkStockEntryIds,
+    BulkStockMove,
+    BulkStockMoveResult,
     StockEntryConsume,
     StockEntryCreate,
     StockEntryRead,
@@ -260,6 +266,98 @@ def add_stock(payload: StockEntryCreate, db: Session = Depends(get_db)):
     return entry
 
 
+def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -> bool:
+    """Logs the consumption and either shrinks or fully removes `entry`.
+    Returns True if the entry was fully consumed (deleted), False if it was
+    only partially reduced and still exists. Caller is responsible for
+    commit/refresh -- kept out of here so bulk callers can batch a single
+    commit across many entries."""
+    entry.amount -= amount
+    db.add(
+        ConsumptionLog(
+            product_id=entry.product_id,
+            amount=amount,
+            reason=reason,
+            quantity_unit=entry.product.quantity_unit,
+        )
+    )
+    # Repeated float subtraction (e.g. ten 0.1 consumes) can leave a tiny
+    # non-zero residue instead of an exact 0, so treat anything below this
+    # epsilon as fully consumed rather than leaving a ghost entry behind.
+    if entry.amount <= 1e-9:
+        db.delete(entry)
+        return True
+    return False
+
+
+def _delete_entry(db: Session, entry: StockEntry) -> None:
+    """Removes `entry` without going through consume -- there's no "used"
+    amount to attribute, so this counts as spoiled/discarded for the waste
+    summary. Caller is responsible for commit."""
+    db.add(
+        ConsumptionLog(
+            product_id=entry.product_id,
+            amount=entry.amount,
+            reason="spoiled",
+            quantity_unit=entry.product.quantity_unit,
+        )
+    )
+    db.delete(entry)
+
+
+def _get_entries_or_404(db: Session, entry_ids: list[int]) -> list[StockEntry]:
+    """Looks up entry_ids (de-duplicated, order preserved) and 404s naming
+    every id that doesn't exist, before any mutation happens -- so a bulk
+    request with even one bogus id changes nothing (all-or-nothing)."""
+    unique_ids = list(dict.fromkeys(entry_ids))
+    entries = db.query(StockEntry).filter(StockEntry.id.in_(unique_ids)).all()
+    by_id = {entry.id: entry for entry in entries}
+    missing = [i for i in unique_ids if i not in by_id]
+    if missing:
+        raise HTTPException(404, f"Stock entries not found: {missing}")
+    return [by_id[i] for i in unique_ids]
+
+
+# The three /bulk/* routes below must be registered before the /{entry_id}...
+# routes further down: Starlette matches routes in registration order, and
+# since entry_id has no ":int" constraint in the path string itself (only in
+# the function signature, which FastAPI validates *after* the path already
+# matched), "/{entry_id}/consume" would otherwise greedily match
+# "/bulk/consume" too and fail with a 422 (can't parse "bulk" as int) instead
+# of falling through to the route actually meant to handle it.
+@router.post("/bulk/consume", response_model=BulkStockConsumeResult)
+def bulk_consume_stock(payload: BulkStockConsume, db: Session = Depends(get_db)):
+    """Fully consumes every listed entry (its whole remaining amount), each
+    logged exactly like a single consume-to-zero would be."""
+    entries = _get_entries_or_404(db, payload.entry_ids)
+    for entry in entries:
+        _consume_entry(db, entry, entry.amount, payload.reason)
+    db.commit()
+    return BulkStockConsumeResult(consumed=len(entries))
+
+
+@router.post("/bulk/delete", response_model=BulkStockDeleteResult)
+def bulk_delete_stock(payload: BulkStockEntryIds, db: Session = Depends(get_db)):
+    entries = _get_entries_or_404(db, payload.entry_ids)
+    for entry in entries:
+        _delete_entry(db, entry)
+    db.commit()
+    return BulkStockDeleteResult(deleted=len(entries))
+
+
+@router.post("/bulk/move", response_model=BulkStockMoveResult)
+def bulk_move_stock(payload: BulkStockMove, db: Session = Depends(get_db)):
+    if not db.get(Location, payload.location_id):
+        raise HTTPException(404, "Location not found")
+    entries = _get_entries_or_404(db, payload.entry_ids)
+    for entry in entries:
+        entry.location_id = payload.location_id
+    db.commit()
+    for entry in entries:
+        db.refresh(entry)
+    return BulkStockMoveResult(moved=len(entries), entries=entries)
+
+
 @router.patch("/{entry_id}", response_model=StockEntryRead)
 def update_stock(entry_id: int, payload: StockEntryUpdate, db: Session = Depends(get_db)):
     entry = db.get(StockEntry, entry_id)
@@ -277,23 +375,10 @@ def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depen
     entry = db.get(StockEntry, entry_id)
     if not entry:
         raise HTTPException(404, "Stock entry not found")
-    entry.amount -= payload.amount
-    db.add(
-        ConsumptionLog(
-            product_id=entry.product_id,
-            amount=payload.amount,
-            reason=payload.reason,
-            quantity_unit=entry.product.quantity_unit,
-        )
-    )
-    # Repeated float subtraction (e.g. ten 0.1 consumes) can leave a tiny
-    # non-zero residue instead of an exact 0, so treat anything below this
-    # epsilon as fully consumed rather than leaving a ghost entry behind.
-    if entry.amount <= 1e-9:
-        db.delete(entry)
-        db.commit()
-        return None
+    fully_consumed = _consume_entry(db, entry, payload.amount, payload.reason)
     db.commit()
+    if fully_consumed:
+        return None
     db.refresh(entry)
     return entry
 
@@ -303,15 +388,5 @@ def delete_stock(entry_id: int, db: Session = Depends(get_db)):
     entry = db.get(StockEntry, entry_id)
     if not entry:
         raise HTTPException(404, "Stock entry not found")
-    # Removed without going through consume -- there's no "used" amount to
-    # attribute, so this counts as spoiled/discarded for the waste summary.
-    db.add(
-        ConsumptionLog(
-            product_id=entry.product_id,
-            amount=entry.amount,
-            reason="spoiled",
-            quantity_unit=entry.product.quantity_unit,
-        )
-    )
-    db.delete(entry)
+    _delete_entry(db, entry)
     db.commit()

@@ -137,6 +137,31 @@ class StockOverviewItem(StockEntryRead):
     status: str
 
 
+class BulkStockEntryIds(BaseModel):
+    entry_ids: list[int] = Field(min_length=1)
+
+
+class BulkStockConsume(BulkStockEntryIds):
+    reason: Literal["used", "spoiled"] = "used"
+
+
+class BulkStockMove(BulkStockEntryIds):
+    location_id: int
+
+
+class BulkStockConsumeResult(BaseModel):
+    consumed: int
+
+
+class BulkStockDeleteResult(BaseModel):
+    deleted: int
+
+
+class BulkStockMoveResult(BaseModel):
+    moved: int
+    entries: list[StockEntryRead]
+
+
 class StockImportRowError(BaseModel):
     row: int
     error: str
