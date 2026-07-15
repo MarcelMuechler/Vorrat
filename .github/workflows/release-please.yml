@@ -76,7 +76,13 @@ jobs:
       # track this repo's new tag, or HA never notices a release exists (see
       # #11's history) and Docker's build cache silently keeps serving
       # whatever was cloned on the very first build (see #19's original bug
-      # report).
+      # report). It also carries over CHANGELOG.md so Supervisor's "What's
+      # new" dialog has something to show (#193) -- HA reads that file from
+      # the add-on's own root, which is vorrat/ in the wrapper repo, not
+      # anywhere in this one. This repo's root CHANGELOG.md (written by
+      # release-please) is already in the Keep a Changelog format HA expects,
+      # so it's fetched straight from the tag via raw.githubusercontent.com
+      # rather than duplicated -- no checkout step runs on this path.
       #
       # Requires a `HASSIO_ADDON_PAT` repository secret: a PAT (classic or
       # fine-grained) with write access to vorrat-hassio-addon. The default
@@ -85,6 +91,10 @@ jobs:
       # that secret is added, this step fails loudly rather than silently
       # skipping, so a missing/expired token doesn't quietly reintroduce the
       # exact bug this automates away.
+      #
+      # TAG_NAME comes from release-please's own `tag_name` action output
+      # (e.g. "v0.16.0"), not from any user-controlled event field, so it's
+      # safe to interpolate into the curl URL and sed patterns below.
       - if: ${{ steps.release.outputs.release_created }}
         env:
           TAG_NAME: ${{ steps.release.outputs.tag_name }}
@@ -94,10 +104,11 @@ jobs:
           cd /tmp/vorrat-hassio-addon
           sed -i "s/^version: .*/version: \"${TAG_NAME#v}\"/" vorrat/config.yaml
           sed -i "s/^ARG VORRAT_REF=.*/ARG VORRAT_REF=${TAG_NAME}/" vorrat/Dockerfile
+          curl -sf "https://raw.githubusercontent.com/MarcelMuechler/Vorrat/${TAG_NAME}/CHANGELOG.md" -o vorrat/CHANGELOG.md
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add vorrat/config.yaml vorrat/Dockerfile
+            git add vorrat/config.yaml vorrat/Dockerfile vorrat/CHANGELOG.md
             git commit -m "chore: bump to $TAG_NAME"
             git push
           fi
