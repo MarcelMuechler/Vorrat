@@ -60,7 +60,7 @@ jobs:
         run: uv lock
       - if: ${{ steps.release.outputs.pr }}
         env:
-          HEAD_BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          HEAD_BRANCH: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).headBranchName || '' }}
         run: |
           if ! git diff --quiet -- backend/uv.lock; then
             git config user.name "github-actions[bot]"
