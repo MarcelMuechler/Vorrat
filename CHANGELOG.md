@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.16.1...v0.17.0) (2026-07-15)
+
+
+### Features
+
+* **frontend:** revamp UI to match new wireframe design ([233ce57](https://github.com/MarcelMuechler/Vorrat/commit/233ce57c3bbb08d68d69fedfc1f9c0a0af171fe4))
+
 ## [0.16.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.16.0...v0.16.1) (2026-07-15)
 
 
