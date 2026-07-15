@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../state/stock_provider.dart';
+import '../util/format.dart';
 
 /// Inline "add a batch" form for a product that's already known, shown as a
 /// modal bottom sheet over the scan screen (#98) so unloading a grocery haul
@@ -90,6 +91,17 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
     if (picked != null) setState(() => _bestBeforeDate = picked);
   }
 
+  void _setBestBeforeOffset(int days) {
+    setState(() => _bestBeforeDate = DateTime.now().add(Duration(days: days)));
+  }
+
+  void _stepAmount(double delta) {
+    final current = double.tryParse(_amountController.text) ?? 0;
+    final next = current + delta;
+    if (next <= 0) return;
+    _amountController.text = formatAmount(next);
+  }
+
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
     final amount = double.tryParse(_amountController.text) ?? 1;
@@ -146,38 +158,66 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _amountController,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: l10n.amountFieldLabel,
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            Text(l10n.amountFieldLabel, style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton.outlined(onPressed: () => _stepAmount(-1), icon: const Icon(Icons.remove)),
+                SizedBox(
+                  width: 72,
+                  child: TextField(
+                    controller: _amountController,
+                    autofocus: true,
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(isDense: true),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+                IconButton.outlined(onPressed: () => _stepAmount(1), icon: const Icon(Icons.add)),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            Text(l10n.locationLabel, style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 4),
             _loadingLocations
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Center(child: CircularProgressIndicator()),
                   )
-                : DropdownButtonFormField<int>(
-                    initialValue: _selectedLocationId,
-                    decoration: InputDecoration(
-                      labelText: l10n.locationLabel,
-                    ),
-                    items: _locations.map((l) => DropdownMenuItem(value: l.id, child: Text(l.name))).toList(),
-                    onChanged: (value) => setState(() => _selectedLocationId = value),
+                : Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final location in _locations)
+                        ChoiceChip(
+                          label: Text(location.name),
+                          selected: _selectedLocationId == location.id,
+                          onSelected: (_) => setState(() => _selectedLocationId = location.id),
+                        ),
+                    ],
                   ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                _bestBeforeDate == null
-                    ? l10n.noBestBeforeDate
-                    : l10n.bestBeforeLabel(_bestBeforeDate!.toIso8601String().split('T').first),
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _pickBestBeforeDate,
+            const SizedBox(height: 16),
+            Text(l10n.bestBeforeSectionLabel, style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final days in [3, 7, 30])
+                  ActionChip(
+                    label: Text(l10n.inDaysChipLabel(days)),
+                    onPressed: () => _setBestBeforeOffset(days),
+                  ),
+                ActionChip(
+                  avatar: const Icon(Icons.calendar_today, size: 16),
+                  label: Text(
+                    _bestBeforeDate == null
+                        ? l10n.pickDateLabel
+                        : _bestBeforeDate!.toIso8601String().split('T').first,
+                  ),
+                  onPressed: _pickBestBeforeDate,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Row(

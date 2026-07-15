@@ -452,5 +452,27 @@
   "couldNotBulkMove": "Could not move selected items: {error}",
   "@couldNotBulkMove": {
     "placeholders": { "error": { "type": "String" } }
+  },
+
+  "needsAttentionHeader": "Needs attention",
+  "inStockHeader": "In stock",
+  "defaultsLabel": "Defaults",
+  "lowStockBannerText": "{count, plural, =1{1 item low on stock} other{{count} items low on stock}}",
+  "@lowStockBannerText": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "addAllButton": "Add all",
+  "fromStockTag": "From stock",
+  "doneSectionLabel": "Done",
+  "settingsConnectionSection": "Connection",
+  "settingsPreferencesSection": "Preferences",
+  "settingsManageSection": "Manage",
+  "settingsDataSection": "Data",
+  "pickDateLabel": "Pick date",
+  "bestBeforeSectionLabel": "Best-before",
+  "batchesHeading": "Batches",
+  "inDaysChipLabel": "+{days}d",
+  "@inDaysChipLabel": {
+    "placeholders": { "days": { "type": "int" } }
   }
 }

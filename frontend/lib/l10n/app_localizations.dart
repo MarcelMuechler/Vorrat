@@ -1441,6 +1441,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not move selected items: {error}'**
   String couldNotBulkMove(String error);
+
+  /// No description provided for @needsAttentionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get needsAttentionHeader;
+
+  /// No description provided for @inStockHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'In stock'**
+  String get inStockHeader;
+
+  /// No description provided for @defaultsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Defaults'**
+  String get defaultsLabel;
+
+  /// No description provided for @lowStockBannerText.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item low on stock} other{{count} items low on stock}}'**
+  String lowStockBannerText(int count);
+
+  /// No description provided for @addAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add all'**
+  String get addAllButton;
+
+  /// No description provided for @fromStockTag.
+  ///
+  /// In en, this message translates to:
+  /// **'From stock'**
+  String get fromStockTag;
+
+  /// No description provided for @doneSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneSectionLabel;
+
+  /// No description provided for @settingsConnectionSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get settingsConnectionSection;
+
+  /// No description provided for @settingsPreferencesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferencesSection;
+
+  /// No description provided for @settingsManageSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get settingsManageSection;
+
+  /// No description provided for @settingsDataSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get settingsDataSection;
+
+  /// No description provided for @pickDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get pickDateLabel;
+
+  /// No description provided for @bestBeforeSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Best-before'**
+  String get bestBeforeSectionLabel;
+
+  /// No description provided for @batchesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Batches'**
+  String get batchesHeading;
+
+  /// No description provided for @inDaysChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'+{days}d'**
+  String inDaysChipLabel(int days);
 }
 
 class _AppLocalizationsDelegate

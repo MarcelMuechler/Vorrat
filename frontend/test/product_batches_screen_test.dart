@@ -7,6 +7,7 @@ import 'package:vorrat/models/models.dart';
 import 'package:vorrat/screens/product_batches_screen.dart';
 import 'package:vorrat/state/settings_provider.dart';
 import 'package:vorrat/state/stock_provider.dart';
+import 'package:vorrat/widgets/add_batch_sheet.dart';
 
 class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
@@ -67,8 +68,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The product detail screen's expiry banner also shows the amount ("2"),
+    // so the batch row's own "2" (rendered below it) is the last match.
     // Tap the tile to reveal the Open/Use/Spoil buttons (#75).
-    await tester.tap(find.text('2'));
+    await tester.tap(find.text('2').last);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.lock_open), findsOneWidget);
 
@@ -77,7 +80,7 @@ void main() {
     expect(api.opened, isTrue);
 
     // Re-expand -- Open is no longer offered once the batch is opened.
-    await tester.tap(find.text('2'));
+    await tester.tap(find.text('2').last);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.lock_open), findsNothing);
   });
@@ -101,15 +104,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.add));
+    // The FAB now opens the lightweight AddBatchSheet (not a full
+    // ProductDetailScreen push) since the product already exists.
+    await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add to stock'), findsOneWidget);
+    expect(find.text('Jam'), findsWidgets);
 
-    await tester.tap(find.text('Save'));
+    // The product detail screen's own action row also has an "Add" button
+    // (opens this same sheet) -- scope the tap to the sheet's own button.
+    await tester.tap(
+      find.descendant(of: find.byType(AddBatchSheet), matching: find.widgetWithText(FilledButton, 'Add')),
+    );
     await tester.pumpAndSettle();
 
     expect(api.addStockCalled, isTrue);
-    expect(find.text('Jam'), findsWidgets);
   });
 }

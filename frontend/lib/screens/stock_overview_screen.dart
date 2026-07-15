@@ -11,6 +11,7 @@ import '../util/format.dart';
 import '../util/status.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/stock_item_actions.dart';
+import '../widgets/undo_snackbar.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -26,40 +27,6 @@ String _bucketLabel(AppLocalizations l10n, ExpiryBucketKey key) {
       return l10n.expiryBucketLater;
     case ExpiryBucketKey.noDate:
       return l10n.expiryBucketNoDate;
-  }
-}
-
-enum _RelativeKind { expiry, purchased, opened }
-
-/// Relative day label ("today"/"tomorrow"/"in N days"/"N days ago"), so
-/// scanning the list doesn't require doing date math against a raw ISO
-/// string. [kind] picks which localized phrase set applies (expiry uses
-/// "Expires"/"Expired", purchased/opened use the same word both ways).
-String _relativeLabel(BuildContext context, DateTime date, _RelativeKind kind) {
-  final l10n = AppLocalizations.of(context)!;
-  final today = DateTime.now();
-  final days = DateTime(date.year, date.month, date.day)
-      .difference(DateTime(today.year, today.month, today.day))
-      .inDays;
-  switch (kind) {
-    case _RelativeKind.expiry:
-      if (days == 0) return l10n.expiryToday;
-      if (days == 1) return l10n.expiryTomorrow;
-      if (days == -1) return l10n.expiredYesterday;
-      if (days > 0) return l10n.expiryInDays(days);
-      return l10n.expiredDaysAgo(-days);
-    case _RelativeKind.purchased:
-      if (days == 0) return l10n.purchasedToday;
-      if (days == 1) return l10n.purchasedTomorrow;
-      if (days == -1) return l10n.purchasedYesterday;
-      if (days > 0) return l10n.purchasedInDays(days);
-      return l10n.purchasedDaysAgo(-days);
-    case _RelativeKind.opened:
-      if (days == 0) return l10n.openedToday;
-      if (days == 1) return l10n.openedTomorrow;
-      if (days == -1) return l10n.openedYesterday;
-      if (days > 0) return l10n.openedInDays(days);
-      return l10n.openedDaysAgo(-days);
   }
 }
 
@@ -153,6 +120,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       appBar: _selectionMode ? _buildSelectionAppBar(context, stock, l10n) : _buildDefaultAppBar(stock, l10n),
       body: Column(
         children: [
+          if (!_selectionMode) _buildStatStrip(context, stock, l10n),
           // A distinct tonal panel (#199) so the search/filter toolbar reads
           // as a deliberate surface instead of floating directly on the
           // near-black scaffold background.
@@ -274,6 +242,99 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(value: value, hint: Text(hint), items: items, onChanged: onChanged),
+      ),
+    );
+  }
+
+  // Glanceable urgency counts above the filter row (#199 wireframe revamp) --
+  // computed client-side from data already loaded (StockProvider.items /
+  // groupedItems), no new provider state needed. Expired/Expiring both reuse
+  // the existing "expiring soon" filter toggle (there's no separate
+  // "expired-only" filter); Low stock switches to the grouped view, where
+  // ProductGroup.isLowStock is actually surfaced per row -- an approximation
+  // since there's no dedicated low-stock-only filter either.
+  Widget _buildStatStrip(BuildContext context, StockProvider stock, AppLocalizations l10n) {
+    final expiredCount = stock.items.where((i) => i.status == 'expired').length;
+    final expiringCount = stock.items.where((i) => i.status == 'expiring_soon').length;
+    final lowStockCount = stock.groupedItems.where((g) => g.isLowStock).length;
+    final filterActive = stock.expiringWithinDaysFilter != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _statCard(
+              context,
+              count: expiredCount,
+              label: l10n.statusExpired,
+              color: statusColor('expired'),
+              selected: filterActive,
+              onTap: () => stock.setExpiringFilter(filterActive ? null : stock.expiringSoonDays),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _statCard(
+              context,
+              count: expiringCount,
+              label: l10n.statusExpiringSoon,
+              color: statusColor('expiring_soon'),
+              selected: filterActive,
+              onTap: () => stock.setExpiringFilter(filterActive ? null : stock.expiringSoonDays),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _statCard(
+              context,
+              count: lowStockCount,
+              label: l10n.lowStockChip,
+              color: Theme.of(context).colorScheme.outline,
+              selected: stock.viewMode == StockViewMode.grouped,
+              onTap: () => stock.setViewMode(StockViewMode.grouped),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard(
+    BuildContext context, {
+    required int count,
+    required String label,
+    required Color color,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: selected ? 0.24 : 0.12),
+          border: Border.all(color: color, width: selected ? 2 : 1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text('$count', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: TextStyle(fontSize: 11, color: color), textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
       ),
     );
   }
@@ -416,11 +477,24 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           },
         );
       case StockViewMode.flat:
+        // Split into a color-coded "needs attention" section (expired/expiring)
+        // and a plain "in stock" section (#199 wireframe revamp), instead of one
+        // undifferentiated list -- the whole point being to scan the urgent
+        // half without wading through everything that's simply fine.
         final items = stock.sortedItems;
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, index) => _buildItemTile(context, stock, items[index]),
+        final attention = items.where((i) => i.status != 'ok').toList();
+        final inStock = items.where((i) => i.status == 'ok').toList();
+        return ListView(
+          children: [
+            if (attention.isNotEmpty) ...[
+              _sectionHeader(context, l10n.needsAttentionHeader),
+              for (final item in attention) _buildItemTile(context, stock, item, emphasize: true),
+            ],
+            if (inStock.isNotEmpty) ...[
+              _sectionHeader(context, l10n.inStockHeader),
+              for (final item in inStock) _buildItemTile(context, stock, item),
+            ],
+          ],
         );
     }
   }
@@ -459,15 +533,20 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     return Text([
       if (item.locationName != null) item.locationName!,
       if (item.bestBeforeDate != null)
-        _relativeLabel(context, item.bestBeforeDate!, _RelativeKind.expiry),
+        relativeLabel(context, item.bestBeforeDate!, RelativeDateKind.expiry),
       if (item.purchasedDate != null)
-        _relativeLabel(context, item.purchasedDate!, _RelativeKind.purchased),
-      if (item.openedAt != null) _relativeLabel(context, item.openedAt!, _RelativeKind.opened),
+        relativeLabel(context, item.purchasedDate!, RelativeDateKind.purchased),
+      if (item.openedAt != null) relativeLabel(context, item.openedAt!, RelativeDateKind.opened),
       formatAmount(item.amount),
     ].join(' · '));
   }
 
-  Widget _buildItemTile(BuildContext context, StockProvider stock, StockItem item) {
+  Widget _buildItemTile(
+    BuildContext context,
+    StockProvider stock,
+    StockItem item, {
+    bool emphasize = false,
+  }) {
     if (_selectionMode) {
       return CheckboxListTile(
         key: ValueKey(item.id),
@@ -488,6 +567,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       productName: item.productName,
       canOpen: item.openedAt == null,
       dismissibleKey: item.id,
+      emphasizeStatus: emphasize ? item.status : null,
       onOpen: () => stock.markOpened(item.id),
       onConsume: (amount, reason) => _consume(context, stock, item, amount, reason),
       onDelete: () => _confirmDelete(context, stock, item.id, item.productName),
@@ -528,19 +608,10 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     int consumptionLogId,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          reason == 'spoiled' ? l10n.scannedDiscarded(item.productName) : l10n.scannedUsed(item.productName),
-        ),
-        action: SnackBarAction(
-          label: l10n.undoButton,
-          onPressed: () => _undoConsume(context, stock, item, amount, consumptionLogId),
-        ),
-        // A SnackBar with an action defaults to `persist: true` (stays until
-        // manually dismissed) -- opt back into the normal timeout (#178).
-        persist: false,
-      ),
+    showUndoSnackBar(
+      context,
+      message: reason == 'spoiled' ? l10n.scannedDiscarded(item.productName) : l10n.scannedUsed(item.productName),
+      onUndo: () => _undoConsume(context, stock, item, amount, consumptionLogId),
     );
   }
 

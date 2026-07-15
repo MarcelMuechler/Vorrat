@@ -16,9 +16,12 @@ void main() {
     expect(find.text('Stock'), findsWidgets);
   });
 
-  testWidgets('wide screens show a NavigationRail instead of the bottom bar', (
+  testWidgets('wide screens still show the bottom bar, not a NavigationRail', (
     WidgetTester tester,
   ) async {
+    // Home Assistant's own left sidebar already fills the "rail" role on
+    // wide/HA-panel layouts (#199 wireframe revamp), so the bottom nav bar
+    // stays consistent at every width instead of switching to a rail.
     final originalSize = tester.view.physicalSize;
     final originalRatio = tester.view.devicePixelRatio;
     tester.view.physicalSize = const Size(1400, 900);
@@ -33,7 +36,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 }

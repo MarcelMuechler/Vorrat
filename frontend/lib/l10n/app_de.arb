@@ -239,5 +239,21 @@
   "bulkMovedCount": "{count, plural, =1{1 Charge verschoben.} other{{count} Chargen verschoben.}}",
   "couldNotBulkConsume": "Auswahl konnte nicht verbraucht werden: {error}",
   "couldNotBulkDelete": "Auswahl konnte nicht gelöscht werden: {error}",
-  "couldNotBulkMove": "Auswahl konnte nicht verschoben werden: {error}"
+  "couldNotBulkMove": "Auswahl konnte nicht verschoben werden: {error}",
+
+  "needsAttentionHeader": "Braucht Aufmerksamkeit",
+  "inStockHeader": "Auf Lager",
+  "defaultsLabel": "Standardwerte",
+  "lowStockBannerText": "{count, plural, =1{1 Artikel wenig vorrätig} other{{count} Artikel wenig vorrätig}}",
+  "addAllButton": "Alle hinzufügen",
+  "fromStockTag": "Aus Vorrat",
+  "doneSectionLabel": "Erledigt",
+  "settingsConnectionSection": "Verbindung",
+  "settingsPreferencesSection": "Einstellungen",
+  "settingsManageSection": "Verwalten",
+  "settingsDataSection": "Daten",
+  "pickDateLabel": "Datum wählen",
+  "bestBeforeSectionLabel": "Mindesthaltbarkeit",
+  "batchesHeading": "Chargen",
+  "inDaysChipLabel": "+{days}T"
 }

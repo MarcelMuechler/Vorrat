@@ -39,7 +39,6 @@ ThemeData _buildTheme(Brightness brightness) {
       side: BorderSide.none,
     ),
     navigationBarTheme: NavigationBarThemeData(backgroundColor: colorScheme.surfaceContainer),
-    navigationRailTheme: NavigationRailThemeData(backgroundColor: colorScheme.surfaceContainer),
   );
 }
 
@@ -119,12 +118,11 @@ List<_Tab> _allTabs(BuildContext context) {
   ];
 }
 
-/// Below this width the shell uses the mobile bottom [NavigationBar]; at or
-/// above it, a side [NavigationRail] is used instead (#135).
-const double _wideLayoutBreakpoint = 700;
-
 /// Main content is centered and capped at this width on wide screens so text
-/// and lists don't stretch uncomfortably far (#135).
+/// and lists don't stretch uncomfortably far (#135). The bottom [NavigationBar]
+/// is kept at every width, even wide desktop/HA-panel layouts (#199 wireframe
+/// revamp) -- Home Assistant's own left sidebar already fills the "rail"
+/// role there, so a second one would be redundant.
 const double _contentMaxWidth = 900;
 
 class HomeShell extends StatefulWidget {
@@ -158,37 +156,13 @@ class _HomeShellState extends State<HomeShell> {
       ),
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= _wideLayoutBreakpoint;
-        if (wide) {
-          return Scaffold(
-            body: Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: index,
-                  onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
-                  labelType: NavigationRailLabelType.all,
-                  destinations: [
-                    for (final t in tabs)
-                      NavigationRailDestination(icon: iconFor(t), label: Text(t.label)),
-                  ],
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(child: content),
-              ],
-            ),
-          );
-        }
-        return Scaffold(
-          body: content,
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: index,
-            onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
-            destinations: [for (final t in tabs) NavigationDestination(icon: iconFor(t), label: t.label)],
-          ),
-        );
-      },
+    return Scaffold(
+      body: content,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (i) => setState(() => _selected = tabs[i].id),
+        destinations: [for (final t in tabs) NavigationDestination(icon: iconFor(t), label: t.label)],
+      ),
     );
   }
 }

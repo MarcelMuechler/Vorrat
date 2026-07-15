@@ -5,8 +5,10 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../util/format.dart';
+import '../state/stock_provider.dart';
 import '../util/status.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/undo_snackbar.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -132,14 +134,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   void _showUndoDeleteSnackBar(ShoppingListItem item) {
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.shoppingListItemDeleted(item.name)),
-        action: SnackBarAction(label: l10n.undoButton, onPressed: () => _undoDelete(item)),
-        // A SnackBar with an action defaults to `persist: true` (stays until
-        // manually dismissed) -- opt back into the normal timeout (#178).
-        persist: false,
-      ),
+    showUndoSnackBar(
+      context,
+      message: l10n.shoppingListItemDeleted(item.name),
+      onUndo: () => _undoDelete(item),
     );
   }
 
@@ -211,6 +209,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final hasDone = _items.any((i) => i.done);
+    // Reads StockProvider's already-loaded data (no fetch of its own) --
+    // only populated once the Stock tab has been visited at least once,
+    // same as its "Low stock" stat card (#199 wireframe revamp).
+    final lowStockCount = context.watch<StockProvider>().groupedItems.where((g) => g.isLowStock).length;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.shoppingListTitle),
@@ -229,6 +231,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       ),
       body: Column(
         children: [
+          if (lowStockCount > 0) _buildLowStockBanner(context, l10n, lowStockCount),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: _buildAddField(l10n),
@@ -237,6 +240,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             child: RefreshIndicator(onRefresh: _refresh, child: _buildBody(l10n)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLowStockBanner(BuildContext context, AppLocalizations l10n, int count) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: colors.tertiaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(l10n.lowStockBannerText(count))),
+            FilledButton.tonal(onPressed: _addLowStock, child: Text(l10n.addAllButton)),
+          ],
+        ),
       ),
     );
   }
@@ -315,14 +338,31 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ],
       );
     }
-    return ListView.separated(
-      itemCount: _items.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) => _buildItemTile(_items[index]),
+    // Pending items first, then a "Done" section (#199 wireframe revamp) --
+    // partitioned client-side by .done instead of relying on sort order.
+    final pending = _items.where((i) => !i.done).toList();
+    final done = _items.where((i) => i.done).toList();
+    return ListView(
+      children: [
+        for (final item in pending) _buildItemTile(item),
+        if (done.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              l10n.doneSectionLabel,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+          ),
+          for (final item in done) _buildItemTile(item),
+        ],
+      ],
     );
   }
 
   Widget _buildItemTile(ShoppingListItem item) {
+    final l10n = AppLocalizations.of(context)!;
     final showAmount = item.amount != 1 || (item.unit != null && item.unit!.isNotEmpty);
     return Dismissible(
       key: ValueKey(item.id),
@@ -343,11 +383,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         controlAffinity: ListTileControlAffinity.leading,
         value: item.done,
         onChanged: (_) => _toggleDone(item),
-        title: Text(
-          item.name,
-          style: item.done
-              ? TextStyle(decoration: TextDecoration.lineThrough, color: Theme.of(context).disabledColor)
-              : null,
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(
+                item.name,
+                style: item.done
+                    ? TextStyle(decoration: TextDecoration.lineThrough, color: Theme.of(context).disabledColor)
+                    : null,
+              ),
+            ),
+            if (item.productId != null) ...[
+              const SizedBox(width: 8),
+              Chip(
+                label: Text(l10n.fromStockTag),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelStyle: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+          ],
         ),
         subtitle: showAmount
             ? Text('${formatAmount(item.amount)}${item.unit != null ? ' ${item.unit}' : ''}')

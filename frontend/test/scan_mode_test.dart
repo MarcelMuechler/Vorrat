@@ -173,7 +173,10 @@ void main() {
     // The sheet appeared over the scan screen instead of pushing a route.
     expect(find.text('Jam'), findsOneWidget);
     expect(find.text('Scan'), findsOneWidget);
-    expect(find.widgetWithText(TextField, 'Amount'), findsOneWidget);
+    // Amount is now a stepper (a caption label beside a plain TextField, no
+    // -/+ pressed) rather than a labeled TextField.
+    expect(find.text('Amount'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     for (var i = 0; i < 10; i++) {

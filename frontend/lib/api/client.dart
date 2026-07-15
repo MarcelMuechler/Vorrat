@@ -153,6 +153,12 @@ class ApiClient {
     return list.map((e) => Product.fromJson(e)).toList();
   }
 
+  Future<Product> getProduct(int id) async {
+    final res = await http.get(_uri('/api/products/$id'));
+    _checkOk(res);
+    return Product.fromJson(jsonDecode(res.body));
+  }
+
   Future<Product> updateProduct(int id, Map<String, dynamic> payload) async {
     final res = await http.patch(
       _uri('/api/products/$id'),

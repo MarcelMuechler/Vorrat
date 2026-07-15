@@ -215,6 +215,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _testConnection();
   }
 
+  // Groups a section's children into a bordered, labeled card (#199
+  // wireframe revamp) -- pure layout wrapper, no behavior change to what's
+  // inside.
+  Widget _section(BuildContext context, String title, List<Widget> children) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -228,165 +253,155 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            Text(l10n.serverUrlDescription),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText: l10n.serverUrlLabel,
-                hintText: 'http://192.168.1.20:8099',
-                suffixIcon: settings.scanEnabled
-                    ? IconButton(
-                        icon: const Icon(Icons.qr_code_scanner),
-                        tooltip: l10n.scanToConnectTooltip,
-                        onPressed: _scanToConnect,
-                      )
-                    : null,
-              ),
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _testing ? null : _testConnection,
-              child: _testing
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.saveTestConnectionButton),
-            ),
-            if (_testResult != null) ...[
-              const SizedBox(height: 8),
-              Text(_testResult!),
-            ],
-            const SizedBox(height: 24),
-            const Divider(),
-            Text(l10n.expiringSoonDescription),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: TextField(
-                    controller: _expiringSoonController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(isDense: true),
+              _section(context, l10n.settingsConnectionSection, [
+                Text(l10n.serverUrlDescription),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    labelText: l10n.serverUrlLabel,
+                    hintText: 'http://192.168.1.20:8099',
+                    suffixIcon: settings.scanEnabled
+                        ? IconButton(
+                            icon: const Icon(Icons.qr_code_scanner),
+                            tooltip: l10n.scanToConnectTooltip,
+                            onPressed: _scanToConnect,
+                          )
+                        : null,
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _testing ? null : _testConnection,
+                  child: _testing
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(l10n.saveTestConnectionButton),
+                ),
+                if (_testResult != null) ...[const SizedBox(height: 8), Text(_testResult!)],
+              ]),
+              _section(context, l10n.settingsPreferencesSection, [
+                Text(l10n.expiringSoonDescription),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      child: TextField(
+                        controller: _expiringSoonController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: _savingExpiringSoon ? null : _saveExpiringSoonDays,
+                      child: _savingExpiringSoon
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : Text(l10n.saveButton),
+                    ),
+                  ],
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.qr_code_scanner),
+                  title: Text(l10n.barcodeScanningTitle),
+                  subtitle: Text(l10n.barcodeScanningSubtitle),
+                  value: settings.scanEnabled,
+                  onChanged: settings.setScanEnabled,
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.category_outlined),
+                  title: Text(l10n.offCategorySuggestionsTitle),
+                  subtitle: Text(l10n.offCategorySuggestionsSubtitle),
+                  value: settings.offCategorySuggestionsEnabled,
+                  onChanged: settings.setOffCategorySuggestionsEnabled,
+                ),
+                if (pendingScans > 0)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.pending_actions),
+                    title: Text(l10n.pendingScans),
+                    subtitle: Text(l10n.pendingScansSubtitle(pendingScans)),
+                    trailing: Badge(label: Text('$pendingScans'), child: const Icon(Icons.chevron_right)),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PendingScansScreen()),
+                    ),
+                  ),
+              ]),
+              _section(context, l10n.settingsManageSection, [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.location_on_outlined),
+                  title: Text(l10n.locationsTitle),
+                  subtitle: Text(l10n.locationsSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocationsScreen())),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.inventory_2_outlined),
+                  title: Text(l10n.productsTitle),
+                  subtitle: Text(l10n.productsSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProductsScreen())),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.category_outlined),
+                  title: Text(l10n.categoriesTitle),
+                  subtitle: Text(l10n.categoriesSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoriesScreen())),
+                ),
+              ]),
+              _section(context, l10n.settingsDataSection, [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.file_download_outlined),
+                  title: Text(l10n.exportCsvTitle),
+                  subtitle: Text(l10n.exportCsvSubtitle),
+                  onTap: _exportStockCsv,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.file_upload_outlined),
+                  title: Text(l10n.importCsvTitle),
+                  subtitle: Text(l10n.importCsvSubtitle),
+                  onTap: _importStockCsv,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.file_download_outlined),
+                  title: Text(l10n.exportConsumptionLogCsvTitle),
+                  subtitle: Text(l10n.exportConsumptionLogCsvSubtitle),
+                  onTap: _exportConsumptionLogCsv,
+                ),
+                if (_wastedThisMonth != null) ...[
+                  const Divider(),
+                  Text(l10n.spoiledThisMonth(_wastedThisMonth!)),
+                ],
+              ]),
+              if (kIsWeb) ...[
+                Text(l10n.pairDeviceHint),
+                const SizedBox(height: 12),
+                Center(
+                  child: QrImageView(
+                    // Always port 8099, regardless of how this page itself was
+                    // reached — matters when this loads through HA Ingress
+                    // (a dynamic, session-bound proxy path another device can't
+                    // use), where the pairable address is still the add-on's
+                    // own direct LAN port (see vorrat/DOCS.md).
+                    data: '${Uri.base.scheme}://${Uri.base.host}:8099',
+                    size: 220,
                   ),
                 ),
-                const SizedBox(width: 12),
-                FilledButton(
-                  onPressed: _savingExpiringSoon ? null : _saveExpiringSoonDays,
-                  child: _savingExpiringSoon
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(l10n.saveButton),
-                ),
               ],
-            ),
-            const Divider(),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.qr_code_scanner),
-              title: Text(l10n.barcodeScanningTitle),
-              subtitle: Text(l10n.barcodeScanningSubtitle),
-              value: settings.scanEnabled,
-              onChanged: settings.setScanEnabled,
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.category_outlined),
-              title: Text(l10n.offCategorySuggestionsTitle),
-              subtitle: Text(l10n.offCategorySuggestionsSubtitle),
-              value: settings.offCategorySuggestionsEnabled,
-              onChanged: settings.setOffCategorySuggestionsEnabled,
-            ),
-            if (pendingScans > 0)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.pending_actions),
-                title: Text(l10n.pendingScans),
-                subtitle: Text(l10n.pendingScansSubtitle(pendingScans)),
-                trailing: Badge(
-                  label: Text('$pendingScans'),
-                  child: const Icon(Icons.chevron_right),
-                ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PendingScansScreen()),
-                ),
-              ),
-            const Divider(),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.location_on_outlined),
-              title: Text(l10n.locationsTitle),
-              subtitle: Text(l10n.locationsSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LocationsScreen()),
-              ),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.inventory_2_outlined),
-              title: Text(l10n.productsTitle),
-              subtitle: Text(l10n.productsSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProductsScreen()),
-              ),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.category_outlined),
-              title: Text(l10n.categoriesTitle),
-              subtitle: Text(l10n.categoriesSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
-              ),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.file_download_outlined),
-              title: Text(l10n.exportCsvTitle),
-              subtitle: Text(l10n.exportCsvSubtitle),
-              onTap: _exportStockCsv,
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.file_upload_outlined),
-              title: Text(l10n.importCsvTitle),
-              subtitle: Text(l10n.importCsvSubtitle),
-              onTap: _importStockCsv,
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.file_download_outlined),
-              title: Text(l10n.exportConsumptionLogCsvTitle),
-              subtitle: Text(l10n.exportConsumptionLogCsvSubtitle),
-              onTap: _exportConsumptionLogCsv,
-            ),
-            if (_wastedThisMonth != null) ...[
-              const Divider(),
-              Text(l10n.spoiledThisMonth(_wastedThisMonth!)),
             ],
-            if (kIsWeb) ...[
-              const SizedBox(height: 32),
-              Text(l10n.pairDeviceHint),
-              const SizedBox(height: 12),
-              Center(
-                child: QrImageView(
-                  // Always port 8099, regardless of how this page itself was
-                  // reached — matters when this loads through HA Ingress
-                  // (a dynamic, session-bound proxy path another device can't
-                  // use), where the pairable address is still the add-on's
-                  // own direct LAN port (see vorrat/DOCS.md).
-                  data: '${Uri.base.scheme}://${Uri.base.host}:8099',
-                  size: 220,
-                ),
-              ),
-            ],
-          ],
           ),
         ),
       ),

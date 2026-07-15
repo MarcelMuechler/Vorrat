@@ -922,4 +922,59 @@ class AppLocalizationsDe extends AppLocalizations {
   String couldNotBulkMove(String error) {
     return 'Auswahl konnte nicht verschoben werden: $error';
   }
+
+  @override
+  String get needsAttentionHeader => 'Braucht Aufmerksamkeit';
+
+  @override
+  String get inStockHeader => 'Auf Lager';
+
+  @override
+  String get defaultsLabel => 'Standardwerte';
+
+  @override
+  String lowStockBannerText(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Artikel wenig vorrätig',
+      one: '1 Artikel wenig vorrätig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addAllButton => 'Alle hinzufügen';
+
+  @override
+  String get fromStockTag => 'Aus Vorrat';
+
+  @override
+  String get doneSectionLabel => 'Erledigt';
+
+  @override
+  String get settingsConnectionSection => 'Verbindung';
+
+  @override
+  String get settingsPreferencesSection => 'Einstellungen';
+
+  @override
+  String get settingsManageSection => 'Verwalten';
+
+  @override
+  String get settingsDataSection => 'Daten';
+
+  @override
+  String get pickDateLabel => 'Datum wählen';
+
+  @override
+  String get bestBeforeSectionLabel => 'Mindesthaltbarkeit';
+
+  @override
+  String get batchesHeading => 'Chargen';
+
+  @override
+  String inDaysChipLabel(int days) {
+    return '+${days}T';
+  }
 }

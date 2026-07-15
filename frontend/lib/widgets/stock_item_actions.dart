@@ -30,6 +30,12 @@ class StockItemActions extends StatefulWidget {
   // its confirmation dialog was cancelled.
   final Future<bool> Function() onDelete;
   final Object dismissibleKey;
+  // When set, renders as a colored-left-border/tinted card instead of a
+  // plain row -- the Stock overview's "needs attention" section (#199 wireframe
+  // revamp) uses this to make expired/expiring batches visually stand out from
+  // the plain "in stock" rows below them. Batch lists elsewhere (product
+  // detail, selection mode) leave this null and keep today's plain look.
+  final String? emphasizeStatus;
 
   const StockItemActions({
     super.key,
@@ -43,6 +49,7 @@ class StockItemActions extends StatefulWidget {
     required this.onConsume,
     required this.onDelete,
     required this.dismissibleKey,
+    this.emphasizeStatus,
   });
 
   @override
@@ -82,34 +89,47 @@ class _StockItemActionsState extends State<StockItemActions> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final row = Dismissible(
+      key: ValueKey(widget.dismissibleKey),
+      background: Container(
+        color: statusColor('ok'),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(l10n.usedLabel, style: const TextStyle(color: Colors.white)),
+      ),
+      secondaryBackground: Container(
+        color: statusColor('expired'),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(l10n.spoiledLabel, style: const TextStyle(color: Colors.white)),
+      ),
+      confirmDismiss: (direction) => widget.onConsume(
+        widget.amount,
+        direction == DismissDirection.startToEnd ? 'used' : 'spoiled',
+      ),
+      child: ListTile(
+        leading: widget.leading,
+        title: widget.title,
+        subtitle: widget.subtitle,
+        onTap: () => setState(() => _expanded = !_expanded),
+        onLongPress: widget.onDelete,
+      ),
+    );
+    final emphasizeStatus = widget.emphasizeStatus;
     return Column(
       children: [
-        Dismissible(
-          key: ValueKey(widget.dismissibleKey),
-          background: Container(
-            color: statusColor('ok'),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(l10n.usedLabel, style: const TextStyle(color: Colors.white)),
+        if (emphasizeStatus == null)
+          row
+        else
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor(emphasizeStatus).withValues(alpha: 0.08),
+              border: Border(left: BorderSide(color: statusColor(emphasizeStatus), width: 4)),
+              borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
+            ),
+            child: row,
           ),
-          secondaryBackground: Container(
-            color: statusColor('expired'),
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(l10n.spoiledLabel, style: const TextStyle(color: Colors.white)),
-          ),
-          confirmDismiss: (direction) => widget.onConsume(
-            widget.amount,
-            direction == DismissDirection.startToEnd ? 'used' : 'spoiled',
-          ),
-          child: ListTile(
-            leading: widget.leading,
-            title: widget.title,
-            subtitle: widget.subtitle,
-            onTap: () => setState(() => _expanded = !_expanded),
-            onLongPress: widget.onDelete,
-          ),
-        ),
         if (_expanded)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),

@@ -6,6 +6,7 @@ import 'package:vorrat/l10n/app_localizations.dart';
 import 'package:vorrat/models/models.dart';
 import 'package:vorrat/screens/shopping_list_screen.dart';
 import 'package:vorrat/state/settings_provider.dart';
+import 'package:vorrat/state/stock_provider.dart';
 
 class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
@@ -52,6 +53,10 @@ Widget _wrap(ApiClient api, SettingsProvider settings) => MultiProvider(
       providers: [
         ChangeNotifierProvider<SettingsProvider>.value(value: settings),
         Provider<ApiClient>.value(value: api),
+        // The screen now shows a low-stock banner sourced from StockProvider
+        // (#199 wireframe revamp) -- must be in the tree even though this
+        // test doesn't exercise it.
+        ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -914,4 +914,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String couldNotBulkMove(String error) {
     return 'Could not move selected items: $error';
   }
+
+  @override
+  String get needsAttentionHeader => 'Needs attention';
+
+  @override
+  String get inStockHeader => 'In stock';
+
+  @override
+  String get defaultsLabel => 'Defaults';
+
+  @override
+  String lowStockBannerText(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items low on stock',
+      one: '1 item low on stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addAllButton => 'Add all';
+
+  @override
+  String get fromStockTag => 'From stock';
+
+  @override
+  String get doneSectionLabel => 'Done';
+
+  @override
+  String get settingsConnectionSection => 'Connection';
+
+  @override
+  String get settingsPreferencesSection => 'Preferences';
+
+  @override
+  String get settingsManageSection => 'Manage';
+
+  @override
+  String get settingsDataSection => 'Data';
+
+  @override
+  String get pickDateLabel => 'Pick date';
+
+  @override
+  String get bestBeforeSectionLabel => 'Best-before';
+
+  @override
+  String get batchesHeading => 'Batches';
+
+  @override
+  String inDaysChipLabel(int days) {
+    return '+${days}d';
+  }
 }
