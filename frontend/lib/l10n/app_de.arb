@@ -39,7 +39,7 @@
   "unitCustomLabel": "Eigene Einheit",
   "locationLabel": "Standort",
   "defaultLocationLabel": "Standardort",
-  "noneLabel": "Keine",
+  "noneLabel": "Keiner",
   "searchLabel": "Suche",
   "barcodeLabel": "Barcode: {code}",
 
@@ -195,7 +195,7 @@
   "offCategorySuggestionsSubtitle": "Beim Hinzufügen eines gescannten Produkts eine Kategorie vorschlagen",
   "scanToConnectTooltip": "Zum Verbinden scannen",
   "saveTestConnectionButton": "Speichern & Verbindung testen",
-  "expiringSoonDescription": "„Bald ablaufend\" gilt für Artikel, die innerhalb dieser Anzahl von Tagen fällig sind.",
+  "expiringSoonDescription": "\"Bald ablaufend\" gilt für Artikel, die innerhalb dieser Anzahl von Tagen fällig sind.",
   "exportCsvTitle": "Bestand exportieren (CSV)",
   "exportCsvSubtitle": "Aktuellen Bestand als Tabelle herunterladen",
   "importCsvTitle": "Bestand importieren (CSV)",

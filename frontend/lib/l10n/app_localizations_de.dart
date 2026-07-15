@@ -119,7 +119,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get defaultLocationLabel => 'Standardort';
 
   @override
-  String get noneLabel => 'Keine';
+  String get noneLabel => 'Keiner';
 
   @override
   String get searchLabel => 'Suche';
@@ -684,7 +684,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get expiringSoonDescription =>
-      '„Bald ablaufend\" gilt für Artikel, die innerhalb dieser Anzahl von Tagen fällig sind.';
+      '\"Bald ablaufend\" gilt für Artikel, die innerhalb dieser Anzahl von Tagen fällig sind.';
 
   @override
   String get exportCsvTitle => 'Bestand exportieren (CSV)';
