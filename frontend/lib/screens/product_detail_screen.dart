@@ -108,20 +108,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (picked != null) setState(() => _bestBeforeDate = picked);
   }
 
-  /// Barcode-less products have no uniqueness constraint at all (unlike
-  /// barcoded ones, protected by the DB's unique barcode column) -- a typo'd
-  /// re-entry of an existing name would otherwise silently create a second,
-  /// separate product. Only an exact case-insensitive match after trimming;
-  /// no fuzzy matching (#47).
+  /// Product.name has no uniqueness constraint at all, and the barcode
+  /// column's uniqueness only protects against the *same* barcode being
+  /// reused -- two different barcodes (two packagings/sizes of the same
+  /// generic item from Open Food Facts, or a manual entry followed later by
+  /// a scan of that item) can otherwise silently produce two separate
+  /// products with an identical name (#downstream of #47's original,
+  /// barcode-less-only version of this check). Only an exact
+  /// case-insensitive match after trimming; no fuzzy matching.
   Future<Product?> _findExactNameMatch(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return null;
     final api = context.read<ApiClient>();
-    final candidates = await api.listProducts(search: trimmed);
-    for (final p in candidates) {
-      if (p.name.trim().toLowerCase() == trimmed.toLowerCase()) return p;
+    try {
+      final candidates = await api.listProducts(search: trimmed);
+      for (final p in candidates) {
+        if (p.name.trim().toLowerCase() == trimmed.toLowerCase()) return p;
+      }
+      return null;
+    } catch (_) {
+      // This is a courtesy check, not a hard requirement -- if it can't be
+      // reached, fall through and let the actual save (which will itself
+      // surface any real connectivity error) decide, rather than blocking
+      // the save on a lookup failure.
+      return null;
     }
-    return null;
   }
 
   /// Force-resolves the category field's current text (rather than trusting
@@ -168,14 +179,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         productId = widget.existingProduct!.id;
       } else {
         Product? useExisting;
-        if (widget.barcode == null) {
-          final match = await _findExactNameMatch(_nameController.text);
-          if (match != null && mounted && await _confirmUseExisting(match)) {
-            useExisting = match;
-          }
+        final match = await _findExactNameMatch(_nameController.text);
+        if (match != null && mounted && await _confirmUseExisting(match)) {
+          useExisting = match;
         }
         if (useExisting != null) {
           productId = useExisting.id;
+          // A scanned barcode wasn't stored anywhere in this case (the
+          // existing product was reused instead of creating a new one) --
+          // attach it now, if the existing product doesn't already have a
+          // different one, so re-scanning the same barcode is recognized
+          // locally next time instead of hitting Open Food Facts and this
+          // same dialog again.
+          if (widget.barcode != null && useExisting.barcode == null) {
+            await api.updateProduct(useExisting.id, {'barcode': widget.barcode});
+          }
         } else {
           final created = await api.createProduct({
             'barcode': widget.barcode,

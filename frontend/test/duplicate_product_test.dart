@@ -12,6 +12,7 @@ class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
   bool createProductCalled = false;
   int? stockedProductId;
+  Map<String, dynamic>? lastUpdatePayload;
 
   @override
   Future<List<Location>> listLocations() async => [];
@@ -24,6 +25,12 @@ class FakeApiClient extends ApiClient {
   Future<Product> createProduct(Map<String, dynamic> payload) async {
     createProductCalled = true;
     return Product(id: 99, name: payload['name']);
+  }
+
+  @override
+  Future<Product> updateProduct(int id, Map<String, dynamic> payload) async {
+    lastUpdatePayload = {'id': id, ...payload};
+    return Product(id: id, name: 'Homemade Jam', barcode: payload['barcode']);
   }
 
   @override
@@ -43,7 +50,7 @@ class FakeApiClient extends ApiClient {
   }) async => [];
 }
 
-Widget _wrap(ApiClient api, SettingsProvider settings) => MultiProvider(
+Widget _wrap(ApiClient api, SettingsProvider settings, {String? barcode}) => MultiProvider(
       providers: [
         ChangeNotifierProvider<SettingsProvider>.value(value: settings),
         Provider<ApiClient>.value(value: api),
@@ -52,7 +59,7 @@ Widget _wrap(ApiClient api, SettingsProvider settings) => MultiProvider(
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const ProductDetailScreen(),
+        home: ProductDetailScreen(barcode: barcode),
       ),
     );
 
@@ -96,5 +103,32 @@ void main() {
 
     expect(api.createProductCalled, isTrue);
     expect(api.stockedProductId, 99);
+  });
+
+  // Regression test: a scanned barcode used to skip the duplicate-name check
+  // entirely, so two different barcodes for the same name (or a barcode scan
+  // matching an existing barcode-less product) could silently create two
+  // separate products with an identical name.
+  testWidgets('a barcode-carrying scan still warns about a matching product name', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_wrap(api, settings, barcode: '4001234'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'homemade jam');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Similar product exists'), findsOneWidget);
+
+    await tester.tap(find.text('Use existing'));
+    await tester.pumpAndSettle();
+
+    expect(api.createProductCalled, isFalse);
+    expect(api.stockedProductId, 42);
+    // The scanned barcode is attached to the reused product so re-scanning
+    // it is recognized locally next time.
+    expect(api.lastUpdatePayload, {'id': 42, 'barcode': '4001234'});
   });
 }
