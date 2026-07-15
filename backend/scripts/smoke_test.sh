@@ -137,6 +137,25 @@ done
 [ "$(echo "$STATS" | jq -r .expiring_soon)" = "1" ] || { echo "FAIL: expected expiring_soon=1"; exit 1; }
 [ "$(echo "$STATS" | jq -r .earliest_expiry)" = "$SOON_DATE" ] || { echo "FAIL: expected earliest_expiry=$SOON_DATE"; exit 1; }
 
+echo "== stock: default_open_shelf_life_days=0 must count as a real value, not unset (#184) =="
+ZERO_SHELF_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' -d '{"name": "Counter"}' | jq -r .id)
+ZERO_SHELF_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Cut Fruit", "default_open_shelf_life_days": 0, "default_location_id": '"$ZERO_SHELF_LOCATION_ID"'}' \
+  | jq -r .id)
+ZERO_SHELF_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$ZERO_SHELF_PRODUCT_ID"', "location_id": '"$ZERO_SHELF_LOCATION_ID"', "amount": 1, "best_before_date": "'"$FAR_DATE"'"}' \
+  | jq -r .id)
+curl -sf -X PATCH "$BASE/api/stock/$ZERO_SHELF_ENTRY_ID" \
+  -H 'content-type: application/json' -d '{"opened_at": "'"$PAST_DATE"'"}' > /dev/null
+ZERO_SHELF_STATUS=$(curl -sf "$BASE/api/stock?product_id=$ZERO_SHELF_PRODUCT_ID" | jq -r '.[0].status')
+[ "$ZERO_SHELF_STATUS" = "expired" ] \
+  || { echo "FAIL: expected status=expired for opened item with default_open_shelf_life_days=0, got $ZERO_SHELF_STATUS"; exit 1; }
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$ZERO_SHELF_ENTRY_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$ZERO_SHELF_PRODUCT_ID"
+
 echo "== shopping-list: create by product_id =="
 ITEM_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/shopping-list" \
   -H 'content-type: application/json' \

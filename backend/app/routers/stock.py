@@ -34,7 +34,11 @@ router = APIRouter(prefix="/api/stock", tags=["stock"])
 def _effective_expiry(
     best_before_date: date | None, opened_at: date | None, open_shelf_life_days: int | None
 ) -> date | None:
-    opened_expiry = opened_at + timedelta(days=open_shelf_life_days) if opened_at and open_shelf_life_days else None
+    opened_expiry = (
+        opened_at + timedelta(days=open_shelf_life_days)
+        if opened_at is not None and open_shelf_life_days is not None
+        else None
+    )
     candidates = [d for d in (best_before_date, opened_expiry) if d is not None]
     return min(candidates) if candidates else None
 
