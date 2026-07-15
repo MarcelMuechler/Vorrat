@@ -103,10 +103,13 @@ async def _fetch_off(barcode: str) -> dict | None | object:
             break
         except httpx.HTTPStatusError as exc:
             # A genuine 4xx like 404 "not found" is a clean answer, not a
-            # transient failure — retrying it would just waste time.
+            # transient failure — retrying it would just waste time, and
+            # unlike a real error it's safe (and desirable) to cache as a miss.
             status = exc.response.status_code
             retryable = status == 429 or status >= 500
-            if not retryable or attempt == _MAX_ATTEMPTS - 1:
+            if not retryable:
+                return None
+            if attempt == _MAX_ATTEMPTS - 1:
                 return _ERROR
         except (httpx.HTTPError, ValueError):
             # ValueError covers response.json() raising JSONDecodeError, e.g. OFF
@@ -196,7 +199,8 @@ if __name__ == "__main__":
     assert asyncio.run(_fetch_off("555")) is _ERROR
     assert _calls["n"] == _MAX_ATTEMPTS
 
-    # A clean 404 "not found" is not retried — it's a real answer, not a glitch.
+    # A clean 404 "not found" is not retried — it's a real answer, not a glitch —
+    # and it must be cacheable (None), not the never-cached _ERROR sentinel.
     _calls = {"n": 0}
 
     async def _clean_404(barcode: str) -> dict:
@@ -204,7 +208,7 @@ if __name__ == "__main__":
         raise _http_status_error(404)
 
     _request_off = _clean_404
-    assert asyncio.run(_fetch_off("666")) is _ERROR
+    assert asyncio.run(_fetch_off("666")) is None
     assert _calls["n"] == 1  # no retry attempted
 
     _CACHE.clear()
