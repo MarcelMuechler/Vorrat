@@ -72,6 +72,20 @@ if STATIC_DIR.exists():
         page_html = page_html.replace(
             _BASE_HREF_MARKER, f'<base href="{escape_html(ingress_path, quote=True)}/">'
         )
-        return HTMLResponse(page_html)
+        # no-cache (not no-store): still lets the browser send a conditional
+        # request and reuse the body on a 304, but forces revalidation every
+        # load instead of serving a stale post-update index.html from the
+        # heuristic cache.
+        return HTMLResponse(page_html, headers={"Cache-Control": "no-cache"})
 
-    app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")
+    class NoCacheStaticFiles(StaticFiles):
+        # Flutter web's build output isn't content-hashed (main.dart.js,
+        # flutter_service_worker.js etc keep fixed names across builds), so
+        # without this every asset is as cache-stale-prone as index.html
+        # above after an add-on update.
+        def file_response(self, *args, **kwargs):
+            response = super().file_response(*args, **kwargs)
+            response.headers["Cache-Control"] = "no-cache"
+            return response
+
+    app.mount("/", NoCacheStaticFiles(directory=STATIC_DIR), name="static")
