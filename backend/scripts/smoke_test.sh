@@ -652,4 +652,14 @@ LIMIT_COUNT=$(curl -sf "$BASE/api/products?search=PagTest&limit=2" | jq 'length'
 OFFSET_COUNT=$(curl -sf "$BASE/api/products?search=PagTest&offset=2" | jq 'length')
 [ "$OFFSET_COUNT" = "1" ] || { echo "FAIL: expected offset=2 to return the remaining 1 product, got $OFFSET_COUNT"; exit 1; }
 
+echo "== security: X-Ingress-Path header must be HTML-escaped before it's spliced into <base href> (#181) =="
+INGRESS_BODY=$(curl -s -H 'X-Ingress-Path: "><script>alert(1)</script>' "$BASE/")
+if echo "$INGRESS_BODY" | grep -q '<base href'; then
+  echo "$INGRESS_BODY" | grep -q '<script>alert(1)</script>' \
+    && { echo "FAIL: raw <script> tag from X-Ingress-Path leaked unescaped into the response (XSS)"; exit 1; }
+  echo "OK: X-Ingress-Path was HTML-escaped, no raw <script> tag in response"
+else
+  echo "skip: no Flutter static build bundled locally (index route only exists once vorrat/Dockerfile copies app/static/ in)"
+fi
+
 echo "OK"

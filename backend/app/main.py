@@ -1,3 +1,4 @@
+from html import escape as escape_html
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -67,8 +68,10 @@ if STATIC_DIR.exists():
         # default hash-based routing, so this rewrite on the initial document
         # load is the only place ingress-awareness is needed.
         ingress_path = request.headers.get("X-Ingress-Path", "")
-        html = (STATIC_DIR / "index.html").read_text()
-        html = html.replace(_BASE_HREF_MARKER, f'<base href="{ingress_path}/">')
-        return HTMLResponse(html)
+        page_html = (STATIC_DIR / "index.html").read_text()
+        page_html = page_html.replace(
+            _BASE_HREF_MARKER, f'<base href="{escape_html(ingress_path, quote=True)}/">'
+        )
+        return HTMLResponse(page_html)
 
     app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")
