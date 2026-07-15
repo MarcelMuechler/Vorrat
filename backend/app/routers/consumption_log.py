@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -27,7 +27,7 @@ def _query_consumption_log(
     if since is not None:
         query = query.filter(ConsumptionLog.created_at >= since)
     if until is not None:
-        query = query.filter(ConsumptionLog.created_at <= until)
+        query = query.filter(ConsumptionLog.created_at < until + timedelta(days=1))
     if reason is not None:
         query = query.filter(ConsumptionLog.reason == reason)
     return [
