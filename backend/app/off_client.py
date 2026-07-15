@@ -1,5 +1,6 @@
 import asyncio
 import time
+from urllib.parse import quote
 
 import httpx
 
@@ -86,7 +87,7 @@ async def lookup_off(barcode: str) -> dict | None:
 
 async def _request_off(barcode: str) -> dict:
     """A single OFF request attempt. Raises httpx.HTTPError/ValueError on failure."""
-    url = f"{settings.off_base_url}/api/v2/product/{barcode}.json"
+    url = f"{settings.off_base_url}/api/v2/product/{quote(barcode, safe='')}.json"
     headers = {"User-Agent": settings.off_user_agent}
     async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_SECONDS) as client:
         response = await client.get(url, headers=headers)
