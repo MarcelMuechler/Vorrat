@@ -118,6 +118,12 @@ LOG_UNIT=$(curl -sf "$BASE/api/consumption-log?reason=used" \
   | jq -r --argjson pid "$PRODUCT_ID" '[.[] | select(.product_id == $pid)][0].quantity_unit')
 [ "$LOG_UNIT" = "pcs" ] || { echo "FAIL: expected consumption-log quantity_unit=pcs, got $LOG_UNIT"; exit 1; }
 
+echo "== consumption-log: until=today still includes an entry logged today (inclusive of the whole day, not just up to midnight) =="
+TODAY=$(date +%Y-%m-%d)
+COUNT=$(curl -sf "$BASE/api/consumption-log?until=$TODAY" \
+  | jq --argjson pid "$PRODUCT_ID" '[.[] | select(.product_id == $pid)] | length')
+[ "$COUNT" = "1" ] || { echo "FAIL: expected 1 consumption-log row for product with until=today, got $COUNT"; exit 1; }
+
 echo "== stats: summary for HA sensors (expect 1 product, 2 stock entries, 0 expired, 1 expiring_soon) =="
 STATS=$(curl -sf "$BASE/api/stats")
 echo "$STATS" | jq .
