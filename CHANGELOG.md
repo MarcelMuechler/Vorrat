@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.14.1...v0.15.0) (2026-07-15)
+
+
+### Features
+
+* **frontend:** add bulk consume/delete/move to StockProvider ([e207377](https://github.com/MarcelMuechler/Vorrat/commit/e207377dafe10ec5f2abc78d879b545010e4bae4))
+* **frontend:** add selection-mode UI for bulk stock actions ([#123](https://github.com/MarcelMuechler/Vorrat/issues/123)) ([1eb8096](https://github.com/MarcelMuechler/Vorrat/commit/1eb809696601520e753c8e3d0c5e5ab3d29bd89a))
+
 ## [0.14.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.14.0...v0.14.1) (2026-07-15)
 
 
