@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.15.0...v0.16.0) (2026-07-15)
+
+
+### Features
+
+* **ci:** carry the release CHANGELOG.md into the HA add-on wrapper repo ([5899ec5](https://github.com/MarcelMuechler/Vorrat/commit/5899ec5a8964e603db28de46306ca0d42f8a6ea0)), closes [#193](https://github.com/MarcelMuechler/Vorrat/issues/193)
+
+
+### Bug Fixes
+
+* **frontend:** correct German l10n gender agreement and quote style ([beacaf7](https://github.com/MarcelMuechler/Vorrat/commit/beacaf79a5b6941b7ac9dd928efc2c43ab263c5b))
+
 ## [0.15.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.14.1...v0.15.0) (2026-07-15)
 
 
