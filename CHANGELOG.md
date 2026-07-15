@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.14.0...v0.14.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* **backend:** cache genuine OFF 404 responses as not-found instead of retrying ([5a8f1c6](https://github.com/MarcelMuechler/Vorrat/commit/5a8f1c63f1ce078ae726bfa713a9946c4d7b1b29)), closes [#183](https://github.com/MarcelMuechler/Vorrat/issues/183)
+* **backend:** escape X-Ingress-Path before splicing into base href ([5919499](https://github.com/MarcelMuechler/Vorrat/commit/5919499ab4b7d714c1b7e5ef32a619946ef4472c))
+* **backend:** make consumption log 'until' filter inclusive of the whole day ([9d5beab](https://github.com/MarcelMuechler/Vorrat/commit/9d5beab530a44340425163ed2b7412389cee6eab)), closes [#185](https://github.com/MarcelMuechler/Vorrat/issues/185)
+* **backend:** treat default_open_shelf_life_days=0 as a real value, not unset ([ca2e85c](https://github.com/MarcelMuechler/Vorrat/commit/ca2e85c41573fdf8b235333432d3395fd8ceb0f1))
+* **backend:** URL-encode barcode before building the OFF request URL ([a5902aa](https://github.com/MarcelMuechler/Vorrat/commit/a5902aafd081546f76893093b675afefce89afa5)), closes [#182](https://github.com/MarcelMuechler/Vorrat/issues/182)
+* **ci:** guard fromJSON(pr) in release-please workflow, sync uv.lock ([798e143](https://github.com/MarcelMuechler/Vorrat/commit/798e1439fa7faef6242b6c5d6f5cc7f3629be3fb)), closes [#191](https://github.com/MarcelMuechler/Vorrat/issues/191)
+
 ## [0.14.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.13.0...v0.14.0) (2026-07-14)
 
 
