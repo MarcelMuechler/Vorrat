@@ -235,7 +235,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: InputDecoration(
                 labelText: l10n.serverUrlLabel,
                 hintText: 'http://192.168.1.20:8099',
-                border: const OutlineInputBorder(),
                 suffixIcon: settings.scanEnabled
                     ? IconButton(
                         icon: const Icon(Icons.qr_code_scanner),
@@ -272,7 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: TextField(
                     controller: _expiringSoonController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                    decoration: const InputDecoration(isDense: true),
                   ),
                 ),
                 const SizedBox(width: 12),

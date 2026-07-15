@@ -151,7 +151,6 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
               autofocus: true,
               decoration: InputDecoration(
                 labelText: l10n.amountFieldLabel,
-                border: const OutlineInputBorder(),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
@@ -165,7 +164,6 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
                     initialValue: _selectedLocationId,
                     decoration: InputDecoration(
                       labelText: l10n.locationLabel,
-                      border: const OutlineInputBorder(),
                     ),
                     items: _locations.map((l) => DropdownMenuItem(value: l.id, child: Text(l.name))).toList(),
                     onChanged: (value) => setState(() => _selectedLocationId = value),

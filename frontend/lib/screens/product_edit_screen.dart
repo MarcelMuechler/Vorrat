@@ -251,7 +251,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                 ],
                 TextField(
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.nameLabel),
                 ),
                 const SizedBox(height: 12),
                 CategoryField(
@@ -275,7 +275,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   initialValue: _selectedLocationId,
                   decoration: InputDecoration(
                     labelText: l10n.defaultLocationLabel,
-                    border: const OutlineInputBorder(),
                   ),
                   items: [
                     DropdownMenuItem<int>(value: null, child: Text(l10n.noneLabel)),
@@ -289,7 +288,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.defaultBestBeforeDaysLabel,
                     hintText: l10n.defaultBestBeforeDaysHint,
-                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -299,7 +297,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.openShelfLifeLabel,
                     hintText: l10n.openShelfLifeHint,
-                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -309,7 +306,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.lowStockThresholdLabel,
                     hintText: l10n.lowStockThresholdHint,
-                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
@@ -319,7 +315,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.targetStockLevelLabel,
                     hintText: l10n.targetStockLevelHint,
-                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),

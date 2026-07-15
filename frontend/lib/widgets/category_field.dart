@@ -135,7 +135,6 @@ class CategoryFieldState extends State<CategoryField> {
           focusNode: focusNode,
           decoration: InputDecoration(
             labelText: widget.label,
-            border: const OutlineInputBorder(),
             suffixIcon: controller.text.isEmpty
                 ? null
                 : IconButton(

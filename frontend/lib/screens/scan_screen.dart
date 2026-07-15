@@ -261,21 +261,47 @@ class _ScanScreenState extends State<ScanScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            // Horizontally scrollable -- four segments with locale-dependent
-            // label lengths (e.g. German "Verbrauchen") can be wider than a
-            // narrow phone screen.
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<ScanMode>(
-                segments: [
-                  ButtonSegment(value: ScanMode.add, label: Text(l10n.scanModeAdd)),
-                  ButtonSegment(value: ScanMode.open, label: Text(l10n.scanModeOpen)),
-                  ButtonSegment(value: ScanMode.consume, label: Text(l10n.scanModeUse)),
-                  ButtonSegment(value: ScanMode.discard, label: Text(l10n.scanModeDiscard)),
-                ],
-                selected: {_mode},
-                onSelectionChanged: (selected) => setState(() => _mode = selected.first),
-              ),
+            // Four segments with locale-dependent label lengths (e.g. German
+            // "Verbrauchen") don't fit a labeled SegmentedButton on a narrow
+            // phone screen -- a scrollable row just clips the last segment
+            // off the edge with no visible affordance (#199). Icon-only
+            // (with a tooltip) below the breakpoint keeps every mode
+            // reachable by a plain tap regardless of screen width or locale.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final showLabels = constraints.maxWidth >= 560;
+                Widget? label(String text) => showLabels ? Text(text) : null;
+                return SegmentedButton<ScanMode>(
+                  segments: [
+                    ButtonSegment(
+                      value: ScanMode.add,
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: label(l10n.scanModeAdd),
+                      tooltip: showLabels ? null : l10n.scanModeAdd,
+                    ),
+                    ButtonSegment(
+                      value: ScanMode.open,
+                      icon: const Icon(Icons.lock_open),
+                      label: label(l10n.scanModeOpen),
+                      tooltip: showLabels ? null : l10n.scanModeOpen,
+                    ),
+                    ButtonSegment(
+                      value: ScanMode.consume,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: label(l10n.scanModeUse),
+                      tooltip: showLabels ? null : l10n.scanModeUse,
+                    ),
+                    ButtonSegment(
+                      value: ScanMode.discard,
+                      icon: const Icon(Icons.delete_outline),
+                      label: label(l10n.scanModeDiscard),
+                      tooltip: showLabels ? null : l10n.scanModeDiscard,
+                    ),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: (selected) => setState(() => _mode = selected.first),
+                );
+              },
             ),
           ),
           Expanded(

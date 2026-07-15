@@ -77,7 +77,7 @@ class _QuantityUnitFieldState extends State<QuantityUnitField> {
       children: [
         DropdownButtonFormField<String>(
           initialValue: _isOther ? _otherValue : widget.value,
-          decoration: InputDecoration(labelText: widget.label, border: const OutlineInputBorder()),
+          decoration: InputDecoration(labelText: widget.label),
           items: [
             for (final unit in commonQuantityUnits)
               DropdownMenuItem(value: unit, child: Text(quantityUnitLabel(l10n, unit))),
@@ -95,7 +95,6 @@ class _QuantityUnitFieldState extends State<QuantityUnitField> {
             controller: _customController,
             decoration: InputDecoration(
               labelText: l10n.unitCustomLabel,
-              border: const OutlineInputBorder(),
             ),
             onChanged: widget.onChanged,
           ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../state/scan_history.dart';
+import '../widgets/empty_state.dart';
 
 /// Pops with the tapped entry's barcode, so ScanScreen can re-run its own
 /// lookup flow -- keeps that logic in one place instead of duplicating it
@@ -17,7 +18,7 @@ class ScanHistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recentlyScanned)),
       body: entries.isEmpty
-          ? Center(child: Text(l10n.nothingScannedYet))
+          ? EmptyState(icon: Icons.history, message: l10n.nothingScannedYet)
           : ListView.separated(
               itemCount: entries.length,
               separatorBuilder: (_, _) => const Divider(height: 1),

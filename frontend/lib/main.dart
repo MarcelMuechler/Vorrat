@@ -12,6 +12,37 @@ import 'state/scan_queue.dart';
 import 'state/settings_provider.dart';
 import 'state/stock_provider.dart';
 
+// One deliberate theme for both brightnesses (#199) -- the M3 seed defaults
+// left surfaces flat (near-black in dark mode with no layering) and every
+// text field/dialog relying on Flutter's bare OutlineInputBorder. Filled,
+// tonal surfaces give the filter row and cards a visible base to sit on.
+ThemeData _buildTheme(Brightness brightness) {
+  final colorScheme = ColorScheme.fromSeed(seedColor: Colors.teal, brightness: brightness);
+  return ThemeData(
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: colorScheme.surface,
+    appBarTheme: AppBarThemeData(backgroundColor: colorScheme.surface, scrolledUnderElevation: 0),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHighest,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+    ),
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainer,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      selectedColor: colorScheme.secondaryContainer,
+      shape: const StadiumBorder(),
+      side: BorderSide.none,
+    ),
+    navigationBarTheme: NavigationBarThemeData(backgroundColor: colorScheme.surfaceContainer),
+    navigationRailTheme: NavigationRailThemeData(backgroundColor: colorScheme.surfaceContainer),
+  );
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = SettingsProvider();
@@ -54,10 +85,8 @@ class VorratApp extends StatelessWidget {
         title: 'Vorrat',
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal)),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal, brightness: Brightness.dark),
-        ),
+        theme: _buildTheme(Brightness.light),
+        darkTheme: _buildTheme(Brightness.dark),
         home: const HomeShell(),
       ),
     );

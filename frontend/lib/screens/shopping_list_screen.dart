@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../util/format.dart';
 import '../util/status.dart';
+import '../widgets/empty_state.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -257,7 +258,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           focusNode: focusNode,
           decoration: InputDecoration(
             hintText: l10n.shoppingListAddHint,
-            border: const OutlineInputBorder(),
             isDense: true,
             suffixIcon: IconButton(
               icon: const Icon(Icons.add),
@@ -310,7 +310,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         children: [
           SizedBox(
             height: MediaQuery.sizeOf(context).height * 0.45,
-            child: Center(child: Text(l10n.shoppingListEmpty)),
+            child: EmptyState(icon: Icons.shopping_cart_outlined, message: l10n.shoppingListEmpty),
           ),
         ],
       );

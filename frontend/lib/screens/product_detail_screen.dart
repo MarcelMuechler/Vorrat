@@ -234,7 +234,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ],
                 TextField(
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.nameLabel, border: const OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l10n.nameLabel),
                 ),
                 const SizedBox(height: 12),
                 if (widget.existingProduct == null) ...[
@@ -258,7 +258,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         initialValue: _selectedLocationId,
                         decoration: InputDecoration(
                           labelText: l10n.locationLabel,
-                          border: const OutlineInputBorder(),
                         ),
                         items: _locations
                             .map((l) => DropdownMenuItem(value: l.id, child: Text(l.name)))
@@ -281,7 +280,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         controller: _amountController,
                         decoration: InputDecoration(
                           labelText: l10n.amountFieldLabel,
-                          border: const OutlineInputBorder(),
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       ),

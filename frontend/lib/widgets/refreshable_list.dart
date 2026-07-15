@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'empty_state.dart';
+
 /// The loading / error / empty / populated list shared by every screen
 /// backed by a simple GET-and-list flow (Categories, Locations, Products).
 /// Error and empty states are still wrapped in a scrollable [ListView], not
@@ -8,6 +10,7 @@ class RefreshableList<T> extends StatelessWidget {
   final bool loading;
   final Object? error;
   final String Function(Object error) errorText;
+  final IconData emptyIcon;
   final String emptyText;
   final List<T> items;
   final Widget Function(BuildContext context, T item) itemBuilder;
@@ -18,6 +21,7 @@ class RefreshableList<T> extends StatelessWidget {
     required this.loading,
     required this.error,
     required this.errorText,
+    required this.emptyIcon,
     required this.emptyText,
     required this.items,
     required this.itemBuilder,
@@ -41,7 +45,7 @@ class RefreshableList<T> extends StatelessWidget {
                   children: [
                     SizedBox(
                       height: MediaQuery.sizeOf(context).height * 0.45,
-                      child: Center(child: Text(emptyText)),
+                      child: EmptyState(icon: emptyIcon, message: emptyText),
                     ),
                   ],
                 )

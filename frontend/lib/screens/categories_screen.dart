@@ -120,6 +120,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         loading: _loading,
         error: _error,
         errorText: (e) => l10n.couldNotLoadCategories('$e'),
+        emptyIcon: Icons.sell_outlined,
         emptyText: l10n.noCategoriesYet,
         items: _categories,
         onRefresh: _refresh,

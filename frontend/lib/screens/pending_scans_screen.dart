@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../state/scan_queue.dart';
+import '../widgets/empty_state.dart';
 import 'product_detail_screen.dart';
 
 class PendingScansScreen extends StatefulWidget {
@@ -80,7 +81,7 @@ class _PendingScansScreenState extends State<PendingScansScreen> {
           ),
           Expanded(
             child: queue.pending.isEmpty
-                ? Center(child: Text(l10n.nothingPending))
+                ? EmptyState(icon: Icons.inbox_outlined, message: l10n.nothingPending)
                 : ListView.separated(
                     itemCount: queue.pending.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),

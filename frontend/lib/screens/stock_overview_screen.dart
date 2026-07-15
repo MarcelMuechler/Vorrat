@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
 import '../util/status.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/stock_item_actions.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
@@ -147,83 +148,95 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     final stock = context.watch<StockProvider>();
     final l10n = AppLocalizations.of(context)!;
 
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: _selectionMode ? _buildSelectionAppBar(context, stock, l10n) : _buildDefaultAppBar(stock, l10n),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: l10n.searchLabel,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchDebounce?.cancel();
-                          _searchController.clear();
-                          stock.setSearchFilter('');
-                          setState(() {});
-                        },
-                      ),
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              textInputAction: TextInputAction.search,
-              onChanged: (value) {
-                _searchDebounce?.cancel();
-                _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-                  stock.setSearchFilter(value);
-                });
-                setState(() {});
-              },
-              onSubmitted: (value) {
-                _searchDebounce?.cancel();
-                stock.setSearchFilter(value);
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  FilterChip(
-                    label: Text(l10n.expiringSoonChip),
-                    selected: stock.expiringWithinDaysFilter != null,
-                    onSelected: (selected) =>
-                        stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
+          // A distinct tonal panel (#199) so the search/filter toolbar reads
+          // as a deliberate surface instead of floating directly on the
+          // near-black scaffold background.
+          Container(
+            color: colors.surfaceContainer,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: l10n.searchLabel,
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchDebounce?.cancel();
+                                _searchController.clear();
+                                stock.setSearchFilter('');
+                                setState(() {});
+                              },
+                            ),
+                      isDense: true,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onChanged: (value) {
+                      _searchDebounce?.cancel();
+                      _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                        stock.setSearchFilter(value);
+                      });
+                      setState(() {});
+                    },
+                    onSubmitted: (value) {
+                      _searchDebounce?.cancel();
+                      stock.setSearchFilter(value);
+                    },
                   ),
-                  const SizedBox(width: 12),
-                  if (_locations.isNotEmpty)
-                    DropdownButton<int?>(
-                      value: stock.locationIdFilter,
-                      hint: Text(l10n.allLocationsLabel),
-                      items: [
-                        DropdownMenuItem<int?>(value: null, child: Text(l10n.allLocationsLabel)),
-                        for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
-                      ],
-                      onChanged: (value) => stock.setLocationFilter(value),
-                    ),
-                  if (_categories.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    DropdownButton<int?>(
-                      value: stock.categoryIdFilter,
-                      hint: Text(l10n.allCategoriesLabel),
-                      items: [
-                        DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
-                        for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
-                      ],
-                      onChanged: (value) => stock.setCategoryFilter(value),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  // Wrap, not a horizontally-scrolling Row (#199) -- on a
+                  // narrow phone a scrolling row clips the last filter off
+                  // the edge with no visible affordance that more exists.
+                  // Wrapping to a second line keeps every control reachable
+                  // by a plain tap regardless of screen width or locale.
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      FilterChip(
+                        label: Text(l10n.expiringSoonChip),
+                        selected: stock.expiringWithinDaysFilter != null,
+                        onSelected: (selected) =>
+                            stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
+                      ),
+                      if (_locations.isNotEmpty)
+                        _pillDropdown(
+                          value: stock.locationIdFilter,
+                          hint: l10n.allLocationsLabel,
+                          items: [
+                            DropdownMenuItem<int?>(value: null, child: Text(l10n.allLocationsLabel)),
+                            for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
+                          ],
+                          onChanged: (value) => stock.setLocationFilter(value),
+                        ),
+                      if (_categories.isNotEmpty)
+                        _pillDropdown(
+                          value: stock.categoryIdFilter,
+                          hint: l10n.allCategoriesLabel,
+                          items: [
+                            DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
+                            for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
+                          ],
+                          onChanged: (value) => stock.setCategoryFilter(value),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -243,6 +256,25 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
               ),
               child: const Icon(Icons.add),
             ),
+    );
+  }
+
+  // A plain DropdownButton has no fill/border and disappears against the
+  // dark scaffold background (#199) -- give it the same pill shape as the
+  // FilterChip next to it so the whole toolbar reads as one control group.
+  Widget _pillDropdown({
+    required int? value,
+    required String hint,
+    required List<DropdownMenuItem<int?>> items,
+    required ValueChanged<int?> onChanged,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(value: value, hint: Text(hint), items: items, onChanged: onChanged),
+      ),
     );
   }
 
@@ -340,8 +372,15 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.45,
-            child: Center(child: Text(l10n.noStockYet)),
+            height: MediaQuery.sizeOf(context).height * 0.6,
+            child: EmptyState(
+              icon: Icons.kitchen_outlined,
+              message: l10n.noStockYet,
+              actionLabel: l10n.addProductManuallyTooltip,
+              onAction: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProductDetailScreen()),
+              ),
+            ),
           ),
         ],
       );
@@ -626,7 +665,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
           title: Text(l10n.moveToLocationTitle),
           content: DropdownButtonFormField<int>(
             initialValue: selected,
-            decoration: InputDecoration(labelText: l10n.locationLabel, border: const OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.locationLabel),
             items: [for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name))],
             onChanged: (value) => setDialogState(() => selected = value),
           ),

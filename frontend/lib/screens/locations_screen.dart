@@ -120,6 +120,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
         loading: _loading,
         error: _error,
         errorText: (e) => l10n.couldNotLoadLocations('$e'),
+        emptyIcon: Icons.place_outlined,
         emptyText: l10n.noLocationsYet,
         items: _locations,
         onRefresh: _refresh,

@@ -110,61 +110,78 @@ class _ProductsScreenState extends State<ProductsScreen> {
       appBar: AppBar(title: Text(l10n.productsTitle)),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: l10n.searchLabel,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchDebounce?.cancel();
-                          _searchController.clear();
-                          _refresh();
-                          setState(() {});
-                        },
+          Container(
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: l10n.searchLabel,
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchDebounce?.cancel();
+                                _searchController.clear();
+                                _refresh();
+                                setState(() {});
+                              },
+                            ),
+                      isDense: true,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onChanged: (_) {
+                      _searchDebounce?.cancel();
+                      _searchDebounce = Timer(const Duration(milliseconds: 350), _refresh);
+                      setState(() {});
+                    },
+                    onSubmitted: (_) {
+                      _searchDebounce?.cancel();
+                      _refresh();
+                    },
+                  ),
+                ),
+                if (_categories.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            value: _categoryFilter,
+                            hint: Text(l10n.allCategoriesLabel),
+                            items: [
+                              DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
+                              for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
+                            ],
+                            onChanged: (value) => setState(() => _categoryFilter = value),
+                          ),
+                        ),
                       ),
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              textInputAction: TextInputAction.search,
-              onChanged: (_) {
-                _searchDebounce?.cancel();
-                _searchDebounce = Timer(const Duration(milliseconds: 350), _refresh);
-                setState(() {});
-              },
-              onSubmitted: (_) {
-                _searchDebounce?.cancel();
-                _refresh();
-              },
+                    ),
+                  ),
+              ],
             ),
           ),
-          if (_categories.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: DropdownButton<int?>(
-                  value: _categoryFilter,
-                  hint: Text(l10n.allCategoriesLabel),
-                  items: [
-                    DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
-                    for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
-                  ],
-                  onChanged: (value) => setState(() => _categoryFilter = value),
-                ),
-              ),
-            ),
           Expanded(
             child: RefreshableList<Product>(
               loading: _loading,
               error: _error,
               errorText: (e) => l10n.couldNotLoadProducts('$e'),
+              emptyIcon: Icons.inventory_2_outlined,
               emptyText: l10n.noProductsYet,
               items: _visibleProducts,
               onRefresh: _refresh,

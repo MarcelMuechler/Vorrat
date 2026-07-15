@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
 import '../util/status.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/stock_item_actions.dart';
 import 'product_detail_screen.dart';
 
@@ -166,7 +167,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                     ],
                   )
                 : _items.isEmpty
-                    ? Center(child: Text(l10n.noBatchesLeft))
+                    ? EmptyState(icon: Icons.inventory_2_outlined, message: l10n.noBatchesLeft)
                     : ListView.separated(
                         itemCount: _items.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
