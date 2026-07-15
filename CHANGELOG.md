@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.17.0...v0.17.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* **frontend:** check for a duplicate product name on barcode-scanned adds too ([e5ce6cb](https://github.com/MarcelMuechler/Vorrat/commit/e5ce6cbc555facbf15df702ae776e615872edd9e))
+
 ## [0.17.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.16.1...v0.17.0) (2026-07-15)
 
 
