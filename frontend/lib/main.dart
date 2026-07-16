@@ -39,6 +39,13 @@ ThemeData _buildTheme(Brightness brightness) {
       side: BorderSide.none,
     ),
     navigationBarTheme: NavigationBarThemeData(backgroundColor: colorScheme.surfaceContainer),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: colorScheme.inverseSurface,
+      contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+      actionTextColor: colorScheme.inversePrimary,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
   );
 }
 
