@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
 import '../util/status.dart';
@@ -14,6 +16,7 @@ import '../widgets/stock_item_actions.dart';
 import '../widgets/undo_snackbar.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
+import 'settings_screen.dart';
 
 String _bucketLabel(AppLocalizations l10n, ExpiryBucketKey key) {
   switch (key) {
@@ -115,11 +118,19 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     final stock = context.watch<StockProvider>();
     final l10n = AppLocalizations.of(context)!;
 
+    // Native apps (Android/iOS) have no origin to fall back to, so an unset
+    // server URL means every request has nowhere to go (#198) -- an empty
+    // serverUrl on the web build is the *correct*, expected state instead
+    // (same-origin deployment via Docker/HA Ingress, see ApiClient._baseUrl),
+    // so this only fires for !kIsWeb.
+    final serverNotConfigured = !kIsWeb && context.watch<SettingsProvider>().serverUrl.isEmpty;
+
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: _selectionMode ? _buildSelectionAppBar(context, stock, l10n) : _buildDefaultAppBar(stock, l10n),
       body: Column(
         children: [
+          if (serverNotConfigured) _buildServerNotConfiguredBanner(context, l10n),
           if (!_selectionMode) _buildStatStrip(context, stock, l10n),
           // A distinct tonal panel (#199) so the search/filter toolbar reads
           // as a deliberate surface instead of floating directly on the
@@ -242,6 +253,47 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
       decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(value: value, hint: Text(hint), items: items, onChanged: onChanged),
+      ),
+    );
+  }
+
+  // Onboarding nudge for native apps with no server URL set (#198) -- a
+  // first-time native user has no other cue that this is the required first
+  // step (requests just fail silently/confusingly otherwise). Purely a
+  // reflection of live SettingsProvider state, not a dismissible one-time
+  // banner, so it simply disappears once a server URL is saved.
+  Widget _buildServerNotConfiguredBanner(BuildContext context, AppLocalizations l10n) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: colors.primaryContainer, borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.settings_outlined, color: colors.onPrimaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.serverUrlNotSetTitle,
+                  style: TextStyle(fontWeight: FontWeight.bold, color: colors.onPrimaryContainer),
+                ),
+                const SizedBox(height: 4),
+                Text(l10n.serverUrlNotSetMessage, style: TextStyle(color: colors.onPrimaryContainer)),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                  child: Text(l10n.goToSettingsButton),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
