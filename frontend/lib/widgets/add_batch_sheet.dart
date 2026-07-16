@@ -37,6 +37,7 @@ class AddBatchSheet extends StatefulWidget {
 
 class _AddBatchSheetState extends State<AddBatchSheet> {
   late final TextEditingController _amountController;
+  late final TextEditingController _priceController;
   List<Location> _locations = [];
   int? _selectedLocationId;
   DateTime? _bestBeforeDate;
@@ -47,6 +48,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
   void initState() {
     super.initState();
     _amountController = TextEditingController(text: '1');
+    _priceController = TextEditingController();
     _selectedLocationId = widget.product.defaultLocationId;
     final defaultDays = widget.product.defaultBestBeforeDays;
     if (defaultDays != null) {
@@ -58,6 +60,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
   @override
   void dispose() {
     _amountController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -105,6 +108,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
     final amount = double.tryParse(_amountController.text) ?? 1;
+    final price = double.tryParse(_priceController.text);
     setState(() => _saving = true);
     final api = context.read<ApiClient>();
     try {
@@ -113,6 +117,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
         'location_id': _selectedLocationId,
         'amount': amount,
         'best_before_date': _bestBeforeDate?.toIso8601String().split('T').first,
+        'price': price,
       });
       if (!mounted) return;
       await context.read<StockProvider>().refresh();
@@ -176,6 +181,12 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
                 ),
                 IconButton.outlined(onPressed: () => _stepAmount(1), icon: const Icon(Icons.add)),
               ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _priceController,
+              decoration: InputDecoration(labelText: l10n.priceFieldLabel, isDense: true),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 16),
             Text(l10n.locationLabel, style: Theme.of(context).textTheme.labelMedium),

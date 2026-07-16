@@ -57,6 +57,17 @@ def get_stats(db: Session = Depends(get_db)):
 
     low_stock_products = low_stock_products_query(db).count()
 
+    # Entries with no price are simply skipped (not treated as free) --
+    # func.sum ignores NULLs the same way SQL aggregates always do, but
+    # amount * NULL is itself NULL, so filtering price.isnot(None) first
+    # (rather than relying on the sum alone) is what actually keeps this a
+    # true "sum of what's priced" instead of every row needing a price.
+    total_value = (
+        db.query(func.sum(StockEntry.amount * StockEntry.price))
+        .filter(StockEntry.price.isnot(None))
+        .scalar()
+    ) or 0.0
+
     return StatsRead(
         total_products=total_products,
         total_stock_entries=total_stock_entries,
@@ -64,4 +75,5 @@ def get_stats(db: Session = Depends(get_db)):
         expiring_soon=expiring_soon,
         low_stock_products=low_stock_products,
         earliest_expiry=earliest_expiry,
+        total_value=total_value,
     )

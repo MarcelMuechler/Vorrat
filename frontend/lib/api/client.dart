@@ -254,6 +254,7 @@ class ApiClient {
       'best_before_date': item.bestBeforeDate?.toIso8601String().split('T').first,
       'purchased_date': item.purchasedDate?.toIso8601String().split('T').first,
       'opened_at': item.openedAt?.toIso8601String().split('T').first,
+      'price': item.price,
     });
   }
 

@@ -83,6 +83,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get amountFieldLabel => 'Menge';
 
   @override
+  String get priceFieldLabel => 'Preis pro Einheit (optional)';
+
+  @override
+  String totalStockValueLabel(String value) {
+    return 'Gesamtwert: $value';
+  }
+
+  @override
   String get unitLabel => 'Einheit';
 
   @override

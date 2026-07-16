@@ -242,6 +242,18 @@ abstract class AppLocalizations {
   /// **'Amount'**
   String get amountFieldLabel;
 
+  /// No description provided for @priceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price per unit (optional)'**
+  String get priceFieldLabel;
+
+  /// No description provided for @totalStockValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total value: {value}'**
+  String totalStockValueLabel(String value);
+
   /// No description provided for @unitLabel.
   ///
   /// In en, this message translates to:

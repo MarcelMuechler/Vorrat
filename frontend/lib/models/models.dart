@@ -106,6 +106,10 @@ class StockItem {
   final DateTime? bestBeforeDate;
   final DateTime? purchasedDate;
   final DateTime? openedAt;
+  // Per-unit price (see the backend's StockEntry.price docstring for why
+  // per-unit rather than a total for the whole entry) -- null if this
+  // entry's cost was never recorded.
+  final double? price;
   final String productName;
   final String? productBarcode;
   final String? category;
@@ -123,6 +127,7 @@ class StockItem {
     this.bestBeforeDate,
     this.purchasedDate,
     this.openedAt,
+    this.price,
     this.productBarcode,
     this.category,
     this.lowStockThreshold,
@@ -141,6 +146,7 @@ class StockItem {
             ? DateTime.parse(json['purchased_date'])
             : null,
         openedAt: json['opened_at'] != null ? DateTime.parse(json['opened_at']) : null,
+        price: (json['price'] as num?)?.toDouble(),
         productName: json['product_name'],
         productBarcode: json['product_barcode'],
         category: json['product_category'],
