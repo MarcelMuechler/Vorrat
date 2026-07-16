@@ -446,6 +446,24 @@ abstract class AppLocalizations {
   /// **'No stock yet. Scan something to add it.'**
   String get noStockYet;
 
+  /// No description provided for @serverUrlNotSetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No server configured'**
+  String get serverUrlNotSetTitle;
+
+  /// No description provided for @serverUrlNotSetMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a server URL in Settings so this app can connect to your Vorrat instance.'**
+  String get serverUrlNotSetMessage;
+
+  /// No description provided for @goToSettingsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Settings'**
+  String get goToSettingsButton;
+
   /// No description provided for @addProductManuallyTooltip.
   ///
   /// In en, this message translates to:

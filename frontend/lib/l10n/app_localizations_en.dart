@@ -189,6 +189,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStockYet => 'No stock yet. Scan something to add it.';
 
   @override
+  String get serverUrlNotSetTitle => 'No server configured';
+
+  @override
+  String get serverUrlNotSetMessage =>
+      'Set a server URL in Settings so this app can connect to your Vorrat instance.';
+
+  @override
+  String get goToSettingsButton => 'Go to Settings';
+
+  @override
   String get addProductManuallyTooltip => 'Add product manually';
 
   @override

@@ -190,6 +190,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch kein Bestand. Scanne etwas, um es hinzuzufügen.';
 
   @override
+  String get serverUrlNotSetTitle => 'Kein Server konfiguriert';
+
+  @override
+  String get serverUrlNotSetMessage =>
+      'Lege in den Einstellungen eine Server-URL fest, damit diese App sich mit deiner Vorrat-Instanz verbinden kann.';
+
+  @override
+  String get goToSettingsButton => 'Zu den Einstellungen';
+
+  @override
   String get addProductManuallyTooltip => 'Produkt manuell hinzufügen';
 
   @override

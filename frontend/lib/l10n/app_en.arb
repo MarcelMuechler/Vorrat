@@ -71,6 +71,9 @@
     "placeholders": { "error": { "type": "String" } }
   },
   "noStockYet": "No stock yet. Scan something to add it.",
+  "serverUrlNotSetTitle": "No server configured",
+  "serverUrlNotSetMessage": "Set a server URL in Settings so this app can connect to your Vorrat instance.",
+  "goToSettingsButton": "Go to Settings",
   "addProductManuallyTooltip": "Add product manually",
   "addNewBatchTooltip": "Add new batch",
   "groupTotalAmount": "{amount} total",
