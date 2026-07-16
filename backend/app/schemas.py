@@ -109,6 +109,9 @@ class StockEntryCreate(BaseModel):
     amount: float = Field(gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
+    # Per-unit price -- see StockEntry.price's docstring in models.py for
+    # why per-unit rather than a total for the whole entry.
+    price: float | None = Field(default=None, ge=0)
 
 
 class StockEntryUpdate(BaseModel):
@@ -117,6 +120,7 @@ class StockEntryUpdate(BaseModel):
     best_before_date: date | None = None
     purchased_date: date | None = None
     opened_at: date | None = None
+    price: float | None = Field(default=None, ge=0)
 
 
 class StockEntryConsume(BaseModel):
@@ -136,6 +140,7 @@ class StockUndoConsume(BaseModel):
     best_before_date: date | None = None
     purchased_date: date | None = None
     opened_at: date | None = None
+    price: float | None = Field(default=None, ge=0)
 
 
 class StockEntryRead(BaseModel):
@@ -148,6 +153,7 @@ class StockEntryRead(BaseModel):
     best_before_date: date | None
     purchased_date: date | None
     opened_at: date | None
+    price: float | None
     created_at: datetime
     updated_at: datetime
 
@@ -214,6 +220,9 @@ class ConsumptionLogRead(BaseModel):
     amount: float
     reason: str
     quantity_unit: str | None = None
+    # Snapshotted per-unit price from the source StockEntry at
+    # consume/spoil time -- see ConsumptionLog.price's docstring.
+    price: float | None = None
     created_at: datetime
 
 
@@ -238,6 +247,11 @@ class StatsRead(BaseModel):
     expiring_soon: int
     low_stock_products: int
     earliest_expiry: date | None
+    # Sum of amount * price across current stock entries that have a price
+    # set -- entries with no price are simply skipped (not treated as
+    # free), so this is a lower bound whenever some entries are unpriced.
+    # 0 (not null) when nothing is priced, matching the other counters here.
+    total_value: float
 
 
 class ShoppingListItemCreate(BaseModel):

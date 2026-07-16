@@ -27,6 +27,8 @@
   "categoryLabel": "Kategorie",
   "clearCategoryTooltip": "Kategorie entfernen",
   "amountFieldLabel": "Menge",
+  "priceFieldLabel": "Preis pro Einheit (optional)",
+  "totalStockValueLabel": "Gesamtwert: {value}",
   "unitLabel": "Einheit",
   "quantityUnitLabel": "Mengeneinheit",
   "unitPcsLabel": "Stück",

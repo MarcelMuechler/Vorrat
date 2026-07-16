@@ -30,6 +30,11 @@
   "categoryLabel": "Category",
   "clearCategoryTooltip": "Clear category",
   "amountFieldLabel": "Amount",
+  "priceFieldLabel": "Price per unit (optional)",
+  "totalStockValueLabel": "Total value: {value}",
+  "@totalStockValueLabel": {
+    "placeholders": { "value": { "type": "String" } }
+  },
   "unitLabel": "Unit",
   "quantityUnitLabel": "Quantity unit",
   "unitPcsLabel": "pcs",

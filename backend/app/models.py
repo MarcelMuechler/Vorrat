@@ -108,6 +108,15 @@ class StockEntry(Base):
     best_before_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     purchased_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     opened_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Price *per unit* (Product.quantity_unit), not the total paid for the
+    # whole entry -- amount can shrink via partial consumption
+    # (_consume_entry in stock.py), so a per-unit price stays correct
+    # against whatever's left, whereas a fixed total would silently
+    # overstate value after any partial use. Optional: entries created
+    # before this existed, or where the user just doesn't track cost, have
+    # no price and are skipped (not treated as free) by the total-value sum
+    # in stats.py.
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
@@ -174,6 +183,13 @@ class ConsumptionLog(Base):
     # written before this column existed have no snapshot to backfill beyond
     # the product's *current* unit (see the migration).
     quantity_unit: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Snapshotted from the source StockEntry.price at the moment it's
+    # consumed/spoiled (not looked up live) -- same rationale as
+    # quantity_unit above: a later price edit (or the entry being deleted
+    # entirely) mustn't retroactively reinterpret what this historic row
+    # cost. Null if the source entry had no price, or for rows written
+    # before this column existed.
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     product: Mapped[Product] = relationship()

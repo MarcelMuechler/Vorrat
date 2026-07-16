@@ -393,7 +393,23 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
 
   AppBar _buildDefaultAppBar(StockProvider stock, AppLocalizations l10n) {
     return AppBar(
-      title: Text(l10n.stockTitle),
+      title: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.stockTitle),
+          // Hidden entirely (rather than showing "0") until at least one
+          // stock entry has a price -- no currency setting exists in this
+          // app, so this is a plain number, not a formatted currency amount.
+          // Computed client-side from the already-loaded list (#126), same
+          // approach the stat strip below uses for its own counts.
+          if (stock.hasAnyPricedItem)
+            Text(
+              l10n.totalStockValueLabel(formatAmount(stock.totalValue)),
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+        ],
+      ),
       actions: [
         // Grouped rows aggregate multiple stock entries with no per-entry
         // ids exposed (see ProductGroup) -- selection only makes sense in

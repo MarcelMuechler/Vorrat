@@ -158,7 +158,7 @@ COUNT=$(curl -sf "$BASE/api/consumption-log?until=$TODAY" \
 echo "== stats: summary for HA sensors (expect 1 product, 2 stock entries, 0 expired, 1 expiring_soon) =="
 STATS=$(curl -sf "$BASE/api/stats")
 echo "$STATS" | jq .
-for key in total_products total_stock_entries expired expiring_soon low_stock_products earliest_expiry; do
+for key in total_products total_stock_entries expired expiring_soon low_stock_products earliest_expiry total_value; do
   echo "$STATS" | jq -e "has(\"$key\")" > /dev/null \
     || { echo "FAIL: /api/stats response missing key $key"; exit 1; }
 done
@@ -167,6 +167,47 @@ done
 [ "$(echo "$STATS" | jq -r .expired)" = "0" ] || { echo "FAIL: expected expired=0"; exit 1; }
 [ "$(echo "$STATS" | jq -r .expiring_soon)" = "1" ] || { echo "FAIL: expected expiring_soon=1"; exit 1; }
 [ "$(echo "$STATS" | jq -r .earliest_expiry)" = "$SOON_DATE" ] || { echo "FAIL: expected earliest_expiry=$SOON_DATE"; exit 1; }
+
+echo "== stock: price tracking (per-unit price) round-trips via the API =="
+PRICE_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' -d '{"name": "Pantry"}' | jq -r .id)
+PRICE_PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "Olive Oil"}' | jq -r .id)
+
+TOTAL_VALUE_BEFORE=$(curl -sf "$BASE/api/stats" | jq -r .total_value)
+
+PRICE_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRICE_PRODUCT_ID"', "location_id": '"$PRICE_LOCATION_ID"', "amount": 2, "price": 3.5}' \
+  | jq -r .id)
+echo "created priced stock entry $PRICE_ENTRY_ID"
+
+RETURNED_PRICE=$(curl -sf "$BASE/api/stock?product_id=$PRICE_PRODUCT_ID" | jq -r '.[0].price')
+[ "$RETURNED_PRICE" = "3.5" ] || { echo "FAIL: expected price=3.5 to round-trip, got $RETURNED_PRICE"; exit 1; }
+
+echo "== stock: add a second, unpriced entry for the same product (must be skipped by total_value, not treated as free) =="
+NOPRICE_ENTRY_ID=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$PRICE_PRODUCT_ID"', "location_id": '"$PRICE_LOCATION_ID"', "amount": 100}' \
+  | jq -r .id)
+
+echo "== stats: total_value reflects only the priced entry (amount 2 * price 3.5 = 7) =="
+TOTAL_VALUE_AFTER=$(curl -sf "$BASE/api/stats" | jq -r .total_value)
+DELTA=$(python3 -c "print($TOTAL_VALUE_AFTER - $TOTAL_VALUE_BEFORE)")
+[ "$DELTA" = "7.0" ] \
+  || { echo "FAIL: expected total_value to increase by 7.0, got delta=$DELTA (before=$TOTAL_VALUE_BEFORE after=$TOTAL_VALUE_AFTER)"; exit 1; }
+
+echo "== consumption-log: consuming a priced entry snapshots its per-unit price onto the log row =="
+curl -sf -X POST "$BASE/api/stock/$PRICE_ENTRY_ID/consume" \
+  -H 'content-type: application/json' -d '{"amount": 1, "reason": "spoiled"}' | jq .
+LOG_PRICE=$(curl -sf "$BASE/api/consumption-log?reason=spoiled" \
+  | jq -r --argjson pid "$PRICE_PRODUCT_ID" '[.[] | select(.product_id == $pid)][0].price')
+[ "$LOG_PRICE" = "3.5" ] \
+  || { echo "FAIL: expected consumption-log price=3.5 snapshotted from stock entry, got $LOG_PRICE"; exit 1; }
+
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$PRICE_ENTRY_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/stock/$NOPRICE_ENTRY_ID"
+curl -sf -o /dev/null -X DELETE "$BASE/api/products/$PRICE_PRODUCT_ID"
 
 echo "== stock: default_open_shelf_life_days=0 must count as a real value, not unset (#184) =="
 ZERO_SHELF_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \

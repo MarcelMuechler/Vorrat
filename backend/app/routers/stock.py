@@ -318,6 +318,10 @@ def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -
         amount=amount,
         reason=reason,
         quantity_unit=entry.product.quantity_unit,
+        # Snapshotted from the entry being consumed (not looked up live)
+        # for the same reason as quantity_unit above -- see
+        # ConsumptionLog.price's docstring in models.py.
+        price=entry.price,
     )
     db.add(log)
     # Flushed (not committed) so log.id is populated for the caller even
@@ -347,6 +351,7 @@ def _delete_entry(db: Session, entry: StockEntry) -> None:
             amount=entry.amount,
             reason="spoiled",
             quantity_unit=entry.product.quantity_unit,
+            price=entry.price,
         )
     )
     db.delete(entry)
@@ -462,6 +467,7 @@ def undo_consume(log_id: int, payload: StockUndoConsume, db: Session = Depends(g
         best_before_date=payload.best_before_date,
         purchased_date=payload.purchased_date,
         opened_at=payload.opened_at,
+        price=payload.price,
     )
     db.add(entry)
     db.delete(log)

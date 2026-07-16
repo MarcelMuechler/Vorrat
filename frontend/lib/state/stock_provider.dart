@@ -85,6 +85,20 @@ class StockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sum of amount * price across currently loaded [items] that have a
+  /// price set -- entries with no price are simply skipped (not treated as
+  /// free), same rule as the backend's /api/stats total_value. Computed
+  /// client-side from data already fetched, same approach
+  /// StockOverviewScreen's stat strip uses for its expired/expiring counts,
+  /// rather than a separate API round-trip.
+  double get totalValue =>
+      items.where((i) => i.price != null).fold(0.0, (sum, i) => sum + i.amount * i.price!);
+
+  /// True once at least one loaded entry has a price -- lets the UI hide
+  /// the total-value figure entirely rather than show a misleading "0" when
+  /// nobody has started tracking cost yet.
+  bool get hasAnyPricedItem => items.any((i) => i.price != null);
+
   /// [sortedItems] collapsed to one row per product -- summed amount, the
   /// worst status among its batches (expired beats expiring_soon beats ok),
   /// and every distinct location it's spread across.
