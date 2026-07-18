@@ -17,6 +17,35 @@ echo "created location $LOCATION_ID"
 echo "== locations: list =="
 curl -sf "$BASE/api/locations" | jq .
 
+echo "== locations: create with whitespace-only name (expect 422) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' \
+  -d '{"name": "   "}')
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 creating location with whitespace-only name, got $STATUS"; exit 1; }
+
+echo "== locations: create case-variant duplicate (expect 409) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' \
+  -d '{"name": "fridge"}')
+[ "$STATUS" = "409" ] || { echo "FAIL: expected 409 creating location with case-variant duplicate name, got $STATUS"; exit 1; }
+
+echo "== locations: create a second location for rename test =="
+LOCATION_ID_2=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Cellar"}' | jq -r .id)
+echo "created location $LOCATION_ID_2"
+
+echo "== locations: rename location to case-variant of another (expect 409) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/locations/$LOCATION_ID_2" \
+  -H 'content-type: application/json' \
+  -d '{"name": "FRIDGE"}')
+[ "$STATUS" = "409" ] || { echo "FAIL: expected 409 renaming location to case-variant duplicate, got $STATUS"; exit 1; }
+
+echo "== locations: rename location to itself (case-variant, should succeed) =="
+curl -sf -X PATCH "$BASE/api/locations/$LOCATION_ID" \
+  -H 'content-type: application/json' \
+  -d '{"name": "FRIDGE"}' | jq .
+
 echo "== products: create =="
 PRODUCT_ID=$(curl -sf -X POST "$BASE/api/products" \
   -H 'content-type: application/json' \
