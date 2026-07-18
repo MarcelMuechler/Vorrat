@@ -190,6 +190,22 @@ class ConsumptionLog(Base):
     # cost. Null if the source entry had no price, or for rows written
     # before this column existed.
     price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Server-authoritative undo (#224). Only a *single* consume
+    # (/{entry_id}/consume) is reversible, and it must restore exactly what
+    # it removed -- never client-supplied replacement values. So the row that
+    # is reversible is flagged `undoable=True` and carries an immutable
+    # snapshot of the StockEntry fields not already captured above
+    # (product_id/amount/price are). Bulk-consume and delete/bulk-delete rows
+    # leave `undoable` at its default False (and never offered Undo in the
+    # UI), so their snapshot columns stay null and undo_consume rejects them.
+    # Undo reconstructs the removed portion from (product_id, amount, price)
+    # plus these columns, then deletes the log -- so it can only ever run
+    # once.
+    undoable: Mapped[bool] = mapped_column(Boolean, server_default="0", default=False)
+    undo_location_id: Mapped[int | None] = mapped_column(nullable=True)
+    undo_best_before_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    undo_purchased_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    undo_opened_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     product: Mapped[Product] = relationship()

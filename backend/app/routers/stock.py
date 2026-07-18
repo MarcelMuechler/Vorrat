@@ -26,7 +26,6 @@ from app.schemas import (
     StockEntryUpdate,
     StockImportResult,
     StockOverviewItem,
-    StockUndoConsume,
 )
 from app.utils import escape_like, normalize_barcode
 
@@ -414,7 +413,9 @@ def add_stock(payload: StockEntryCreate, db: Session = Depends(get_db)):
     return entry
 
 
-def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -> tuple[bool, int]:
+def _consume_entry(
+    db: Session, entry: StockEntry, amount: float, reason: str, undoable: bool = False
+) -> tuple[bool, int]:
     """Logs the consumption and either shrinks or fully removes `entry`.
     Returns (fully_consumed, consumption_log_id): fully_consumed is True if
     the entry was fully consumed (deleted), False if it was only partially
@@ -423,6 +424,12 @@ def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -
     undone later (#160). Caller is responsible for commit/refresh -- kept
     out of here so bulk callers can batch a single commit across many
     entries.
+
+    `undoable` marks this consume as reversible by undo_consume (#224) and
+    snapshots -- immutably, onto the log row -- exactly the StockEntry fields
+    needed to reconstruct the removed portion later. Only a *single* consume
+    passes True; bulk consume leaves it False so those rows can't be undone
+    into arbitrary stock.
 
     Raises HTTPException(422) if `amount` exceeds what's actually left on
     `entry`. The decrement is a single atomic UPDATE whose WHERE clause folds
@@ -450,6 +457,14 @@ def _consume_entry(db: Session, entry: StockEntry, amount: float, reason: str) -
         # for the same reason as quantity_unit above -- see
         # ConsumptionLog.price's docstring in models.py.
         price=entry.price,
+        # Immutable undo snapshot (#224) -- captured only for a single,
+        # reversible consume. product_id/amount/price above already cover the
+        # rest of what undo_consume needs to rebuild the removed portion.
+        undoable=undoable,
+        undo_location_id=entry.location_id if undoable else None,
+        undo_best_before_date=entry.best_before_date if undoable else None,
+        undo_purchased_date=entry.purchased_date if undoable else None,
+        undo_opened_at=entry.opened_at if undoable else None,
     )
     db.add(log)
     # Flushed (not committed) so log.id is populated for the caller even
@@ -561,7 +576,9 @@ def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depen
     entry = db.get(StockEntry, entry_id)
     if not entry:
         raise HTTPException(404, "Stock entry not found")
-    fully_consumed, log_id = _consume_entry(db, entry, payload.amount, payload.reason)
+    fully_consumed, log_id = _consume_entry(
+        db, entry, payload.amount, payload.reason, undoable=True
+    )
     db.commit()
     if fully_consumed:
         return StockConsumeResult(entry=None, consumption_log_id=log_id)
@@ -570,32 +587,38 @@ def consume_stock(entry_id: int, payload: StockEntryConsume, db: Session = Depen
 
 
 @router.post("/undo/{log_id}", response_model=StockEntryRead, status_code=201)
-def undo_consume(log_id: int, payload: StockUndoConsume, db: Session = Depends(get_db)):
-    """Reverses a single consume (#160): atomically deletes the
-    ConsumptionLog row `log_id` (created by /{entry_id}/consume) and
-    recreates a StockEntry from the fields the frontend passes back --
-    the exact data it held for that batch just before calling consume.
-    Nothing is persisted server-side to make this possible, so all
-    validation (log still exists, product/location still exist) happens
-    before any db.add/db.delete, matching _get_entries_or_404's
-    all-or-nothing pattern above: a 404 here changes nothing. Calling this
-    twice for the same log_id 404s the second time, since the row is
-    already gone."""
+def undo_consume(log_id: int, db: Session = Depends(get_db)):
+    """Reverses a single consume (#160, hardened in #224): atomically
+    deletes the ConsumptionLog row `log_id` and recreates the StockEntry
+    portion that consume removed -- entirely from the immutable snapshot
+    that /{entry_id}/consume wrote onto that log row, never from the request
+    body. This is server-authoritative: the request carries no stock data
+    (any body is ignored), so a client cannot erase one product's log while
+    fabricating stock for another (#224).
+
+    Only rows flagged `undoable` (single consume) qualify; bulk-consume and
+    delete/bulk-delete rows -- which the UI never offered Undo for -- are
+    rejected with 409. Validation (log exists + undoable, product/location
+    still exist) happens before any db.add/db.delete, so a rejected call
+    changes nothing. Deleting the log makes undo one-shot: a second call for
+    the same id 404s, since the row is already gone."""
     log = db.get(ConsumptionLog, log_id)
     if not log:
         raise HTTPException(404, "Consumption log entry not found")
-    if not db.get(Product, payload.product_id):
+    if not log.undoable:
+        raise HTTPException(409, "This consumption log entry cannot be undone")
+    if not db.get(Product, log.product_id):
         raise HTTPException(404, "Product not found")
-    if payload.location_id is not None and not db.get(Location, payload.location_id):
+    if log.undo_location_id is not None and not db.get(Location, log.undo_location_id):
         raise HTTPException(404, "Location not found")
     entry = StockEntry(
-        product_id=payload.product_id,
-        location_id=payload.location_id,
-        amount=payload.amount,
-        best_before_date=payload.best_before_date,
-        purchased_date=payload.purchased_date,
-        opened_at=payload.opened_at,
-        price=payload.price,
+        product_id=log.product_id,
+        location_id=log.undo_location_id,
+        amount=log.amount,
+        best_before_date=log.undo_best_before_date,
+        purchased_date=log.undo_purchased_date,
+        opened_at=log.undo_opened_at,
+        price=log.price,
     )
     db.add(entry)
     db.delete(log)
