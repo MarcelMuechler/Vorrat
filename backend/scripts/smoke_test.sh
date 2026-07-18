@@ -881,6 +881,75 @@ echo "$ROUNDTRIP_RESULT" | jq .
 [ "$(echo "$ROUNDTRIP_RESULT" | jq '.errors | length')" = "0" ] \
   || { echo "FAIL: expected zero errors round-tripping export.csv, got $ROUNDTRIP_RESULT"; exit 1; }
 
+echo "== CSV formula injection protection: create products with formula-injection prefixes (#226) =="
+FORMULA_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
+  -H 'content-type: application/json' -d '{"name": "=Injection Location"}' | jq -r .id)
+FORMULA_EQUALS_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "=SUM(A1:A10)", "barcode": "=1234567"}' | jq -r .id)
+FORMULA_PLUS_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "+1+1"}' | jq -r .id)
+FORMULA_MINUS_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "-2"}' | jq -r .id)
+FORMULA_AT_ID=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' -d '{"name": "@SUM(A1:A10)"}' | jq -r .id)
+
+curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FORMULA_EQUALS_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 1}' > /dev/null
+curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FORMULA_PLUS_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 2}' > /dev/null
+curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FORMULA_MINUS_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 3}' > /dev/null
+curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FORMULA_AT_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 4}' > /dev/null
+
+echo "== CSV formula injection: verify export.csv escapes formula-prefix cells with apostrophe (#226) =="
+FORMULA_EXPORT=$(curl -sf "$BASE/api/stock/export.csv")
+# Check that equals sign is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'=SUM" || { echo "FAIL: expected '=SUM in stock export.csv"; exit 1; }
+# Check that plus sign is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'+1+1" || { echo "FAIL: expected '+1+1 in stock export.csv"; exit 1; }
+# Check that minus sign is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'-2" || { echo "FAIL: expected '-2 in stock export.csv"; exit 1; }
+# Check that at sign is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q "^'@SUM" || { echo "FAIL: expected '@SUM in stock export.csv"; exit 1; }
+# Check that location with formula prefix is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q ",'=Injection Location," || { echo "FAIL: expected location '=Injection Location in stock export.csv"; exit 1; }
+# Check that barcode with formula prefix is escaped
+echo "$FORMULA_EXPORT" | tr -d '\r' | grep -q ",'=1234567" || { echo "FAIL: expected barcode '=1234567 in stock export.csv"; exit 1; }
+
+echo "== CSV formula injection: round-trip formula-prefix products through export->import (#226) =="
+FORMULA_ROUNDTRIP=$(curl -sf -X POST "$BASE/api/stock/import.csv" \
+  -H 'content-type: text/csv' --data-binary "$FORMULA_EXPORT")
+[ "$(echo "$FORMULA_ROUNDTRIP" | jq '.errors | length')" = "0" ] \
+  || { echo "FAIL: expected zero errors round-tripping formula export.csv, got $FORMULA_ROUNDTRIP"; exit 1; }
+# Verify the product names were restored correctly (without the apostrophe escape)
+RESTORED_EQUALS=$(curl -sf "$BASE/api/products/$FORMULA_EQUALS_ID" | jq -r .name)
+[ "$RESTORED_EQUALS" = "=SUM(A1:A10)" ] || { echo "FAIL: expected product name '=SUM(A1:A10)' after round-trip, got '$RESTORED_EQUALS'"; exit 1; }
+RESTORED_PLUS=$(curl -sf "$BASE/api/products/$FORMULA_PLUS_ID" | jq -r .name)
+[ "$RESTORED_PLUS" = "+1+1" ] || { echo "FAIL: expected product name '+1+1' after round-trip, got '$RESTORED_PLUS'"; exit 1; }
+
+echo "== CSV formula injection: test consumption-log export escapes formula-prefix cells (#226) =="
+# reason is a fixed literal (used/spoiled), so the injectable cells in this
+# export are the snapshotted product name and quantity_unit. Give the product
+# a formula-prefixed unit, then consume a fresh entry of it.
+curl -sf -X PATCH "$BASE/api/products/$FORMULA_PLUS_ID" \
+  -H 'content-type: application/json' -d '{"quantity_unit": "=EVILUNIT"}' > /dev/null
+FORMULA_UNIT_ENTRY=$(curl -sf -X POST "$BASE/api/stock" \
+  -H 'content-type: application/json' \
+  -d '{"product_id": '"$FORMULA_PLUS_ID"', "location_id": '"$FORMULA_LOCATION_ID"', "amount": 1}' | jq -r .id)
+curl -sf -X POST "$BASE/api/stock/$FORMULA_UNIT_ENTRY/consume" \
+  -H 'content-type: application/json' \
+  -d '{"amount": 1, "reason": "used"}' > /dev/null
+
+# Verify the log export escapes the snapshotted name and unit
+CONSUMPTION_EXPORT=$(curl -sf "$BASE/api/consumption-log/export.csv")
+echo "$CONSUMPTION_EXPORT" | tr -d '\r' | grep -q "^[^,]*,'+1+1," || { echo "FAIL: expected escaped product name in consumption-log export"; exit 1; }
+echo "$CONSUMPTION_EXPORT" | tr -d '\r' | grep -q "'=EVILUNIT" || { echo "FAIL: expected escaped quantity_unit '=EVILUNIT in consumption-log export"; exit 1; }
+
 echo "== stock/import.csv: upload over the 5 MB size limit is rejected with 413 (not buffered/parsed) =="
 OVERSIZED_CSV_FILE="$(mktemp)"
 trap 'rm -f "$OVERSIZED_CSV_FILE"' EXIT
