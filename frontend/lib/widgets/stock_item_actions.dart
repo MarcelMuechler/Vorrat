@@ -5,6 +5,11 @@ import '../util/format.dart';
 import '../util/status.dart';
 import 'prompt_validated.dart';
 
+// Above this width the three icon+label buttons are guaranteed to fit one
+// line even for the widest (German, with "Mark as opened") label set --
+// measured worst case ~740; below it we render icon-only buttons (#222).
+const double _labelBreakpoint = 760;
+
 /// Wraps a stock batch's list tile with the shared interaction model (#75):
 /// tapping reveals Open/Use/Spoil buttons beneath it (Open only shown while
 /// [canOpen]); Use and Spoil each prompt for an amount. Swiping either
@@ -133,35 +138,62 @@ class _StockItemActionsState extends State<StockItemActions> {
         if (_expanded)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            // Wrap, not a Row (same fix as the stock filter row, #199) -- three
-            // buttons with German labels don't fit one line on a narrow phone;
-            // a Row just clips the last one instead of wrapping it down.
-            child: Wrap(
-              alignment: WrapAlignment.spaceEvenly,
-              children: [
-                if (widget.canOpen)
-                  TextButton.icon(
-                    onPressed: () {
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final actions = <_StockAction>[
+                  if (widget.canOpen)
+                    _StockAction(Icons.lock_open, l10n.markAsOpenedTooltip, () {
                       widget.onOpen();
                       setState(() => _expanded = false);
-                    },
-                    icon: const Icon(Icons.lock_open),
-                    label: Text(l10n.markAsOpenedTooltip),
+                    }),
+                  _StockAction(
+                    Icons.check_circle_outline,
+                    l10n.usedLabel,
+                    () => _promptAndConsume(l10n.useSomeOfTitle(widget.productName), 'used'),
                   ),
-                TextButton.icon(
-                  onPressed: () => _promptAndConsume(l10n.useSomeOfTitle(widget.productName), 'used'),
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(l10n.usedLabel),
-                ),
-                TextButton.icon(
-                  onPressed: () => _promptAndConsume(l10n.spoilSomeOfTitle(widget.productName), 'spoiled'),
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text(l10n.spoiledLabel),
-                ),
-              ],
+                  _StockAction(
+                    Icons.delete_outline,
+                    l10n.spoiledLabel,
+                    () => _promptAndConsume(l10n.spoilSomeOfTitle(widget.productName), 'spoiled'),
+                  ),
+                ];
+                // Keep icon+label buttons whenever the single-line Row is
+                // guaranteed to fit; below the breakpoint (only the narrowest
+                // phones, where three buttons -- e.g. German's "Als geöffnet
+                // markieren" -- can't fit one line) fall back to icon-only
+                // buttons with the label carried by a Tooltip (#222). This
+                // replaced a Wrap (#221), whose second line made the row's
+                // height unpredictable.
+                final iconOnly = constraints.maxWidth < _labelBreakpoint;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    for (final action in actions)
+                      if (iconOnly)
+                        Tooltip(
+                          message: action.label,
+                          child: IconButton(onPressed: action.onPressed, icon: Icon(action.icon)),
+                        )
+                      else
+                        TextButton.icon(
+                          onPressed: action.onPressed,
+                          icon: Icon(action.icon),
+                          label: Text(action.label),
+                        ),
+                  ],
+                );
+              },
             ),
           ),
       ],
     );
   }
+}
+
+class _StockAction {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  _StockAction(this.icon, this.label, this.onPressed);
 }
