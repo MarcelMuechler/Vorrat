@@ -1,5 +1,5 @@
 name: Vorrat
-version: "0.18.0" # x-release-please-version
+version: "0.18.1" # x-release-please-version
 slug: vorrat
 description: Self-hosted grocery & stock management
 url: "https://github.com/MarcelMuechler/vorrat"

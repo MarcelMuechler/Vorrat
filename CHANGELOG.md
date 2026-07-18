@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.0...v0.18.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* **frontend:** pin stock stat-strip labels to one line ([7fb11a3](https://github.com/MarcelMuechler/Vorrat/commit/7fb11a3cedb58c547183c27727e5328475d0d48f))
+* **frontend:** wrap stock item action buttons instead of clipping them ([e30a5dc](https://github.com/MarcelMuechler/Vorrat/commit/e30a5dc30651c34c69422cfa2ba2fba02a43fa39))
+
 ## [0.18.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.17.1...v0.18.0) (2026-07-16)
 
 
