@@ -1,9 +1,21 @@
+import math
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PlainValidator, field_validator, model_validator
 
 from app.utils import normalize_barcode
+
+
+def _validate_finite_float(v: float) -> float:
+    """Reject NaN and infinite values."""
+    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+        raise ValueError("must be a finite number, not NaN or Infinity")
+    return v
+
+
+# Annotated float that rejects NaN and infinity at the API boundary
+FiniteFloat = Annotated[float, PlainValidator(_validate_finite_float)]
 
 
 def _strip_name(v: str | None) -> str | None:
@@ -59,8 +71,8 @@ class ProductCreate(BaseModel):
     default_location_id: int | None = None
     default_best_before_days: int | None = None
     default_open_shelf_life_days: int | None = None
-    low_stock_threshold: float | None = Field(default=None, gt=0)
-    target_stock_level: float | None = Field(default=None, gt=0)
+    low_stock_threshold: FiniteFloat | None = Field(default=None, gt=0)
+    target_stock_level: FiniteFloat | None = Field(default=None, gt=0)
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
     _normalize_barcode = field_validator("barcode", mode="before")(normalize_barcode)
@@ -75,8 +87,8 @@ class ProductUpdate(BaseModel):
     default_location_id: int | None = None
     default_best_before_days: int | None = None
     default_open_shelf_life_days: int | None = None
-    low_stock_threshold: float | None = Field(default=None, gt=0)
-    target_stock_level: float | None = Field(default=None, gt=0)
+    low_stock_threshold: FiniteFloat | None = Field(default=None, gt=0)
+    target_stock_level: FiniteFloat | None = Field(default=None, gt=0)
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
     _normalize_barcode = field_validator("barcode", mode="before")(normalize_barcode)
@@ -110,25 +122,25 @@ class ProductBarcodeCreate(BaseModel):
 class StockEntryCreate(BaseModel):
     product_id: int
     location_id: int | None = None
-    amount: float = Field(gt=0)
+    amount: FiniteFloat = Field(gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
     # Per-unit price -- see StockEntry.price's docstring in models.py for
     # why per-unit rather than a total for the whole entry.
-    price: float | None = Field(default=None, ge=0)
+    price: FiniteFloat | None = Field(default=None, ge=0)
 
 
 class StockEntryUpdate(BaseModel):
     location_id: int | None = None
-    amount: float | None = Field(default=None, gt=0)
+    amount: FiniteFloat | None = Field(default=None, gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
     opened_at: date | None = None
-    price: float | None = Field(default=None, ge=0)
+    price: FiniteFloat | None = Field(default=None, ge=0)
 
 
 class StockEntryConsume(BaseModel):
-    amount: float = Field(gt=0)
+    amount: FiniteFloat = Field(gt=0)
     reason: Literal["used", "spoiled"] = "used"
 
 
@@ -140,11 +152,11 @@ class StockUndoConsume(BaseModel):
 
     product_id: int
     location_id: int | None = None
-    amount: float = Field(gt=0)
+    amount: FiniteFloat = Field(gt=0)
     best_before_date: date | None = None
     purchased_date: date | None = None
     opened_at: date | None = None
-    price: float | None = Field(default=None, ge=0)
+    price: FiniteFloat | None = Field(default=None, ge=0)
 
 
 class StockEntryRead(BaseModel):
@@ -262,7 +274,7 @@ class StatsRead(BaseModel):
 class ShoppingListItemCreate(BaseModel):
     product_id: int | None = None
     name: str | None = Field(default=None, min_length=1)
-    amount: float = Field(default=1, gt=0)
+    amount: FiniteFloat = Field(default=1, gt=0)
     unit: str | None = None
     category_id: int | None = None
 
@@ -284,7 +296,7 @@ class ShoppingListItemCreate(BaseModel):
 class ShoppingListItemUpdate(BaseModel):
     product_id: int | None = None
     name: str | None = Field(default=None, min_length=1)
-    amount: float | None = Field(default=None, gt=0)
+    amount: FiniteFloat | None = Field(default=None, gt=0)
     unit: str | None = None
     done: bool | None = None
     category_id: int | None = None
