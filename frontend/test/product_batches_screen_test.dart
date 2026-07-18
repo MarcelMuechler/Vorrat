@@ -48,7 +48,61 @@ class FakeApiClient extends ApiClient {
   }
 }
 
+Widget _app(ApiClient api, SettingsProvider settings, {Locale? locale}) => MultiProvider(
+      providers: [
+        ChangeNotifierProvider<SettingsProvider>.value(value: settings),
+        Provider<ApiClient>.value(value: api),
+        ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
+      ],
+      child: MaterialApp(
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const ProductBatchesScreen(productId: 1, productName: 'Jam'),
+      ),
+    );
+
 void main() {
+  // The summary action row keeps its icon+label buttons where there's room --
+  // even the longer German labels render as text on a wide layout.
+  testWidgets('summary action buttons keep their labels when there is room (German)', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_app(api, settings, locale: const Locale('de')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Verbraucht'), findsOneWidget);
+    expect(find.text('Verdorben'), findsOneWidget);
+    expect(find.text('Hinzufügen'), findsOneWidget);
+  });
+
+  // Regression test (#222): on a narrow German phone the three squeezed
+  // buttons used to clip their labels; now they fall back to icon-only
+  // buttons with the label in a Tooltip. A leftover overflow throws during
+  // pump, so rendering without an exception is itself the assertion.
+  testWidgets('summary action buttons fall back to icon-only on a narrow German phone', (tester) async {
+    final originalSize = tester.view.physicalSize;
+    final originalRatio = tester.view.devicePixelRatio;
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.physicalSize = originalSize;
+      tester.view.devicePixelRatio = originalRatio;
+    });
+
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_app(api, settings, locale: const Locale('de')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Verbraucht'), findsNothing);
+    expect(find.text('Verdorben'), findsNothing);
+    expect(find.text('Hinzufügen'), findsNothing);
+    expect(find.byTooltip('Verbraucht'), findsOneWidget);
+    expect(find.byTooltip('Verdorben'), findsOneWidget);
+    expect(find.byTooltip('Hinzufügen'), findsOneWidget);
+  });
+
   testWidgets('marking a batch opened hides the open button', (tester) async {
     final settings = SettingsProvider();
     final api = FakeApiClient(settings);

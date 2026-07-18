@@ -13,6 +13,11 @@ import '../widgets/stock_item_actions.dart';
 import '../widgets/undo_snackbar.dart';
 import 'product_edit_screen.dart';
 
+// Above this width the three icon+label action buttons are guaranteed to fit
+// one line even for the widest (German) labels -- measured worst case ~625;
+// below it we render icon-only buttons with Tooltips (#222).
+const double _batchActionLabelBreakpoint = 640;
+
 /// Unified "product detail" screen (#199 wireframe revamp) -- the drill-in
 /// target once the Stock overview groups by product (#29), also reached
 /// directly, and where scanning a barcode with existing stock lands (#56).
@@ -309,34 +314,64 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
 
   Widget _buildActionRow(BuildContext context, AppLocalizations l10n) {
     final soonest = _soonestBatch;
+    final useAction = soonest == null ? null : () => _consume(soonest, soonest.amount, 'used');
+    final spoilAction = soonest == null ? null : () => _consume(soonest, soonest.amount, 'spoiled');
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: soonest == null ? null : () => _consume(soonest, soonest.amount, 'used'),
-              icon: const Icon(Icons.check_circle_outline),
-              label: Text(l10n.usedLabel),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: soonest == null ? null : () => _consume(soonest, soonest.amount, 'spoiled'),
-              icon: const Icon(Icons.delete_outline),
-              label: Text(l10n.spoiledLabel),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: FilledButton.icon(
-              onPressed: _addBatch,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addButton),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Keep icon+label buttons while the single-line Row is guaranteed
+          // to fit; below the breakpoint (only the narrowest phones, where
+          // the long German labels get clipped inside the squeezed buttons)
+          // fall back to icon-only buttons with a Tooltip carrying the label
+          // (#222).
+          if (constraints.maxWidth >= _batchActionLabelBreakpoint) {
+            return Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: useAction,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(l10n.usedLabel),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: spoilAction,
+                    icon: const Icon(Icons.delete_outline),
+                    label: Text(l10n.spoiledLabel),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _addBatch,
+                    icon: const Icon(Icons.add),
+                    label: Text(l10n.addButton),
+                  ),
+                ),
+              ],
+            );
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Tooltip(
+                message: l10n.usedLabel,
+                child: IconButton(onPressed: useAction, icon: const Icon(Icons.check_circle_outline)),
+              ),
+              Tooltip(
+                message: l10n.spoiledLabel,
+                child: IconButton(onPressed: spoilAction, icon: const Icon(Icons.delete_outline)),
+              ),
+              Tooltip(
+                message: l10n.addButton,
+                child: IconButton.filled(onPressed: _addBatch, icon: const Icon(Icons.add)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
