@@ -842,6 +842,24 @@ abstract class AppLocalizations {
   /// **'Show QR label'**
   String get showQrLabelTooltip;
 
+  /// No description provided for @takePhotoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get takePhotoTooltip;
+
+  /// No description provided for @choosePhotoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo from gallery'**
+  String get choosePhotoTooltip;
+
+  /// No description provided for @couldNotUploadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload image: {error}'**
+  String couldNotUploadImage(String error);
+
   /// No description provided for @defaultBestBeforeDaysLabel.
   ///
   /// In en, this message translates to:

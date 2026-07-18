@@ -148,7 +148,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: Image.network(
-                      widget.product.imageUrl!,
+                      context.read<ApiClient>().resolveImageUrl(widget.product.imageUrl!),
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,

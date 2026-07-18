@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import uuid
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.config import settings
 from app.db import get_db
 from app.models import (
     Category,
@@ -17,6 +21,23 @@ from app.schemas import ProductBarcodeCreate, ProductCreate, ProductRead, Produc
 from app.utils import escape_like, normalize_barcode
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
+# Mirrors main.py's UPLOADS_DIR (which mounts this same directory at
+# /uploads) -- computed independently here rather than imported from main.py
+# to avoid a circular import (main.py imports this router).
+UPLOADS_DIR = Path(settings.uploads_dir)
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Whitelist, not a blocklist: an uploaded product photo has no legitimate
+# reason to be anything but one of these, and content-type is client-supplied
+# so this is the actual security boundary, not just UX.
+_ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 
 @router.get("", response_model=list[ProductRead])
@@ -120,6 +141,47 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
     return product
 
 
+@router.post("/{product_id}/image", response_model=ProductRead)
+async def upload_product_image(
+    product_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)
+):
+    """Lets a product get a photo without a barcode match on Open Food Facts
+    (#210) -- previously image_url was only ever set by pasting a URL or by
+    the OFF lookup in barcode.py. Saves under a filename derived from the
+    product id and a random suffix (never the client-supplied filename, which
+    is untrusted input) so re-uploads can't collide and don't overwrite a
+    still-referenced old file before the DB row is updated."""
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Product not found")
+    ext = _ALLOWED_IMAGE_TYPES.get(file.content_type)
+    if ext is None:
+        raise HTTPException(415, "Unsupported image type")
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(422, "Empty file")
+    if len(contents) > _MAX_IMAGE_BYTES:
+        raise HTTPException(413, "Image too large")
+    filename = f"{product_id}-{uuid.uuid4().hex[:12]}{ext}"
+    (UPLOADS_DIR / filename).write_bytes(contents)
+    # A previous upload for this product, if any, is now unreferenced --
+    # clean it up so repeated re-uploads don't silently accumulate orphaned
+    # files on disk. Only ever removes files inside UPLOADS_DIR (never a
+    # pasted external image_url), and only after the new file is safely
+    # written.
+    old_url = product.image_url
+    # Leading slash to match how every other path elsewhere in this codebase
+    # is written (e.g. ApiClient._uri's '/api/...' call sites) -- the
+    # frontend's own base-relative resolution strips it before use, the same
+    # way it does for API paths, so this stays correct under HA Ingress.
+    product.image_url = f"/uploads/{filename}"
+    db.commit()
+    if old_url and old_url.startswith("/uploads/"):
+        (UPLOADS_DIR / old_url.removeprefix("/uploads/")).unlink(missing_ok=True)
+    db.refresh(product)
+    return product
+
+
 @router.post("/{product_id}/barcodes", response_model=ProductRead, status_code=201)
 def add_product_barcode(product_id: int, payload: ProductBarcodeCreate, db: Session = Depends(get_db)):
     """Adds an alternate/extra scannable code for this product (#208) --
@@ -214,5 +276,10 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     # IntegrityError. Deliberately bulk-delete them instead: waste history
     # for a product that no longer exists isn't meaningful to keep around.
     db.query(ConsumptionLog).filter(ConsumptionLog.product_id == product_id).delete()
+    image_url = product.image_url
     db.delete(product)
     db.commit()
+    # Same cleanup as upload_product_image's re-upload path -- an uploaded
+    # (not pasted-URL) photo has no other referrer once its product is gone.
+    if image_url and image_url.startswith("/uploads/"):
+        (UPLOADS_DIR / image_url.removeprefix("/uploads/")).unlink(missing_ok=True)

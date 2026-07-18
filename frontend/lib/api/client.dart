@@ -31,6 +31,24 @@ void _checkOk(http.Response res) {
   }
 }
 
+/// Extension-based guess, matching the backend's own whitelist
+/// (products.py's _ALLOWED_IMAGE_TYPES) -- image_picker's XFile.mimeType
+/// isn't reliably populated across platforms, so this is the simplest thing
+/// that actually works rather than a real (and equally guessable) magic-byte
+/// sniff. Defaults to JPEG: both platform image pickers hand back a .jpg for
+/// camera captures, so an unrecognized/missing extension is far more likely
+/// a bare filename than a real non-image upload -- and the backend has the
+/// final say regardless.
+http.MediaType _imageContentType(String filename) {
+  final ext = filename.toLowerCase().split('.').last;
+  return switch (ext) {
+    'png' => http.MediaType('image', 'png'),
+    'webp' => http.MediaType('image', 'webp'),
+    'gif' => http.MediaType('image', 'gif'),
+    _ => http.MediaType('image', 'jpeg'),
+  };
+}
+
 class ApiClient {
   final SettingsProvider settings;
 
@@ -215,6 +233,41 @@ class ApiClient {
     final res = await _post('/api/products/$id/refresh-from-off');
     _checkOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Uploads a custom product photo (#210), for products with no Open Food
+  /// Facts image_url to fall back to. The only multipart call site in this
+  /// client -- every other POST/PATCH sends JSON -- so it doesn't go through
+  /// [_post]. Takes raw [bytes] rather than an image_picker XFile so this
+  /// file stays free of a picker-package dependency; [filename] is only used
+  /// to guess a content type via [_imageContentType] (the backend never
+  /// trusts the name itself for the saved path). Throws [ApiException] (415)
+  /// if the backend rejects the guessed content type as non-image.
+  Future<Product> uploadProductImage(int id, {required List<int> bytes, required String filename}) async {
+    final request = http.MultipartRequest('POST', _uri('/api/products/$id/image'))
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: _imageContentType(filename),
+        ),
+      );
+    final streamed = await request.send().timeout(_timeout);
+    final res = await http.Response.fromStream(streamed);
+    _checkOk(res);
+    return Product.fromJson(jsonDecode(res.body));
+  }
+
+  /// Resolves a possibly-relative `image_url` (a locally uploaded photo,
+  /// e.g. "/uploads/3-ab12cd34.jpg") the same way [exportStockCsvUrl] et al.
+  /// resolve API paths -- against an explicit server URL when configured, or
+  /// against the page's own location otherwise (so it keeps resolving
+  /// correctly under HA Ingress's dynamic per-session path prefix). Open
+  /// Food Facts URLs are already absolute and pass through unchanged.
+  String resolveImageUrl(String imageUrl) {
+    final uri = _uri(imageUrl);
+    return (uri.hasScheme ? uri : Uri.base.resolveUri(uri)).toString();
   }
 
   Future<List<StockItem>> listStock({

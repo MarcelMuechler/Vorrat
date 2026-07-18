@@ -237,7 +237,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                product.imageUrl!,
+                context.read<ApiClient>().resolveImageUrl(product.imageUrl!),
                 width: 64,
                 height: 64,
                 fit: BoxFit.cover,

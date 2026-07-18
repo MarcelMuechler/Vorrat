@@ -70,6 +70,66 @@ curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
 echo "== products: search =="
 curl -sf "$BASE/api/products?search=milk" | jq .
 
+echo "== products/image: upload a real image (#210) sets image_url under /uploads =="
+# Smallest possible valid PNG (1x1 red pixel) -- decoded from a literal
+# base64 blob so this test has no dependency on an external fixture file.
+IMAGE_FILE="$(mktemp --suffix=.png)"
+trap 'rm -f "$IMAGE_FILE"' EXIT
+base64 -d > "$IMAGE_FILE" <<'PNG'
+iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEUlEQVR4nGP4z8AARwgWXg4ArpMP8aaUSCMAAAAASUVORK5CYII=
+PNG
+UPLOADED_IMAGE_URL=$(curl -sf -X POST "$BASE/api/products/$PRODUCT_ID/image" \
+  -F "file=@$IMAGE_FILE;type=image/png" | jq -r .image_url)
+case "$UPLOADED_IMAGE_URL" in
+  /uploads/*) : ;;
+  *) echo "FAIL: expected image_url under /uploads/, got $UPLOADED_IMAGE_URL"; exit 1 ;;
+esac
+
+echo "== products/image: the uploaded file is actually served back (expect 200) =="
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$UPLOADED_IMAGE_URL")
+[ "$STATUS" = "200" ] || { echo "FAIL: expected 200 fetching uploaded image, got $STATUS"; exit 1; }
+
+echo "== products/image: re-uploading replaces image_url and removes the old file (expect old path 404) =="
+SECOND_UPLOADED_IMAGE_URL=$(curl -sf -X POST "$BASE/api/products/$PRODUCT_ID/image" \
+  -F "file=@$IMAGE_FILE;type=image/png" | jq -r .image_url)
+[ "$SECOND_UPLOADED_IMAGE_URL" != "$UPLOADED_IMAGE_URL" ] \
+  || { echo "FAIL: expected a new filename on re-upload, got the same $UPLOADED_IMAGE_URL"; exit 1; }
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$UPLOADED_IMAGE_URL")
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 for the replaced upload's old path, got $STATUS"; exit 1; }
+rm -f "$IMAGE_FILE"
+trap - EXIT
+
+echo "== products/image: rejects a non-image content type (expect 415) =="
+TEXT_FILE="$(mktemp)"
+trap 'rm -f "$TEXT_FILE"' EXIT
+printf 'not an image' > "$TEXT_FILE"
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/$PRODUCT_ID/image" \
+  -F "file=@$TEXT_FILE;type=text/plain")
+[ "$STATUS" = "415" ] || { echo "FAIL: expected 415 uploading a non-image content type, got $STATUS"; exit 1; }
+rm -f "$TEXT_FILE"
+trap - EXIT
+
+echo "== products/image: rejects an empty file (expect 422) =="
+EMPTY_FILE="$(mktemp)"
+trap 'rm -f "$EMPTY_FILE"' EXIT
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/$PRODUCT_ID/image" \
+  -F "file=@$EMPTY_FILE;type=image/png")
+[ "$STATUS" = "422" ] || { echo "FAIL: expected 422 uploading an empty file, got $STATUS"; exit 1; }
+rm -f "$EMPTY_FILE"
+trap - EXIT
+
+echo "== products/image: upload for a nonexistent product (expect 404 not 500) =="
+IMAGE_FILE="$(mktemp --suffix=.png)"
+trap 'rm -f "$IMAGE_FILE"' EXIT
+base64 -d > "$IMAGE_FILE" <<'PNG'
+iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEUlEQVR4nGP4z8AARwgWXg4ArpMP8aaUSCMAAAAASUVORK5CYII=
+PNG
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/999999/image" \
+  -F "file=@$IMAGE_FILE;type=image/png")
+[ "$STATUS" = "404" ] || { echo "FAIL: expected 404 uploading an image for a nonexistent product, got $STATUS"; exit 1; }
+rm -f "$IMAGE_FILE"
+trap - EXIT
+
 echo "== products: create with nonexistent category_id (expect 404 not 500) =="
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
   -H 'content-type: application/json' \

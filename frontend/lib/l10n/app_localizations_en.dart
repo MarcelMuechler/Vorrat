@@ -444,6 +444,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showQrLabelTooltip => 'Show QR label';
 
   @override
+  String get takePhotoTooltip => 'Take photo';
+
+  @override
+  String get choosePhotoTooltip => 'Choose photo from gallery';
+
+  @override
+  String couldNotUploadImage(String error) {
+    return 'Could not upload image: $error';
+  }
+
+  @override
   String get defaultBestBeforeDaysLabel => 'Default best-before days';
 
   @override

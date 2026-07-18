@@ -242,7 +242,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ],
                 if (_imageUrl != null) ...[
                   Center(
-                    child: Image.network(_imageUrl!, height: 120, errorBuilder: (_, _, _) => const SizedBox()),
+                    child: Image.network(
+                      context.read<ApiClient>().resolveImageUrl(_imageUrl!),
+                      height: 120,
+                      errorBuilder: (_, _, _) => const SizedBox(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],

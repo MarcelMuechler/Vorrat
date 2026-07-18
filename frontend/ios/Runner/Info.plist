@@ -67,6 +67,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Vorrat uses the camera to scan product barcodes and QR codes.</string>
+	<string>Vorrat uses the camera to scan product barcodes and QR codes, and to take product photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Vorrat uses your photo library to pick a product photo.</string>
 </dict>
 </plist>

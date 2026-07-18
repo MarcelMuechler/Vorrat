@@ -1,5 +1,9 @@
 #!/usr/bin/with-contenv bashio
 cd /app
 export DATABASE_URL="sqlite:////data/vorrat.db"
+# Uploaded product photos, like the db above, must live on the persistent
+# volume -- everything else under /app is baked into the image and wiped on
+# every container recreation/update.
+export UPLOADS_DIR="/data/uploads"
 alembic upgrade head
 exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8099

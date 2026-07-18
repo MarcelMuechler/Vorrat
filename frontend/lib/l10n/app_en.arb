@@ -219,6 +219,12 @@
   "refreshFromOffTooltip": "Refresh from Open Food Facts",
   "generateQrLabelTooltip": "Generate QR label",
   "showQrLabelTooltip": "Show QR label",
+  "takePhotoTooltip": "Take photo",
+  "choosePhotoTooltip": "Choose photo from gallery",
+  "couldNotUploadImage": "Could not upload image: {error}",
+  "@couldNotUploadImage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
   "defaultBestBeforeDaysLabel": "Default best-before days",
   "defaultBestBeforeDaysHint": "e.g. 7 — prefilled when adding this product to stock",
   "openShelfLifeLabel": "Use within (days after opening)",

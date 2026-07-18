@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -33,6 +34,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   bool _loadingLocations = true;
   bool _saving = false;
   bool _refreshingFromOff = false;
+  bool _uploadingImage = false;
   late String? _barcode;
   bool _generatingQrLabel = false;
   late List<String> _extraBarcodes;
@@ -155,6 +157,37 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       }
     } finally {
       if (mounted) setState(() => _refreshingFromOff = false);
+    }
+  }
+
+  /// Uploads a camera/gallery photo (#210) as this product's image -- the
+  /// only way to give a manually-added, barcode-less product a picture,
+  /// since until now image_url was only ever set by pasting a URL or by the
+  /// Open Food Facts lookup. Uploads immediately (unlike the other fields on
+  /// this screen, which wait for Save) so the preview updates right away and
+  /// a picked-but-never-saved photo isn't silently lost.
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await ImagePicker().pickImage(source: source, imageQuality: 85);
+    if (picked == null || !mounted) return;
+    setState(() => _uploadingImage = true);
+    final api = context.read<ApiClient>();
+    try {
+      final bytes = await picked.readAsBytes();
+      final updated = await api.uploadProductImage(
+        widget.product.id,
+        bytes: bytes,
+        filename: picked.name,
+      );
+      if (!mounted) return;
+      setState(() => _imageUrl = updated.imageUrl);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.couldNotUploadImage('$e'))));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
     }
   }
 
@@ -293,10 +326,38 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
               children: [
                 if (_imageUrl != null) ...[
                   Center(
-                    child: Image.network(_imageUrl!, height: 120, errorBuilder: (_, _, _) => const SizedBox()),
+                    child: Image.network(
+                      context.read<ApiClient>().resolveImageUrl(_imageUrl!),
+                      height: 120,
+                      errorBuilder: (_, _, _) => const SizedBox(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: _uploadingImage
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.photo_camera),
+                        tooltip: l10n.takePhotoTooltip,
+                        onPressed: _uploadingImage ? null : () => _pickImage(ImageSource.camera),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.photo_library),
+                        tooltip: l10n.choosePhotoTooltip,
+                        onPressed: _uploadingImage ? null : () => _pickImage(ImageSource.gallery),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 if (_barcode != null) ...[
                   Text(l10n.barcodeLabel(_barcode!)),
                   const SizedBox(height: 12),

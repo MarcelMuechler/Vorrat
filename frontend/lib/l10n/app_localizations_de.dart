@@ -445,6 +445,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get showQrLabelTooltip => 'QR-Etikett anzeigen';
 
   @override
+  String get takePhotoTooltip => 'Foto aufnehmen';
+
+  @override
+  String get choosePhotoTooltip => 'Foto aus Galerie wählen';
+
+  @override
+  String couldNotUploadImage(String error) {
+    return 'Bild konnte nicht hochgeladen werden: $error';
+  }
+
+  @override
   String get defaultBestBeforeDaysLabel => 'Standard-Haltbarkeitstage';
 
   @override

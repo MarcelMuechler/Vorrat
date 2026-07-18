@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__, off_client
+from app.config import settings as app_settings
 from app.routers import (
     backup,
     barcode,
@@ -62,6 +63,18 @@ app.include_router(backup.router)
 @app.get("/api/health")
 def health():
     return {"status": "ok", "version": __version__}
+
+
+# Uploaded product photos (#210), served back out the same way the Flutter
+# web build below is. Mounted (and thus route-matched) before the "/"
+# catch-all mount further down -- Starlette matches mounts in registration
+# order, so this must come first or every /uploads/* request would be
+# swallowed by that catch-all instead. Created eagerly (unlike STATIC_DIR
+# below) since, unlike the Flutter build, this isn't optional -- local dev
+# without a prior upload just gets an empty directory.
+UPLOADS_DIR = Path(app_settings.uploads_dir)
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 
 # The Flutter web build only exists once the Docker image copies it in (see
