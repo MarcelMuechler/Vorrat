@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
 from app.models import (
@@ -27,7 +27,7 @@ def list_products(
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Product).options(joinedload(Product.category))
+    query = db.query(Product).options(joinedload(Product.category), selectinload(Product.barcodes))
     if barcode:
         query = query.filter(Product.barcode == normalize_barcode(barcode))
     if search:
