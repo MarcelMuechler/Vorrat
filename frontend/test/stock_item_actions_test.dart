@@ -189,14 +189,36 @@ void main() {
     expect(deleteCalled, isFalse);
   });
 
-  // Regression test: the Open/Use/Spoil Row used to clip the last button's
-  // label on a narrow phone (the trash icon showed with no text) since a Row
-  // has nowhere to put content that doesn't fit -- three buttons with the
-  // longer German labels overflowed even though English ones happened to
-  // fit. The generic "app boots, tap through the tabs" overflow test never
-  // caught this because it never taps a stock item open with real data, so
-  // this widget's expanded state was never actually rendered.
-  testWidgets('all three action buttons fit on a narrow German phone screen (canOpen: true)', (
+  // On a wide layout there's room for the full icon+label buttons, so the
+  // German labels render as text -- even the long "Als geöffnet markieren".
+  testWidgets('action buttons keep their labels when there is room (canOpen: true, German)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        canOpen: true,
+        onOpen: () {},
+        onConsume: (_, _) async => true,
+        onDelete: () async => true,
+        locale: const Locale('de'),
+      ),
+    );
+
+    await tester.tap(find.text('Jam'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Als geöffnet markieren'), findsOneWidget);
+    expect(find.text('Verbraucht'), findsOneWidget);
+    expect(find.text('Verdorben'), findsOneWidget);
+  });
+
+  // Regression test (#222): three icon+label buttons with the longer German
+  // labels can't fit one line on a narrow phone. #221's Wrap dropped a button
+  // to a second line (unpredictable height); the fix falls back to icon-only
+  // buttons whose label is carried by a Tooltip. A leftover overflow throws
+  // during pump, so simply rendering without an exception is the assertion --
+  // plus the labels being gone as visible text and the icons still present.
+  testWidgets('action buttons fall back to icon-only on a narrow German phone (canOpen: true)', (
     tester,
   ) async {
     final originalSize = tester.view.physicalSize;
@@ -221,8 +243,14 @@ void main() {
     await tester.tap(find.text('Jam'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Als geöffnet markieren'), findsOneWidget);
-    expect(find.text('Verbraucht'), findsOneWidget);
-    expect(find.text('Verdorben'), findsOneWidget);
+    // Labels no longer take horizontal space -- they moved into Tooltips.
+    expect(find.text('Als geöffnet markieren'), findsNothing);
+    expect(find.text('Verbraucht'), findsNothing);
+    expect(find.text('Verdorben'), findsNothing);
+    expect(find.byTooltip('Verbraucht'), findsOneWidget);
+    expect(find.byTooltip('Verdorben'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    expect(find.byIcon(Icons.lock_open), findsOneWidget);
   });
 }
