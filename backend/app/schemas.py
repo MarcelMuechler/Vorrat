@@ -177,6 +177,7 @@ class StockOverviewItem(StockEntryRead):
     product_barcode: str | None
     product_category: str | None
     product_low_stock_threshold: float | None
+    product_quantity_unit: str
     location_name: str | None
     status: str
 

@@ -109,6 +109,7 @@ def _query_stock(
                 product_barcode=entry.product.barcode,
                 product_category=entry.product.category_name,
                 product_low_stock_threshold=entry.product.low_stock_threshold,
+                product_quantity_unit=entry.product.quantity_unit,
                 location_name=entry.location.name if entry.location else None,
                 status=_status(
                     _effective_expiry(
@@ -139,19 +140,46 @@ def list_stock(
 
 @router.get("/export.csv")
 def export_stock_csv(db: Session = Depends(get_db)):
+    """Exports every stock entry as one CSV row. Preserves the StockEntry
+    fields that affect correctness on re-import -- purchased_date, opened_at
+    (both feed _effective_expiry above, so dropping opened_at could silently
+    turn an expired opened item into a non-expiring one after a round-trip)
+    and price -- plus the owning product's quantity_unit for context. It
+    does NOT export product defaults (default_best_before_days,
+    default_open_shelf_life_days, low_stock_threshold, target_stock_level),
+    categories, or images: those live on Product, not StockEntry, and
+    round-tripping them through a stock file would mean silently rewriting
+    shared product data every time someone edits a CSV. `status` is a
+    derived, read-only column (kept for human review) and is ignored on
+    import -- see import_stock_csv below for exactly what's read back."""
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(
-        ["product_name", "barcode", "location", "amount", "best_before_date", "status"]
+        [
+            "product_name",
+            "barcode",
+            "quantity_unit",
+            "location",
+            "amount",
+            "best_before_date",
+            "purchased_date",
+            "opened_at",
+            "price",
+            "status",
+        ]
     )
     for item in _query_stock(db):
         writer.writerow(
             [
                 item.product_name,
                 item.product_barcode or "",
+                item.product_quantity_unit,
                 item.location_name or "",
                 item.amount,
                 item.best_before_date or "",
+                item.purchased_date or "",
+                item.opened_at or "",
+                item.price if item.price is not None else "",
                 item.status,
             ]
         )
@@ -176,8 +204,18 @@ def _resolve_location(db: Session, name: str, cache: dict[str, Location]) -> Loc
 
 
 def _resolve_product(
-    db: Session, name: str, barcode: str | None, cache: dict[str, Product]
+    db: Session,
+    name: str,
+    barcode: str | None,
+    cache: dict[str, Product],
+    quantity_unit: str | None = None,
 ) -> Product:
+    # quantity_unit is only ever applied to a brand-new Product -- an
+    # existing match (by barcode or name) keeps whatever unit it already
+    # has, since that unit is shared by every other stock entry for the
+    # same product and a stock CSV re-import shouldn't silently redefine it.
+    new_product_kwargs = {"quantity_unit": quantity_unit} if quantity_unit else {}
+
     # Barcode wins when present (it's the more precise match); a cache keyed
     # by barcode/name is required in addition to the DB lookup so that two
     # rows in the same import that both introduce the same new product don't
@@ -188,7 +226,7 @@ def _resolve_product(
             return cache[key]
         product = db.query(Product).filter(Product.barcode == barcode).first()
         if product is None:
-            product = Product(name=name, barcode=barcode)
+            product = Product(name=name, barcode=barcode, **new_product_kwargs)
             db.add(product)
             db.flush()
         cache[key] = product
@@ -199,11 +237,21 @@ def _resolve_product(
         return cache[key]
     product = db.query(Product).filter(func.lower(Product.name) == name.lower()).first()
     if product is None:
-        product = Product(name=name)
+        product = Product(name=name, **new_product_kwargs)
         db.add(product)
         db.flush()
     cache[key] = product
     return product
+
+
+def _parse_optional_date(row: dict, column: str) -> date | None:
+    raw = (row.get(column) or "").strip()
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        raise ValueError(f"invalid {column}: {raw!r}") from None
 
 
 # Keeps one oversized upload from being buffered whole in memory -- checked
@@ -278,26 +326,37 @@ def _import_stock_csv_sync(db: Session, body: bytes) -> dict:
                 if amount <= 0:
                     raise ValueError(f"amount must be greater than 0: {amount_raw!r}")
 
-                best_before_raw = (row.get("best_before_date") or "").strip()
-                best_before_date = None
-                if best_before_raw:
+                best_before_date = _parse_optional_date(row, "best_before_date")
+                purchased_date = _parse_optional_date(row, "purchased_date")
+                opened_at = _parse_optional_date(row, "opened_at")
+
+                price_raw = (row.get("price") or "").strip()
+                price = None
+                if price_raw:
                     try:
-                        best_before_date = date.fromisoformat(best_before_raw)
+                        price = float(price_raw)
                     except ValueError:
-                        raise ValueError(f"invalid best_before_date: {best_before_raw!r}") from None
+                        raise ValueError(f"invalid price: {price_raw!r}") from None
+                    if price < 0:
+                        raise ValueError(f"price must not be negative: {price_raw!r}")
+
+                quantity_unit = (row.get("quantity_unit") or "").strip() or None
 
                 location_raw = (row.get("location") or "").strip()
                 location_id = None
                 if location_raw:
                     location_id = _resolve_location(db, location_raw, location_cache).id
 
-                product = _resolve_product(db, name, barcode, product_cache)
+                product = _resolve_product(db, name, barcode, product_cache, quantity_unit)
 
                 entry = StockEntry(
                     product_id=product.id,
                     location_id=location_id,
                     amount=amount,
                     best_before_date=best_before_date,
+                    purchased_date=purchased_date,
+                    opened_at=opened_at,
+                    price=price,
                 )
                 db.add(entry)
                 db.flush()
@@ -321,8 +380,16 @@ async def import_stock_csv(request: Request, db: Session = Depends(get_db)):
     """Accepts the CSV as a raw request body (not multipart) -- the simplest
     shape for both `curl --data-binary @file.csv` and Flutter's `http.post`.
     Column shape matches export_stock_csv above so export -> import
-    round-trips; the trailing `status` column from the export is derived and
-    simply ignored on the way back in.
+    round-trips the fields that affect correctness (purchased_date,
+    opened_at, price, quantity_unit); the trailing `status` column from the
+    export is derived and simply ignored on the way back in. All of the new
+    columns are optional and read via DictReader.get(), so a CSV from before
+    they existed (or one missing them entirely) still imports fine --
+    missing/blank values just come back as null, exactly like an old-format
+    best_before_date-only file always has. quantity_unit is only applied
+    when a row's product_name/barcode doesn't match an existing product
+    (see _resolve_product) -- an existing product keeps its current unit
+    rather than having it silently rewritten by a stock import.
 
     Limited to IMPORT_CSV_MAX_BYTES (5 MB) -- returns 413 if the upload is
     (or turns out to be) larger, checked both via Content-Length up front and
