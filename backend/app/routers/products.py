@@ -1,6 +1,7 @@
 import uuid
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -103,6 +104,33 @@ def _barcode_in_use(db: Session, code: str, exclude_product_id: int | None = Non
     return db.query(primary_q.exists()).scalar() or db.query(alt_q.exists()).scalar()
 
 
+def _cache_remote_image(url: str, product_id: int) -> str | None:
+    """Downloads a third-party image_url (Open Food Facts' CDN, or a pasted
+    external URL) and stores it under UPLOADS_DIR the same way
+    upload_product_image does, so the frontend only ever renders a local
+    /uploads/... path and never hotlinks a third party on every stock-overview
+    load (#262). Best-effort like off_client's lookups: any failure (network,
+    timeout, bad content-type, oversized) just drops the image rather than
+    falling back to the original external URL -- a broken/slow external host
+    shouldn't be able to fail a product save."""
+    try:
+        response = httpx.get(url, timeout=5.0, follow_redirects=True)
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return None
+    content_type = response.headers.get("content-type", "").split(";")[0].strip()
+    ext = _ALLOWED_IMAGE_TYPES.get(content_type)
+    if ext is None or len(response.content) > _MAX_IMAGE_BYTES:
+        return None
+    filename = f"{product_id}-{uuid.uuid4().hex[:12]}{ext}"
+    (UPLOADS_DIR / filename).write_bytes(response.content)
+    return f"/uploads/{filename}"
+
+
+def _is_external_url(url: str | None) -> bool:
+    return bool(url) and url.startswith(("http://", "https://"))
+
+
 @router.post("", response_model=ProductRead, status_code=201)
 def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     _validate_product_references(db, payload.category_id, payload.default_location_id)
@@ -111,10 +139,13 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     product = Product(**payload.model_dump())
     db.add(product)
     try:
-        db.commit()
+        db.flush()  # assigns product.id (needed for the cached filename) without committing yet
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "A product with this barcode already exists")
+    if _is_external_url(product.image_url):
+        product.image_url = _cache_remote_image(product.image_url, product.id)
+    db.commit()
     db.refresh(product)
     return product
 
@@ -132,6 +163,8 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
         raise HTTPException(409, "A product with this barcode already exists")
     for key, value in updates.items():
         setattr(product, key, value)
+    if "image_url" in updates and _is_external_url(product.image_url):
+        product.image_url = _cache_remote_image(product.image_url, product_id)
     try:
         db.commit()
     except IntegrityError:

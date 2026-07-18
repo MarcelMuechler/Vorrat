@@ -130,6 +130,44 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products/9999
 rm -f "$IMAGE_FILE"
 trap - EXIT
 
+echo "== products: create with an external image_url caches it locally instead of hotlinking (#262) =="
+# No real network dependency: point at our own already-uploaded image (served
+# absolute via $BASE) as a stand-in "external" host -- exercises the exact
+# same download+cache code path a real Open Food Facts image_url would. Must
+# be SECOND_UPLOADED_IMAGE_URL, not the first -- that one was already deleted
+# by the re-upload test above.
+EXTERNAL_IMAGE_URL="$BASE$SECOND_UPLOADED_IMAGE_URL"
+CACHED_PRODUCT=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Cheese", "image_url": "'"$EXTERNAL_IMAGE_URL"'"}')
+CACHED_IMAGE_URL=$(echo "$CACHED_PRODUCT" | jq -r .image_url)
+case "$CACHED_IMAGE_URL" in
+  /uploads/*) : ;;
+  *) echo "FAIL: expected external image_url to be cached under /uploads/, got $CACHED_IMAGE_URL"; exit 1 ;;
+esac
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$CACHED_IMAGE_URL")
+[ "$STATUS" = "200" ] || { echo "FAIL: expected 200 fetching the cached image, got $STATUS"; exit 1; }
+# Cleanup: keep the product count downstream (stats/HA sensors) assertions
+# below unaffected by these scratch products.
+curl -sf -X DELETE "$BASE/api/products/$(echo "$CACHED_PRODUCT" | jq -r .id)" -o /dev/null
+
+echo "== products: create with an unreachable image_url drops it rather than failing the save (expect 201, image_url null) =="
+BROKEN_PRODUCT=$(curl -sf -X POST "$BASE/api/products" \
+  -H 'content-type: application/json' \
+  -d '{"name": "Broken Image Product", "image_url": "http://127.0.0.1:1/nope.jpg"}')
+DROPPED_IMAGE_URL=$(echo "$BROKEN_PRODUCT" | jq -r .image_url)
+[ "$DROPPED_IMAGE_URL" = "null" ] || { echo "FAIL: expected image_url to be dropped (null), got $DROPPED_IMAGE_URL"; exit 1; }
+curl -sf -X DELETE "$BASE/api/products/$(echo "$BROKEN_PRODUCT" | jq -r .id)" -o /dev/null
+
+echo "== products: patch with an external image_url also caches it locally (#262) =="
+PATCHED_IMAGE_URL=$(curl -sf -X PATCH "$BASE/api/products/$PRODUCT_ID" \
+  -H 'content-type: application/json' \
+  -d '{"image_url": "'"$EXTERNAL_IMAGE_URL"'"}' | jq -r .image_url)
+case "$PATCHED_IMAGE_URL" in
+  /uploads/*) : ;;
+  *) echo "FAIL: expected patched external image_url to be cached under /uploads/, got $PATCHED_IMAGE_URL"; exit 1 ;;
+esac
+
 echo "== products: create with nonexistent category_id (expect 404 not 500) =="
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/products" \
   -H 'content-type: application/json' \
