@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.19.0...v0.20.0) (2026-07-18)
+
+
+### Features
+
+* **products:** cache external product images locally instead of hotlinking ([#262](https://github.com/MarcelMuechler/Vorrat/issues/262)) ([185f527](https://github.com/MarcelMuechler/Vorrat/commit/185f5270aafc9a3899a7e6cd274e18cd1ded656b))
+
 ## [0.19.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.3...v0.19.0) (2026-07-18)
 
 
