@@ -706,6 +706,44 @@ echo "$ROUNDTRIP_RESULT" | jq .
 [ "$(echo "$ROUNDTRIP_RESULT" | jq '.errors | length')" = "0" ] \
   || { echo "FAIL: expected zero errors round-tripping export.csv, got $ROUNDTRIP_RESULT"; exit 1; }
 
+echo "== stock/import.csv: upload over the 5 MB size limit is rejected with 413 (not buffered/parsed) =="
+OVERSIZED_CSV_FILE="$(mktemp)"
+trap 'rm -f "$OVERSIZED_CSV_FILE"' EXIT
+head -c 6000000 /dev/zero | tr '\0' 'x' > "$OVERSIZED_CSV_FILE"
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/import.csv" \
+  -H 'content-type: text/csv' --data-binary "@$OVERSIZED_CSV_FILE")
+[ "$STATUS" = "413" ] \
+  || { echo "FAIL: expected 413 for a 6 MB import.csv upload, got $STATUS"; exit 1; }
+rm -f "$OVERSIZED_CSV_FILE"
+trap - EXIT
+
+echo "== stock/import.csv: malformed CSV (field over the parser limit) is rejected with 4xx and rolls back cleanly =="
+BEFORE_MALFORMED_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
+MALFORMED_CSV_FILE="$(mktemp)"
+trap 'rm -f "$MALFORMED_CSV_FILE"' EXIT
+{
+  printf 'product_name,barcode,location,amount,best_before_date\n'
+  printf 'Milk,1234567890123,Fridge,1,%s\n' "$FAR_DATE"
+  head -c 200000 /dev/zero | tr '\0' 'x'
+  printf ',,Fridge,1,%s\n' "$SOON_DATE"
+} > "$MALFORMED_CSV_FILE"
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/stock/import.csv" \
+  -H 'content-type: text/csv' --data-binary "@$MALFORMED_CSV_FILE")
+case "$STATUS" in
+  4??) : ;;
+  *) echo "FAIL: expected a 4xx rejecting malformed CSV, got $STATUS"; exit 1 ;;
+esac
+rm -f "$MALFORMED_CSV_FILE"
+trap - EXIT
+AFTER_MALFORMED_COUNT=$(curl -sf "$BASE/api/stock" | jq 'length')
+[ "$AFTER_MALFORMED_COUNT" = "$BEFORE_MALFORMED_COUNT" ] \
+  || { echo "FAIL: expected no rows committed from a rejected malformed import (before=$BEFORE_MALFORMED_COUNT, after=$AFTER_MALFORMED_COUNT)"; exit 1; }
+
+echo "== stock/import.csv: a subsequent well-formed import still works after the malformed-input rollback =="
+RECOVERY_RESULT=$(curl -sf -X POST "$BASE/api/stock/import.csv" -H 'content-type: text/csv' --data-binary "$(printf 'product_name,barcode,location,amount,best_before_date\nMilk,1234567890123,Fridge,1,%s\n' "$FAR_DATE")")
+[ "$(echo "$RECOVERY_RESULT" | jq -r .imported)" = "1" ] \
+  || { echo "FAIL: expected imported=1 on the recovery import after a rolled-back malformed request, got $RECOVERY_RESULT"; exit 1; }
+
 echo "== stock/bulk: create a fresh product + location and three stock entries for bulk ops =="
 BULK_LOCATION_ID=$(curl -sf -X POST "$BASE/api/locations" \
   -H 'content-type: application/json' \
