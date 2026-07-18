@@ -36,6 +36,12 @@ class ApiClient {
 
   ApiClient(this.settings);
 
+  /// Applied to every request issued through [_get]/[_post]/[_patch]/[_delete]
+  /// so a slow or wedged connection surfaces as a catchable [TimeoutException]
+  /// instead of leaving a spinner or disabled save action pending forever
+  /// (#233). [checkHealth] keeps its own shorter, self-contained timeout.
+  static const Duration _timeout = Duration(seconds: 15);
+
   // Empty serverUrl means "relative to current origin" — correct for the
   // web build served by the backend itself (direct or via HA Ingress, which
   // forwards API paths the same way it forwards the HTML/JS). Native builds
@@ -57,12 +63,36 @@ class ApiClient {
     return Uri.parse(full).replace(queryParameters: query);
   }
 
+  // Shared request helpers (#233): every call site funnels through one of
+  // these four instead of calling package:http directly, so the bounded
+  // [_timeout] lives in exactly one place per verb rather than being
+  // sprinkled across every call site.
+  Future<http.Response> _get(String path, [Map<String, String>? query]) {
+    return http.get(_uri(path, query)).timeout(_timeout);
+  }
+
+  Future<http.Response> _post(String path, [Object? body]) {
+    return http
+        .post(
+          _uri(path),
+          headers: body == null ? null : {'content-type': 'application/json'},
+          body: body == null ? null : jsonEncode(body),
+        )
+        .timeout(_timeout);
+  }
+
+  Future<http.Response> _patch(String path, Object body) {
+    return http
+        .patch(_uri(path), headers: {'content-type': 'application/json'}, body: jsonEncode(body))
+        .timeout(_timeout);
+  }
+
+  Future<http.Response> _delete(String path) {
+    return http.delete(_uri(path)).timeout(_timeout);
+  }
+
   Future<http.Response> _postJson(String path, Object body) async {
-    final res = await http.post(
-      _uri(path),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    final res = await _post(path, body);
     _checkOk(res);
     return res;
   }
@@ -81,7 +111,7 @@ class ApiClient {
   }
 
   Future<List<Location>> listLocations() async {
-    final res = await http.get(_uri('/api/locations'));
+    final res = await _get('/api/locations');
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Location.fromJson(e)).toList();
@@ -93,17 +123,13 @@ class ApiClient {
   }
 
   Future<Location> renameLocation(int id, String name) async {
-    final res = await http.patch(
-      _uri('/api/locations/$id'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
+    final res = await _patch('/api/locations/$id', {'name': name});
     _checkOk(res);
     return Location.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteLocation(int id) async {
-    final res = await http.delete(_uri('/api/locations/$id'));
+    final res = await _delete('/api/locations/$id');
     _checkOk(res);
   }
 
@@ -111,7 +137,7 @@ class ApiClient {
     final query = <String, String>{};
     if (limit != null) query['limit'] = '$limit';
     if (offset != null) query['offset'] = '$offset';
-    final res = await http.get(_uri('/api/categories', query));
+    final res = await _get('/api/categories', query);
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Category.fromJson(e)).toList();
@@ -123,17 +149,13 @@ class ApiClient {
   }
 
   Future<Category> renameCategory(int id, String name) async {
-    final res = await http.patch(
-      _uri('/api/categories/$id'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
+    final res = await _patch('/api/categories/$id', {'name': name});
     _checkOk(res);
     return Category.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteCategory(int id) async {
-    final res = await http.delete(_uri('/api/categories/$id'));
+    final res = await _delete('/api/categories/$id');
     _checkOk(res);
   }
 
@@ -147,30 +169,26 @@ class ApiClient {
     if (search != null && search.isNotEmpty) query['search'] = search;
     if (limit != null) query['limit'] = '$limit';
     if (offset != null) query['offset'] = '$offset';
-    final res = await http.get(_uri('/api/products', query));
+    final res = await _get('/api/products', query);
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Product.fromJson(e)).toList();
   }
 
   Future<Product> getProduct(int id) async {
-    final res = await http.get(_uri('/api/products/$id'));
+    final res = await _get('/api/products/$id');
     _checkOk(res);
     return Product.fromJson(jsonDecode(res.body));
   }
 
   Future<Product> updateProduct(int id, Map<String, dynamic> payload) async {
-    final res = await http.patch(
-      _uri('/api/products/$id'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    final res = await _patch('/api/products/$id', payload);
     _checkOk(res);
     return Product.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteProduct(int id) async {
-    final res = await http.delete(_uri('/api/products/$id'));
+    final res = await _delete('/api/products/$id');
     _checkOk(res);
   }
 
@@ -185,7 +203,7 @@ class ApiClient {
   }
 
   Future<Product> removeProductBarcode(int id, String code) async {
-    final res = await http.delete(_uri('/api/products/$id/barcodes/${Uri.encodeComponent(code)}'));
+    final res = await _delete('/api/products/$id/barcodes/${Uri.encodeComponent(code)}');
     _checkOk(res);
     return Product.fromJson(jsonDecode(res.body));
   }
@@ -194,7 +212,7 @@ class ApiClient {
   /// local-DB-first check [lookupBarcode] does) for the caller to review
   /// and apply via [updateProduct].
   Future<Map<String, dynamic>> refreshProductFromOff(int id) async {
-    final res = await http.post(_uri('/api/products/$id/refresh-from-off'));
+    final res = await _post('/api/products/$id/refresh-from-off');
     _checkOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
@@ -216,7 +234,7 @@ class ApiClient {
     if (categoryId != null) query['category_id'] = '$categoryId';
     if (limit != null) query['limit'] = '$limit';
     if (offset != null) query['offset'] = '$offset';
-    final res = await http.get(_uri('/api/stock', query));
+    final res = await _get('/api/stock', query);
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => StockItem.fromJson(e)).toList();
@@ -227,7 +245,7 @@ class ApiClient {
   }
 
   Future<void> deleteStock(int id) async {
-    final res = await http.delete(_uri('/api/stock/$id'));
+    final res = await _delete('/api/stock/$id');
     _checkOk(res);
   }
 
@@ -295,7 +313,7 @@ class ApiClient {
     if (since != null) query['since'] = since.toIso8601String().split('T').first;
     if (until != null) query['until'] = until.toIso8601String().split('T').first;
     if (reason != null) query['reason'] = reason;
-    final res = await http.get(_uri('/api/consumption-log', query));
+    final res = await _get('/api/consumption-log', query);
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => ConsumptionLogEntry.fromJson(e)).toList();
@@ -303,11 +321,7 @@ class ApiClient {
 
   Future<void> markStockOpened(int id) async {
     final today = DateTime.now().toIso8601String().split('T').first;
-    final res = await http.patch(
-      _uri('/api/stock/$id'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({'opened_at': today}),
-    );
+    final res = await _patch('/api/stock/$id', {'opened_at': today});
     _checkOk(res);
   }
 
@@ -334,33 +348,27 @@ class ApiClient {
   /// reads it (no multipart parsing needed there) and is the simplest thing
   /// for `package:http` to send after reading a picked file as a string.
   Future<StockImportResult> importStockCsv(String csv) async {
-    final res = await http.post(
-      _uri('/api/stock/import.csv'),
-      headers: {'content-type': 'text/csv'},
-      body: csv,
-    );
+    final res = await http
+        .post(_uri('/api/stock/import.csv'), headers: {'content-type': 'text/csv'}, body: csv)
+        .timeout(_timeout);
     _checkOk(res);
     return StockImportResult.fromJson(jsonDecode(res.body));
   }
 
   Future<int> getExpiringSoonDays() async {
-    final res = await http.get(_uri('/api/settings'));
+    final res = await _get('/api/settings');
     _checkOk(res);
     return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
   }
 
   Future<int> setExpiringSoonDays(int days) async {
-    final res = await http.patch(
-      _uri('/api/settings'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({'expiring_soon_days': days}),
-    );
+    final res = await _patch('/api/settings', {'expiring_soon_days': days});
     _checkOk(res);
     return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
   }
 
   Future<List<ShoppingListItem>> listShoppingList() async {
-    final res = await http.get(_uri('/api/shopping-list'));
+    final res = await _get('/api/shopping-list');
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => ShoppingListItem.fromJson(e)).toList();
@@ -385,23 +393,19 @@ class ApiClient {
   }
 
   Future<ShoppingListItem> updateShoppingListItem(int id, Map<String, dynamic> payload) async {
-    final res = await http.patch(
-      _uri('/api/shopping-list/$id'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    final res = await _patch('/api/shopping-list/$id', payload);
     _checkOk(res);
     return ShoppingListItem.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteShoppingListItem(int id) async {
-    final res = await http.delete(_uri('/api/shopping-list/$id'));
+    final res = await _delete('/api/shopping-list/$id');
     _checkOk(res);
   }
 
   /// Returns how many done items were removed.
   Future<int> clearDoneShoppingListItems() async {
-    final res = await http.delete(_uri('/api/shopping-list/done'));
+    final res = await _delete('/api/shopping-list/done');
     _checkOk(res);
     return (jsonDecode(res.body) as Map<String, dynamic>)['deleted'] as int;
   }
@@ -410,14 +414,14 @@ class ApiClient {
   /// the (open) list -- returns whatever was actually created, which may be
   /// empty if everything low-stock is already queued.
   Future<List<ShoppingListItem>> addLowStockToShoppingList() async {
-    final res = await http.post(_uri('/api/shopping-list/add-low-stock'));
+    final res = await _post('/api/shopping-list/add-low-stock');
     _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => ShoppingListItem.fromJson(e)).toList();
   }
 
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
-    final res = await http.get(_uri('/api/barcode/$code'));
+    final res = await _get('/api/barcode/$code');
     if (res.statusCode == 404) {
       return BarcodeLookupResult(source: 'none');
     }
