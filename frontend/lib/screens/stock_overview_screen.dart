@@ -372,7 +372,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         child: Column(
           children: [
             Text('$count', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 11, color: color), textAlign: TextAlign.center),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: color),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
