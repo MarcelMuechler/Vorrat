@@ -177,14 +177,12 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  // Wrap, not a horizontally-scrolling Row (#199) -- on a
-                  // narrow phone a scrolling row clips the last filter off
-                  // the edge with no visible affordance that more exists.
-                  // Wrapping to a second line keeps every control reachable
-                  // by a plain tap regardless of screen width or locale.
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
+                  // A single Row, not a Wrap (#222) -- a Wrap dropped the last
+                  // pill to a second line on a narrow phone, making the row's
+                  // height jump around. The dropdown pills flex and ellipsize
+                  // their labels (see _pillDropdown) so all filters stay on
+                  // one line at any width or locale instead of wrapping.
+                  child: Row(
                     children: [
                       FilterChip(
                         label: Text(l10n.expiringSoonChip),
@@ -192,26 +190,34 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
                         onSelected: (selected) =>
                             stock.setExpiringFilter(selected ? stock.expiringSoonDays : null),
                       ),
-                      if (_locations.isNotEmpty)
-                        _pillDropdown(
-                          value: stock.locationIdFilter,
-                          hint: l10n.allLocationsLabel,
-                          items: [
-                            DropdownMenuItem<int?>(value: null, child: Text(l10n.allLocationsLabel)),
-                            for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
-                          ],
-                          onChanged: (value) => stock.setLocationFilter(value),
+                      if (_locations.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: _pillDropdown(
+                            value: stock.locationIdFilter,
+                            hint: l10n.allLocationsLabel,
+                            options: [
+                              (value: null, label: l10n.allLocationsLabel),
+                              for (final l in _locations) (value: l.id, label: l.name),
+                            ],
+                            onChanged: (value) => stock.setLocationFilter(value),
+                          ),
                         ),
-                      if (_categories.isNotEmpty)
-                        _pillDropdown(
-                          value: stock.categoryIdFilter,
-                          hint: l10n.allCategoriesLabel,
-                          items: [
-                            DropdownMenuItem<int?>(value: null, child: Text(l10n.allCategoriesLabel)),
-                            for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name)),
-                          ],
-                          onChanged: (value) => stock.setCategoryFilter(value),
+                      ],
+                      if (_categories.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: _pillDropdown(
+                            value: stock.categoryIdFilter,
+                            hint: l10n.allCategoriesLabel,
+                            options: [
+                              (value: null, label: l10n.allCategoriesLabel),
+                              for (final c in _categories) (value: c.id, label: c.name),
+                            ],
+                            onChanged: (value) => stock.setCategoryFilter(value),
+                          ),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -244,15 +250,32 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
   Widget _pillDropdown({
     required int? value,
     required String hint,
-    required List<DropdownMenuItem<int?>> items,
+    required List<({int? value, String label})> options,
     required ValueChanged<int?> onChanged,
   }) {
     final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(value: value, hint: Text(hint), items: items, onChanged: onChanged),
+    return ConstrainedBox(
+      // Cap the pill's width so it hugs its label on a wide screen, but let
+      // it shrink (this sits in a Flexible) and ellipsize on a narrow one so
+      // the filter row never overflows or wraps to a second line (#222).
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<int?>(
+            value: value,
+            hint: Text(hint, overflow: TextOverflow.ellipsis),
+            isExpanded: true,
+            // Ellipsize the collapsed selection instead of wrapping it, which
+            // would grow the pill's height.
+            selectedItemBuilder: (context) => [
+              for (final o in options) Text(o.label, overflow: TextOverflow.ellipsis),
+            ],
+            items: [for (final o in options) DropdownMenuItem(value: o.value, child: Text(o.label))],
+            onChanged: onChanged,
+          ),
+        ),
       ),
     );
   }
