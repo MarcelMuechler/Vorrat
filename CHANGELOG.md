@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.3](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.2...v0.18.3) (2026-07-18)
+
+
+### Bug Fixes
+
+* **backend:** escape CSV formula injection in stock and consumption log exports ([0568b14](https://github.com/MarcelMuechler/Vorrat/commit/0568b14e6a496a7f3412efb0e2f635d8e18d49f0)), closes [#226](https://github.com/MarcelMuechler/Vorrat/issues/226)
+
 ## [0.18.2](https://github.com/MarcelMuechler/Vorrat/compare/v0.18.1...v0.18.2) (2026-07-18)
 
 
