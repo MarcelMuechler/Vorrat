@@ -11,11 +11,15 @@ def _strip_name(v: str | None) -> str | None:
 
 
 class LocationCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
 
 
 class LocationUpdate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
+
+    _strip_name = field_validator("name", mode="before")(_strip_name)
 
 
 class LocationRead(BaseModel):
