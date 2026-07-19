@@ -38,6 +38,8 @@ jobs:
         run: uv sync --frozen
       - working-directory: backend
         run: uv run python -c "import app.main"
+      - working-directory: backend
+        run: uv run pytest
       # release-please's extra-files config keeps these four version strings
       # in lockstep within a single release-PR commit, but nothing enforces
       # that the extra-files config itself stays correct -- so double-check
