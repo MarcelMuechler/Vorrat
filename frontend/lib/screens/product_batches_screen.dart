@@ -362,18 +362,17 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Tooltip(
-                message: l10n.usedLabel,
-                child: IconButton(onPressed: useAction, icon: const Icon(Icons.check_circle_outline)),
+              IconButton(
+                tooltip: l10n.usedLabel,
+                onPressed: useAction,
+                icon: const Icon(Icons.check_circle_outline),
               ),
-              Tooltip(
-                message: l10n.spoiledLabel,
-                child: IconButton(onPressed: spoilAction, icon: const Icon(Icons.delete_outline)),
+              IconButton(
+                tooltip: l10n.spoiledLabel,
+                onPressed: spoilAction,
+                icon: const Icon(Icons.delete_outline),
               ),
-              Tooltip(
-                message: l10n.addButton,
-                child: IconButton.filled(onPressed: _addBatch, icon: const Icon(Icons.add)),
-              ),
+              IconButton.filled(tooltip: l10n.addButton, onPressed: _addBatch, icon: const Icon(Icons.add)),
             ],
           );
         },

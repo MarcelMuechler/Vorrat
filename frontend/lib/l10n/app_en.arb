@@ -30,6 +30,8 @@
   "categoryLabel": "Category",
   "clearCategoryTooltip": "Clear category",
   "amountFieldLabel": "Amount",
+  "decreaseAmountTooltip": "Decrease amount",
+  "increaseAmountTooltip": "Increase amount",
   "priceFieldLabel": "Price per unit (optional)",
   "totalStockValueLabel": "Total value: {value}",
   "@totalStockValueLabel": {

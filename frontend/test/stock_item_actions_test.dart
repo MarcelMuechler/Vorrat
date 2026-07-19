@@ -218,6 +218,14 @@ void main() {
   // buttons whose label is carried by a Tooltip. A leftover overflow throws
   // during pump, so simply rendering without an exception is the assertion --
   // plus the labels being gone as visible text and the icons still present.
+  //
+  // Also a regression test (#252): the icon-only fallback used to wrap each
+  // IconButton in a separate Tooltip widget, which never reaches Flutter
+  // Web's semantics tree -- screen readers saw three unlabeled buttons. The
+  // fix moved the label into IconButton's own `tooltip:` param, which Flutter
+  // folds into the accessible name on the web (SemanticsData.tooltip, see
+  // web_ui's computeDomSemanticsLabel) -- so this also asserts each button's
+  // semantics tooltip is non-empty and matches the expected German text.
   testWidgets('action buttons fall back to icon-only on a narrow German phone (canOpen: true)', (
     tester,
   ) async {
@@ -229,6 +237,7 @@ void main() {
       tester.view.physicalSize = originalSize;
       tester.view.devicePixelRatio = originalRatio;
     });
+    final semanticsHandle = tester.ensureSemantics();
 
     await tester.pumpWidget(
       _wrap(
@@ -252,5 +261,15 @@ void main() {
     expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     expect(find.byIcon(Icons.lock_open), findsOneWidget);
+
+    // The accessible name (#252) is carried by the semantics tooltip, which
+    // IconButton's own `tooltip:` param populates -- unlike a separate
+    // Tooltip(child: IconButton(...)) wrapper, which never attaches to this
+    // node at all.
+    expect(tester.getSemantics(find.byIcon(Icons.lock_open)).tooltip, 'Als geöffnet markieren');
+    expect(tester.getSemantics(find.byIcon(Icons.check_circle_outline)).tooltip, 'Verbraucht');
+    expect(tester.getSemantics(find.byIcon(Icons.delete_outline)).tooltip, 'Verdorben');
+
+    semanticsHandle.dispose();
   });
 }

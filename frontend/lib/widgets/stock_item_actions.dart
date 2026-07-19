@@ -170,9 +170,10 @@ class _StockItemActionsState extends State<StockItemActions> {
                   children: [
                     for (final action in actions)
                       if (iconOnly)
-                        Tooltip(
-                          message: action.label,
-                          child: IconButton(onPressed: action.onPressed, icon: Icon(action.icon)),
+                        IconButton(
+                          tooltip: action.label,
+                          onPressed: action.onPressed,
+                          icon: Icon(action.icon),
                         )
                       else
                         TextButton.icon(

@@ -170,7 +170,11 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton.outlined(onPressed: () => _stepAmount(-1), icon: const Icon(Icons.remove)),
+                IconButton.outlined(
+                  tooltip: l10n.decreaseAmountTooltip,
+                  onPressed: () => _stepAmount(-1),
+                  icon: const Icon(Icons.remove),
+                ),
                 SizedBox(
                   width: 72,
                   child: TextField(
@@ -181,7 +185,11 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
-                IconButton.outlined(onPressed: () => _stepAmount(1), icon: const Icon(Icons.add)),
+                IconButton.outlined(
+                  tooltip: l10n.increaseAmountTooltip,
+                  onPressed: () => _stepAmount(1),
+                  icon: const Icon(Icons.add),
+                ),
               ],
             ),
             const SizedBox(height: 16),
