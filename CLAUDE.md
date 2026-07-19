@@ -24,11 +24,16 @@ Backend (from `backend/`):
 uv run uvicorn app.main:app --reload      # dev server, http://localhost:8000
 alembic upgrade head                       # apply migrations (needed before first run)
 alembic revision --autogenerate -m "..."   # new migration after a models.py change
+uv run pytest                              # isolated unit tests (backend/tests/, in-memory SQLite via TestClient)
 BASE=http://localhost:8000 ./scripts/smoke_test.sh   # curl-based end-to-end regression check
 ```
-There is no pytest/unit-test suite for the backend — `scripts/smoke_test.sh` (run against a
-live `uvicorn` instance) is the only automated check, and it's additive: extend it in place
-rather than starting a parallel test framework.
+Two complementary layers of backend testing: `pytest` (`backend/tests/`) runs fast, isolated
+unit tests against FastAPI's `TestClient` and an in-memory SQLite db (see `tests/conftest.py`'s
+`client` fixture) — no live server needed, extend this in place for new router/db-logic
+coverage. `scripts/smoke_test.sh` stays as the live end-to-end regression check, run against a
+real `uvicorn` instance — extend it in place too for checks that specifically need a live
+server (e.g. exercising the actual HTTP stack/CORS/static file serving), rather than starting a
+third parallel test framework.
 
 Frontend (from `frontend/`):
 ```sh
