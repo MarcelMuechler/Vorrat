@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.21.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.21.0...v0.21.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* **backend:** enable Alembic batch mode for safe SQLite schema changes ([#263](https://github.com/MarcelMuechler/Vorrat/issues/263)) ([dc9539f](https://github.com/MarcelMuechler/Vorrat/commit/dc9539f786fbfb19be748a12ead143ce744cf638))
+* **frontend:** add bottom padding so FAB doesn't cover last list row ([#253](https://github.com/MarcelMuechler/Vorrat/issues/253)) ([1e556ba](https://github.com/MarcelMuechler/Vorrat/commit/1e556bae0fbedf9569c2425c8bf01de0097ba327))
+* **frontend:** dedupe low-stock shopping list action and add persistent banner state ([#254](https://github.com/MarcelMuechler/Vorrat/issues/254)) ([3fad896](https://github.com/MarcelMuechler/Vorrat/commit/3fad896fa9098587510a103fbc62d1f00f134ea1))
+* **frontend:** grouped stock total reflects true stock, not filtered subtotal ([#255](https://github.com/MarcelMuechler/Vorrat/issues/255)) ([057c3a7](https://github.com/MarcelMuechler/Vorrat/commit/057c3a7d4735942df84386db786d2b726fb20eec))
+
 ## [0.21.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.20.0...v0.21.0) (2026-07-19)
 
 
