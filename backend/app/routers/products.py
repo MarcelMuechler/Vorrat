@@ -112,18 +112,28 @@ def _cache_remote_image(url: str, product_id: int) -> str | None:
     load (#262). Best-effort like off_client's lookups: any failure (network,
     timeout, bad content-type, oversized) just drops the image rather than
     falling back to the original external URL -- a broken/slow external host
-    shouldn't be able to fail a product save."""
+    shouldn't be able to fail a product save.
+
+    Streams the response and aborts as soon as _MAX_IMAGE_BYTES is exceeded,
+    rather than buffering the whole body first -- a malicious/misbehaving
+    external host can't use an unbounded Content-Length to force this process
+    to hold an arbitrarily large response in memory."""
     try:
-        response = httpx.get(url, timeout=5.0, follow_redirects=True)
-        response.raise_for_status()
+        with httpx.stream("GET", url, timeout=5.0, follow_redirects=True) as response:
+            response.raise_for_status()
+            content_type = response.headers.get("content-type", "").split(";")[0].strip()
+            ext = _ALLOWED_IMAGE_TYPES.get(content_type)
+            if ext is None:
+                return None
+            content = bytearray()
+            for chunk in response.iter_bytes():
+                content += chunk
+                if len(content) > _MAX_IMAGE_BYTES:
+                    return None
     except httpx.HTTPError:
         return None
-    content_type = response.headers.get("content-type", "").split(";")[0].strip()
-    ext = _ALLOWED_IMAGE_TYPES.get(content_type)
-    if ext is None or len(response.content) > _MAX_IMAGE_BYTES:
-        return None
     filename = f"{product_id}-{uuid.uuid4().hex[:12]}{ext}"
-    (UPLOADS_DIR / filename).write_bytes(response.content)
+    (UPLOADS_DIR / filename).write_bytes(content)
     return f"/uploads/{filename}"
 
 

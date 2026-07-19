@@ -99,3 +99,43 @@ def test_update_product_cleans_up_previously_uploaded_image_when_replaced(client
     client.patch(f"/api/products/{product['id']}", json={"image_url": "https://example.invalid/no-such-host.jpg"})
 
     assert not old_path.exists()
+
+
+class _FakeStreamResponse:
+    """Stands in for httpx.stream()'s context-manager response."""
+
+    def __init__(self, content_type, chunks):
+        self.headers = {"content-type": content_type}
+        self._chunks = chunks
+
+    def raise_for_status(self):
+        pass
+
+    def iter_bytes(self):
+        yield from self._chunks
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def test_cache_remote_image_aborts_without_buffering_past_the_size_cap(monkeypatch, tmp_path):
+    # _cache_remote_image must not rely on the response's (possibly
+    # absent/lying) Content-Length header to bound memory use -- it has to
+    # actually stop reading once the streamed body itself exceeds the cap.
+    from app.routers import products as products_router
+
+    monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+    oversized_chunk = b"x" * (products_router._MAX_IMAGE_BYTES + 1)
+    monkeypatch.setattr(
+        products_router.httpx,
+        "stream",
+        lambda *args, **kwargs: _FakeStreamResponse("image/png", [oversized_chunk]),
+    )
+
+    result = products_router._cache_remote_image("https://example.invalid/big.png", product_id=1)
+
+    assert result is None
+    assert list(tmp_path.iterdir()) == []
