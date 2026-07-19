@@ -1,3 +1,4 @@
+from app.off_client import OffLookupError
 from app.routers import barcode as barcode_router
 
 
@@ -43,10 +44,9 @@ def test_lookup_barcode_falls_back_to_off_when_found(client, monkeypatch):
     assert body["product"]["name"] == "OFF Product"
 
 
-def test_lookup_barcode_returns_404_when_off_lookup_misses_or_errors(client, monkeypatch):
-    # lookup_off never raises -- a network error or genuine miss both come
-    # back as None (see off_client.py's docstring) -- so the router's 404
-    # path only needs to be exercised against that single return value.
+def test_lookup_barcode_returns_404_when_off_lookup_genuinely_misses(client, monkeypatch):
+    # A clean miss (OFF answered, no matching product) comes back as None --
+    # that's a real "not found", distinct from OffLookupError below.
     async def fake_lookup_off(code):
         return None
 
@@ -54,3 +54,16 @@ def test_lookup_barcode_returns_404_when_off_lookup_misses_or_errors(client, mon
 
     response = client.get("/api/barcode/0000000000000")
     assert response.status_code == 404
+
+
+def test_lookup_barcode_returns_503_when_off_is_unreachable(client, monkeypatch):
+    # OffLookupError means OFF couldn't be reached/answered at all (timeout,
+    # connection failure, repeated 5xx/429) -- must surface as a distinct
+    # 503, not be folded into the same 404 "not found" as a genuine miss.
+    async def fake_lookup_off(code):
+        raise OffLookupError("simulated network failure")
+
+    monkeypatch.setattr(barcode_router, "lookup_off", fake_lookup_off)
+
+    response = client.get("/api/barcode/0000000000001")
+    assert response.status_code == 503

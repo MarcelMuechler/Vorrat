@@ -164,6 +164,26 @@ class _ScanScreenState extends State<ScanScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.savedForLater(queue.length))),
       );
+    } on ApiException catch (e) {
+      if (e.statusCode == 503) {
+        // The backend reached us fine, but couldn't reach/answer from Open
+        // Food Facts (network outage on the server side, see #260) -- a
+        // transient failure just like the connection-level one above, and
+        // just as retryable, so it gets the same queue-and-retry treatment
+        // rather than the raw-exception message below or being treated as
+        // a genuine "not found".
+        await queue.add(code);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.offLookupUnavailableSavedForLater(queue.length)),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.lookupFailed('$e'))),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

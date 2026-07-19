@@ -99,6 +99,7 @@
   "invalidBarcodeMessage": "Das sieht nicht wie ein gültiger Barcode aus.",
   "enterBarcodeTitle": "Barcode eingeben",
   "savedForLater": "Keine Verbindung — für später gespeichert ({count} ausstehend).",
+  "offLookupUnavailableSavedForLater": "Produktdatenbank nicht erreichbar — für später gespeichert ({count} ausstehend).",
   "lookupFailed": "Abfrage fehlgeschlagen: {error}\n\nServer-URL in den Einstellungen prüfen.",
   "enterManuallyTooltip": "Barcode manuell eingeben",
   "recentlyScanned": "Zuletzt gescannt",

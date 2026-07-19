@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Product, ProductBarcode
-from app.off_client import lookup_off
+from app.off_client import OffLookupError, lookup_off
 from app.schemas import ProductRead
 from app.utils import normalize_barcode
 
@@ -24,7 +24,14 @@ async def lookup_barcode(code: str, db: Session = Depends(get_db)):
     if product:
         return {"source": "local", "product": ProductRead.model_validate(product)}
 
-    off_product = await lookup_off(code)
+    try:
+        off_product = await lookup_off(code)
+    except OffLookupError:
+        # OFF couldn't be reached/answered at all (timeout, connection
+        # failure, repeated 5xx/429) -- distinct from a genuine miss, so the
+        # client can tell "product doesn't exist" apart from "try again
+        # later" instead of being funneled into manual entry either way.
+        raise HTTPException(503, {"source": "none", "reason": "off_unreachable"}) from None
     if off_product:
         return {"source": "off", "product": off_product}
 

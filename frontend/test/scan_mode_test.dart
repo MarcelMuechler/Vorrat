@@ -20,9 +20,16 @@ class FakeApiClient extends ApiClient {
   List<Map<String, dynamic>> addStockCalls = [];
   bool markedOpened = false;
 
+  // Simulates the backend's 503 response when it couldn't reach/answer from
+  // Open Food Facts (#260) -- distinct from a genuine miss or a dropped
+  // connection to the backend itself.
+  bool offUnavailable = false;
+
   @override
-  Future<BarcodeLookupResult> lookupBarcode(String code) async =>
-      BarcodeLookupResult(source: 'local', localProduct: Product(id: 1, name: 'Jam', barcode: code));
+  Future<BarcodeLookupResult> lookupBarcode(String code) async {
+    if (offUnavailable) throw ApiException(503, '{"source": "none", "reason": "off_unreachable"}');
+    return BarcodeLookupResult(source: 'local', localProduct: Product(id: 1, name: 'Jam', barcode: code));
+  }
 
   @override
   Future<List<Location>> listLocations() async => [];
@@ -159,6 +166,24 @@ void main() {
     // Mode selector is still showing "Use" as an available option -- the
     // scan screen itself, not some other flow, is still active.
     expect(find.text('Use'), findsOneWidget);
+  });
+
+  testWidgets('OFF unavailable (503) queues the scan for later instead of failing outright', (
+    tester,
+  ) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    api.offUnavailable = true;
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await _enterBarcode(tester, '5000000000000');
+    await tester.pump(); // let the SnackBar animate in
+
+    expect(find.textContaining('unavailable'), findsOneWidget);
+    // Queued rather than shown as a raw error -- the pending-scans badge
+    // (hidden while the queue is empty) now shows up with one entry.
+    expect(find.text('1'), findsOneWidget);
   });
 
   testWidgets('Add mode shows an inline sheet for a known product, no navigation', (tester) async {

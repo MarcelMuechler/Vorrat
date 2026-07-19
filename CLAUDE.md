@@ -88,8 +88,10 @@ computes an `ok` / `expiring_soon` / `expired` status from `best_before_date` vs
 listing.
 
 **Barcode lookup** (`routers/barcode.py`): checks the local `Product` table first; on a miss,
-falls back to Open Food Facts (`off_client.lookup_off`), which never raises — any network
-error, timeout, or malformed/non-JSON response is treated the same as a genuine "not found".
+falls back to Open Food Facts (`off_client.lookup_off`). A malformed/non-JSON response is still
+treated as a genuine "not found" (`None`), but a real connectivity failure (timeout, connection
+error, repeated 5xx/429 after retries) raises `OffLookupError`, which the router turns into an
+HTTP 503 rather than a 404 — the OFF outage case must stay distinguishable from a genuine miss.
 
 **Search.** Product/stock name search uses `ilike` with `escape_like()` (`utils.py`) so literal
 `%`/`_`/`\` in a user's search term aren't treated as SQL LIKE wildcards.

@@ -329,6 +329,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String offLookupUnavailableSavedForLater(int count) {
+    return 'Produktdatenbank nicht erreichbar — für später gespeichert ($count ausstehend).';
+  }
+
+  @override
   String lookupFailed(String error) {
     return 'Abfrage fehlgeschlagen: $error\n\nServer-URL in den Einstellungen prüfen.';
   }

@@ -33,6 +33,17 @@ _MAX_ATTEMPTS = 3
 _RETRY_BACKOFF_SECONDS = (0.5, 1.0)
 _REQUEST_TIMEOUT_SECONDS = 3.0
 
+
+class OffLookupError(Exception):
+    """Raised when Open Food Facts couldn't be reached or answered at all --
+    a timeout, connection failure, or repeated 5xx/429 after retries are
+    exhausted. Distinct from a genuine "not found" (returned as None): a
+    caller must not treat this the same as a real miss, since the product
+    may well exist and the user shouldn't be told to enter it manually just
+    because of a transient network problem.
+    """
+
+
 # Lifecycle-managed HTTP client, reused across all OFF requests (and retries)
 # for connection pooling / TCP+TLS reuse. Set by init_client() during FastAPI
 # lifespan startup and torn down by close_client() on shutdown. A plain
@@ -87,12 +98,17 @@ def _evict() -> None:
 
 
 async def lookup_off(barcode: str) -> dict | None:
-    """Look up a barcode on Open Food Facts. Returns a Product-shaped dict or None.
+    """Look up a barcode on Open Food Facts. Returns a Product-shaped dict, or
+    None for a genuine "not found" -- a clean 404, a well-formed response with
+    no matching product, or a malformed/unexpected-but-received response
+    (those are treated as answers, not failures).
 
-    Never raises: any network error, timeout, or "not found" response from OFF
-    is treated the same way as a genuine miss. Results are cached in-process
-    for a while (see _TTL_*_SECONDS) so repeated scans of the same barcode
-    don't hit the network every time.
+    Raises OffLookupError if OFF couldn't be reached or answered at all
+    (timeout, connection failure, repeated 5xx/429) after retries are
+    exhausted -- a real failure, distinct from a genuine miss, that callers
+    must not silently swallow. Results are cached in-process for a while (see
+    _TTL_*_SECONDS) so repeated scans of the same barcode don't hit the
+    network every time; errors are never cached (see _ERROR).
     """
     hit, cached = _cache_get(barcode)
     if hit:
@@ -101,7 +117,7 @@ async def lookup_off(barcode: str) -> dict | None:
     result = await _fetch_off(barcode)
     if result is _ERROR:
         # Transient failure: don't cache, so the next scan retries immediately.
-        return None
+        raise OffLookupError(f"Open Food Facts lookup failed for barcode {barcode!r}")
     _cache_set(barcode, result)
     return result
 
@@ -112,7 +128,8 @@ async def _request_off(barcode: str) -> dict:
         # Not initialized (init_client() wasn't called, e.g. lifespan didn't
         # run) or already closed. Raise an httpx.HTTPError subclass rather
         # than letting an AttributeError through, so _fetch_off's retry/error
-        # handling -- and lookup_off's never-raises contract -- still apply.
+        # handling (and lookup_off's OffLookupError contract for genuine
+        # connectivity failures) still applies.
         raise httpx.ConnectError("OFF HTTP client not initialized")
     url = f"{settings.off_base_url}/api/v2/product/{quote(barcode, safe='')}.json"
     headers = {"User-Agent": settings.off_user_agent}
@@ -137,11 +154,19 @@ async def _fetch_off(barcode: str) -> dict | None | object:
                 return None
             if attempt == _MAX_ATTEMPTS - 1:
                 return _ERROR
-        except (httpx.HTTPError, ValueError):
-            # ValueError covers response.json() raising JSONDecodeError, e.g. OFF
-            # returning a 200 with an HTML rate-limit/maintenance page instead of
-            # JSON — treated as transient and retried like a network error. But
-            # unlike a genuine "not found", a failed request must not be cached.
+        except ValueError:
+            # response.json() raised (e.g. JSONDecodeError) -- OFF responded, just
+            # not with parseable JSON (an HTML rate-limit/maintenance page is the
+            # common case). We did get *a* response, so this is answered like a
+            # genuine miss (None), not a transport failure -- still retried first
+            # in case it's a one-off blip, but never escalated to OffLookupError.
+            if attempt == _MAX_ATTEMPTS - 1:
+                return None
+        except httpx.HTTPError:
+            # No response at all: timeout, connection refused, DNS failure, etc.
+            # Retried like the above, but unlike a malformed response this is a
+            # genuine failure to reach OFF -- if every attempt fails, it must
+            # propagate as OffLookupError, not be cached as a false "not found".
             if attempt == _MAX_ATTEMPTS - 1:
                 return _ERROR
         await asyncio.sleep(_RETRY_BACKOFF_SECONDS[attempt])
@@ -201,7 +226,7 @@ if __name__ == "__main__":
     # If init_client() was never called (or close_client() already ran),
     # _request_off must raise an httpx.HTTPError -- not AttributeError -- so
     # _fetch_off's existing retry/error handling still applies and
-    # lookup_off's never-raises contract holds even when the shared client
+    # lookup_off's OffLookupError contract holds even when the shared client
     # is unavailable.
     assert _client is None
     assert asyncio.run(_fetch_off("777")) is _ERROR
@@ -251,9 +276,26 @@ if __name__ == "__main__":
     assert asyncio.run(_fetch_off("666")) is None
     assert _calls["n"] == 1  # no retry attempted
 
+    # A malformed-but-received response (e.g. an HTML page instead of JSON)
+    # is answered as "not found" (None) after retries, not escalated to
+    # OffLookupError -- it's a response we got, just not a usable one.
+    _calls = {"n": 0}
+
+    async def _always_malformed(barcode: str) -> dict:
+        _calls["n"] += 1
+        raise ValueError("simulated JSON decode failure")
+
+    _request_off = _always_malformed
+    assert asyncio.run(_fetch_off("888")) is None
+    assert _calls["n"] == _MAX_ATTEMPTS
+
     _CACHE.clear()
     _fetch_off = lambda barcode: asyncio.sleep(0, result=_ERROR)  # noqa: E731 — simulate a network failure
-    assert asyncio.run(lookup_off("333")) is None  # never-raises contract holds
-    assert "333" not in _CACHE  # but the error is NOT cached
+    try:
+        asyncio.run(lookup_off("333"))
+        raise AssertionError("expected OffLookupError")
+    except OffLookupError:
+        pass
+    assert "333" not in _CACHE  # the error is NOT cached
 
     print("off_client self-check OK")
