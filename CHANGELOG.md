@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.21.2](https://github.com/MarcelMuechler/Vorrat/compare/v0.21.1...v0.21.2) (2026-07-19)
+
+
+### Bug Fixes
+
+* **backend:** harden /api/backup/restore validation and stop blocking the event loop ([592b718](https://github.com/MarcelMuechler/Vorrat/commit/592b718ff907ec39474345aefaf46c3d44b10f4e))
+* **backend:** make CSV formula-injection escaping losslessly reversible ([e3e482d](https://github.com/MarcelMuechler/Vorrat/commit/e3e482d796209347de65a6f44ebebea74199c098))
+* **backend:** prevent path traversal via product image_url deletion ([5f74c7b](https://github.com/MarcelMuechler/Vorrat/commit/5f74c7bb61884578c6fba06b7f8ac9b0ffb42176))
+* **backend:** stream remote product image downloads to enforce the size cap ([4606b79](https://github.com/MarcelMuechler/Vorrat/commit/4606b79d8925264a1b51113c3064f8d425439331))
+* **backend:** surface OFF outages from refresh-from-off as 503, not 500 ([51c5cac](https://github.com/MarcelMuechler/Vorrat/commit/51c5cacd0dd2b83a6ce75b0400897d4b680d59e7))
+* **frontend:** map finite_number validation errors to a friendly message ([6c44c66](https://github.com/MarcelMuechler/Vorrat/commit/6c44c660cda77a62de3c16dbb0350ae6ad21ffef))
+
 ## [0.21.1](https://github.com/MarcelMuechler/Vorrat/compare/v0.21.0...v0.21.1) (2026-07-19)
 
 
