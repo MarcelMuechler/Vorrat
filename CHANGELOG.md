@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.21.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.20.0...v0.21.0) (2026-07-19)
+
+
+### Features
+
+* **backend:** introduce pytest unit test suite with TestClient ([db40751](https://github.com/MarcelMuechler/Vorrat/commit/db40751bbfaa910e6d03cac82833aab53d252fd0)), closes [#261](https://github.com/MarcelMuechler/Vorrat/issues/261)
+
+
+### Bug Fixes
+
+* **backend,frontend:** surface OFF network failures as 503, not a false 404 ([dd273ab](https://github.com/MarcelMuechler/Vorrat/commit/dd273aba115126ef4837cafe13e869070da41e78)), closes [#260](https://github.com/MarcelMuechler/Vorrat/issues/260)
+* **frontend:** localize scan screen's camera error fallback text ([d162fee](https://github.com/MarcelMuechler/Vorrat/commit/d162fee21ee904ce3a617861960b1203fa32d61c)), closes [#251](https://github.com/MarcelMuechler/Vorrat/issues/251)
+* **frontend:** show a friendly, localized reason for save errors instead of raw backend JSON ([8cf8d71](https://github.com/MarcelMuechler/Vorrat/commit/8cf8d711bf2eec8a1fb8eea18fc21aec2e272565)), closes [#250](https://github.com/MarcelMuechler/Vorrat/issues/250)
+
 ## [0.20.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.19.0...v0.20.0) (2026-07-18)
 
 
