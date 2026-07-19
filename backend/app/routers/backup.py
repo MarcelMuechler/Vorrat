@@ -1,5 +1,4 @@
 import os
-import shutil
 import sqlite3
 import tempfile
 from datetime import datetime, timezone
@@ -12,6 +11,12 @@ from app.config import settings as env_settings
 from app.db import engine
 
 router = APIRouter(prefix="/api/backup", tags=["backup"])
+
+# A restore uploads a whole SQLite file, not a small form payload -- generous
+# but bounded so a misbehaving/hostile client can't fill the disk via an
+# unbounded upload (mirrors stock.py's IMPORT_CSV_MAX_BYTES pattern).
+_MAX_RESTORE_BYTES = 500 * 1024 * 1024
+_SQLITE_HEADER = b"SQLite format 3\x00"
 
 
 def _db_path() -> str:
@@ -49,17 +54,38 @@ def download_backup():
 
 
 @router.post("/restore")
-async def restore_backup(file: UploadFile = File(...)):
+def restore_backup(file: UploadFile = File(...)):
     """Replaces the live DB file with the upload. Restoring a backup taken
     from an older schema version (before a later Alembic migration) is the
-    caller's responsibility -- this endpoint does not attempt to migrate it."""
+    caller's responsibility -- this endpoint does not attempt to migrate it.
+
+    A plain `def`, not `async def`, like download_backup above -- everything
+    this does (file copy, sqlite3 connect, engine.dispose(), os.replace) is
+    blocking, and FastAPI runs a sync route in a threadpool automatically,
+    where an `async def` doing the same blocking work would instead run
+    directly on the event loop and stall every other in-flight request for
+    the duration of the restore."""
     target_path = _db_path()
     target_dir = os.path.dirname(os.path.abspath(target_path)) or "."
     fd, tmp_path = tempfile.mkstemp(dir=target_dir, suffix=".upload")
     try:
         with os.fdopen(fd, "wb") as out:
-            shutil.copyfileobj(file.file, out)
+            written = 0
+            while chunk := file.file.read(1024 * 1024):
+                written += len(chunk)
+                if written > _MAX_RESTORE_BYTES:
+                    raise HTTPException(status_code=413, detail="Backup upload too large")
+                out.write(chunk)
 
+        # A quick magic-bytes check first: PRAGMA schema_version alone
+        # doesn't reject this -- SQLite treats an empty/all-zero file as a
+        # valid, freshly-initialized empty database, so an empty or
+        # truncated upload would otherwise sail through and silently replace
+        # the live DB with an empty one.
+        with open(tmp_path, "rb") as f:
+            header = f.read(len(_SQLITE_HEADER))
+        if header != _SQLITE_HEADER:
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid SQLite database")
         try:
             check = sqlite3.connect(tmp_path)
             try:
