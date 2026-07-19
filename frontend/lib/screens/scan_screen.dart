@@ -309,7 +309,8 @@ class _ScanScreenState extends State<ScanScreen> {
               children: [
                 MobileScanner(
                   onDetect: _onDetect,
-                  errorBuilder: (context, error) => Center(child: Text(error.errorCode.message)),
+                  errorBuilder: (context, error) =>
+                      Center(child: Text(_cameraErrorMessage(l10n, error))),
                 ),
                 if (_handling) const Center(child: CircularProgressIndicator()),
               ],
@@ -323,4 +324,25 @@ class _ScanScreenState extends State<ScanScreen> {
 
 extension _FirstOrNull<T> on List<T> {
   T? get firstOrNull => isEmpty ? null : first;
+}
+
+/// Maps a [MobileScannerException] to a localized message for the camera
+/// preview's errorBuilder -- `error.errorCode.message` is the `mobile_scanner`
+/// package's own hardcoded English text and never goes through
+/// [AppLocalizations] (#251). Only the error codes realistically reachable
+/// from a failed camera start (no camera/no `MediaDevices` support, denied
+/// permission, some other platform failure) get a specific message; every
+/// other code (controller lifecycle misuse, not user-facing in practice)
+/// falls back to a generic localized "scanning unavailable" message.
+String _cameraErrorMessage(AppLocalizations l10n, MobileScannerException error) {
+  switch (error.errorCode) {
+    case MobileScannerErrorCode.unsupported:
+      return l10n.cameraUnsupported;
+    case MobileScannerErrorCode.permissionDenied:
+      return l10n.cameraPermissionDenied;
+    case MobileScannerErrorCode.genericError:
+      return l10n.cameraGenericError;
+    default:
+      return l10n.cameraUnavailable;
+  }
 }

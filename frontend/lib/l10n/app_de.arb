@@ -232,6 +232,11 @@
   "pairDeviceHint": "Weiteres Gerät koppeln: Einstellungen → Scannen zum Verbinden öffnen und diesen Code scannen.",
   "scanQrTitle": "Server-QR-Code scannen",
 
+  "cameraUnsupported": "Scannen wird auf diesem Gerät nicht unterstützt.",
+  "cameraPermissionDenied": "Kamerazugriff verweigert. Erlaube den Kamerazugriff, um Barcodes zu scannen.",
+  "cameraGenericError": "Kamera konnte nicht gestartet werden.",
+  "cameraUnavailable": "Scannen ist momentan nicht verfügbar.",
+
   "shoppingListTitle": "Einkaufsliste",
   "shoppingListAddHint": "Artikel hinzufügen…",
   "shoppingListEmpty": "Die Einkaufsliste ist leer. Über das Feld oben einen Artikel hinzufügen.",

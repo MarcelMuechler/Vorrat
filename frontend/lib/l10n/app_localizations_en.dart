@@ -823,6 +823,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanQrTitle => 'Scan server QR code';
 
   @override
+  String get cameraUnsupported => 'Scanning is not supported on this device.';
+
+  @override
+  String get cameraPermissionDenied =>
+      'Camera permission denied. Allow camera access to scan barcodes.';
+
+  @override
+  String get cameraGenericError => 'Could not start the camera.';
+
+  @override
+  String get cameraUnavailable => 'Scanning is unavailable right now.';
+
+  @override
   String get shoppingListTitle => 'Shopping list';
 
   @override

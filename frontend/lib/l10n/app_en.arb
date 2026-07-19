@@ -406,6 +406,11 @@
   "pairDeviceHint": "Pair another device: open Settings → Scan to connect on it, then scan this code.",
   "scanQrTitle": "Scan server QR code",
 
+  "cameraUnsupported": "Scanning is not supported on this device.",
+  "cameraPermissionDenied": "Camera permission denied. Allow camera access to scan barcodes.",
+  "cameraGenericError": "Could not start the camera.",
+  "cameraUnavailable": "Scanning is unavailable right now.",
+
   "shoppingListTitle": "Shopping list",
   "shoppingListAddHint": "Add an item…",
   "shoppingListEmpty": "Your shopping list is empty. Add an item using the field above.",

@@ -1394,6 +1394,30 @@ abstract class AppLocalizations {
   /// **'Scan server QR code'**
   String get scanQrTitle;
 
+  /// No description provided for @cameraUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning is not supported on this device.'**
+  String get cameraUnsupported;
+
+  /// No description provided for @cameraPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission denied. Allow camera access to scan barcodes.'**
+  String get cameraPermissionDenied;
+
+  /// No description provided for @cameraGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the camera.'**
+  String get cameraGenericError;
+
+  /// No description provided for @cameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning is unavailable right now.'**
+  String get cameraUnavailable;
+
   /// No description provided for @shoppingListTitle.
   ///
   /// In en, this message translates to:

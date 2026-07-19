@@ -832,6 +832,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get scanQrTitle => 'Server-QR-Code scannen';
 
   @override
+  String get cameraUnsupported =>
+      'Scannen wird auf diesem Gerät nicht unterstützt.';
+
+  @override
+  String get cameraPermissionDenied =>
+      'Kamerazugriff verweigert. Erlaube den Kamerazugriff, um Barcodes zu scannen.';
+
+  @override
+  String get cameraGenericError => 'Kamera konnte nicht gestartet werden.';
+
+  @override
+  String get cameraUnavailable => 'Scannen ist momentan nicht verfügbar.';
+
+  @override
   String get shoppingListTitle => 'Einkaufsliste';
 
   @override
