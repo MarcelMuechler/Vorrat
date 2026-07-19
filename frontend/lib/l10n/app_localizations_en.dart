@@ -328,6 +328,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String offLookupUnavailableSavedForLater(int count) {
+    return 'Product lookup service unavailable — saved for later ($count pending).';
+  }
+
+  @override
   String lookupFailed(String error) {
     return 'Lookup failed: $error\n\nCheck the server URL in Settings.';
   }

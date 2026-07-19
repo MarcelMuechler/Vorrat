@@ -156,6 +156,10 @@
   "@savedForLater": {
     "placeholders": { "count": { "type": "int" } }
   },
+  "offLookupUnavailableSavedForLater": "Product lookup service unavailable — saved for later ({count} pending).",
+  "@offLookupUnavailableSavedForLater": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "lookupFailed": "Lookup failed: {error}\n\nCheck the server URL in Settings.",
   "@lookupFailed": {
     "placeholders": { "error": { "type": "String" } }

@@ -12,7 +12,7 @@ The `backend/app/off_client.py` module handles all Open Food Facts API interacti
   - Network errors are **never cached** — transient failures allow immediate retries
 - **Cache eviction**: When the cache exceeds 1000 entries, oldest entries are evicted
 - **Retry with backoff**: Transient failures (connection errors, timeouts, HTTP 429, HTTP 5xx) are retried up to 3 attempts total, with a short backoff (0.5s, then 1s) between attempts. A clean 4xx response (e.g. a genuine 404 "not found") is not retried. Each attempt has a 3-second timeout, so a scan never hangs much longer than ~10s even in the worst case.
-- **Never raises**: Network errors, timeouts, and malformed responses are treated the same as a genuine "not found" — the API always returns either a product dict or `None`
+- **Distinguishes failure from a miss**: malformed responses are still treated as a genuine "not found" (`None`), but network errors/timeouts that persist after retries raise `OffLookupError` instead — see Error Handling below
 
 ## Configuration
 
@@ -142,15 +142,25 @@ For integration tests or CI workflows that need to run without the real OFF API:
 
 ## Error Handling
 
-The OFF client never raises exceptions — all failures return `None`:
+`lookup_off()` distinguishes a genuine "not found" (returned as `None`) from a real failure to
+reach or get an answer from OFF at all (raised as `OffLookupError`):
 
-- Network timeouts (3-second limit per request attempt)
-- HTTP errors (4xx, 5xx)
-- Malformed JSON responses
+Returned as `None` (treated as an answer, not a failure):
+- A clean 4xx such as a genuine 404 "not found" — not retried, it's a real answer
+- Malformed/unparseable responses (e.g. an HTML rate-limit/maintenance page instead of JSON) —
+  retried in case it's a one-off blip, but still answered as `None` once retries are exhausted,
+  since a response was received, just not a usable one
 - OFF returning a valid response with `"status": 0` (product not found)
 
-Transient failures — connection errors, timeouts, HTTP 429, and HTTP 5xx — are retried up to 3 attempts total with a short backoff (0.5s, then 1s) before giving up. A clean 4xx response such as a genuine 404 "not found" is treated as a real answer and is not retried.
+Raised as `OffLookupError` once every attempt fails:
+- Network timeouts (3-second limit per request attempt)
+- Connection failures (DNS failure, connection refused, etc.)
+- Repeated HTTP 429 or 5xx responses
 
-All of these cases are treated identically from the caller's perspective: `lookup_off()` returns `None`, and the barcode scan proceeds without product details. The frontend shows "Unknown product" and lets the user enter details manually.
+Transient failures — connection errors, timeouts, HTTP 429, and HTTP 5xx — are retried up to 3 attempts total with a short backoff (0.5s, then 1s) before giving up and raising `OffLookupError`.
+
+The barcode router (`routers/barcode.py`) catches `OffLookupError` and responds with HTTP 503,
+so the frontend can show a distinct "network error, try again" state instead of funneling a
+real outage into the same "Unknown product" manual-entry flow as a genuine miss.
 
 **Important**: Network errors are never cached. If the OFF API is temporarily unavailable even after retries, the next scan of the same barcode will attempt the lookup again (no silent failures due to poisoned cache).

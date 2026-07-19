@@ -656,6 +656,12 @@ abstract class AppLocalizations {
   /// **'No connection — saved for later ({count} pending).'**
   String savedForLater(int count);
 
+  /// No description provided for @offLookupUnavailableSavedForLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Product lookup service unavailable — saved for later ({count} pending).'**
+  String offLookupUnavailableSavedForLater(int count);
+
   /// No description provided for @lookupFailed.
   ///
   /// In en, this message translates to:
