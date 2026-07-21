@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.21.2...v1.0.0) (2026-07-21)
+
+
+### Features
+
+* **backend:** add per-product does_not_spoil flag and expiring-soon override ([#292](https://github.com/MarcelMuechler/Vorrat/issues/292)) ([9fea2da](https://github.com/MarcelMuechler/Vorrat/commit/9fea2da511928c2115b0b67815f74a3c31aaa216))
+* **frontend:** add does-not-spoil toggle and expiring-soon override to product edit ([#292](https://github.com/MarcelMuechler/Vorrat/issues/292)) ([84fa293](https://github.com/MarcelMuechler/Vorrat/commit/84fa2939cb3756c623a9e9cff420005bf80142dc))
+* **frontend:** group shopping list by category ([#293](https://github.com/MarcelMuechler/Vorrat/issues/293)) ([0314d4d](https://github.com/MarcelMuechler/Vorrat/commit/0314d4d9be4737b63ade402e368dc5847d08debc))
+
+
+### Bug Fixes
+
+* **backend:** compare consumption-log since/until against UTC, not local date ([2fc3e5c](https://github.com/MarcelMuechler/Vorrat/commit/2fc3e5cc69c3f753be7da5ad66b808e2182983e8))
+* **backend:** reject valid-but-foreign SQLite files on backup restore ([#289](https://github.com/MarcelMuechler/Vorrat/issues/289)) ([9c345fa](https://github.com/MarcelMuechler/Vorrat/commit/9c345faf1c85d944a120be74c6c8800775d5c525))
+* **backend:** restrict cached product image_url fetches to public hosts ([#288](https://github.com/MarcelMuechler/Vorrat/issues/288)) ([fa20647](https://github.com/MarcelMuechler/Vorrat/commit/fa206471f8712dbf382fb792f53bfca173c4bb82))
+* **backend:** update smoke test for the [#288](https://github.com/MarcelMuechler/Vorrat/issues/288) SSRF guard ([fe2ff75](https://github.com/MarcelMuechler/Vorrat/commit/fe2ff7508c0c7799a6cc41fed14ed5bcff4528a8))
+* **frontend:** add INTERNET permission to release APK manifest ([#287](https://github.com/MarcelMuechler/Vorrat/issues/287)) ([2965d98](https://github.com/MarcelMuechler/Vorrat/commit/2965d98dc8511f3a0400196dd4915355c52ea577))
+* **frontend:** give stock stat tiles distinct expired/expiring filters ([#295](https://github.com/MarcelMuechler/Vorrat/issues/295)) ([8055b33](https://github.com/MarcelMuechler/Vorrat/commit/8055b3393913f5fe4bb64b01da0195ef502e9096))
+
 ## [0.21.2](https://github.com/MarcelMuechler/Vorrat/compare/v0.21.1...v0.21.2) (2026-07-19)
 
 
