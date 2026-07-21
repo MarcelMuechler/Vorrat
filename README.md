@@ -12,17 +12,30 @@ Self-hosted household stock/inventory management — a Grocy alternative.
 
 ## Features
 
-- Stock overview with best-before-date tracking
-- Barcode scanning (Android, iOS, Web)
-- Open Food Facts lookup for unknown products
+- Stock overview with best-before-date tracking, grouped into "needs attention" / "in stock"
+- Barcode scanning (Android, iOS, Web), with an offline queue for scans made without a
+  connection and a scan history
+- Open Food Facts lookup for unknown products, with a custom-photo upload fallback
+- Multiple/alternate barcodes per product
+- Stock batches — track several purchases of the same product with different
+  best-before dates and locations
+- Consumption log with undo
 - Shopping list, with a one-tap "add low stock" shortcut
-- Deployable as a Home Assistant app, or standalone via Docker
+- Categories and locations management
+- CSV import/export of stock
+- In-app SQLite backup/restore from Settings
+- Deployable as a Home Assistant add-on (with a `/api/stats` REST sensor for
+  automations), or standalone via Docker
 
 ## Screenshots
 
-| Stock | Shopping list | Settings |
+| Stock (light) | Stock (dark) | Barcode scan → Open Food Facts |
 |---|---|---|
-| ![Stock overview with expiry status](docs/screenshots/stock.png) | ![Shopping list](docs/screenshots/shopping.png) | ![Settings](docs/screenshots/settings.png) |
+| ![Stock overview with expiry status](docs/screenshots/stock.png) | ![Stock overview in dark mode](docs/screenshots/stock-dark.png) | ![Add to stock after a barcode scan, prefilled from Open Food Facts](docs/screenshots/scan.png) |
+
+| Shopping list | Settings |
+|---|---|
+| ![Shopping list](docs/screenshots/shopping.png) | ![Settings](docs/screenshots/settings.png) |
 
 ## Layout
 
