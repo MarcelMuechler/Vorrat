@@ -282,6 +282,7 @@
   "addAllButton": "Alle hinzufügen",
   "fromStockTag": "Aus Vorrat",
   "doneSectionLabel": "Erledigt",
+  "uncategorizedSectionLabel": "Ohne Kategorie",
   "settingsConnectionSection": "Verbindung",
   "settingsPreferencesSection": "Einstellungen",
   "settingsManageSection": "Verwalten",

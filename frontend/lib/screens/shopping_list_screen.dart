@@ -371,11 +371,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
     // Pending items first, then a "Done" section (#199 wireframe revamp) --
     // partitioned client-side by .done instead of relying on sort order.
+    // Within "pending", items are further grouped by category so shopping
+    // aisle-by-aisle is easier (#293) -- "Done" stays a flat list since it's
+    // no longer something you're actively shopping from.
     final pending = _items.where((i) => !i.done).toList();
     final done = _items.where((i) => i.done).toList();
+    final categoryGroups = _groupByCategory(pending);
     return ListView(
       children: [
-        for (final item in pending) _buildItemTile(item),
+        for (final group in categoryGroups) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              group.key ?? l10n.uncategorizedSectionLabel,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+          ),
+          for (final item in group.value) _buildItemTile(item),
+        ],
         if (done.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -390,6 +405,24 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ],
       ],
     );
+  }
+
+  // Groups (not-done) items by categoryName, alphabetically (case-insensitive)
+  // with items lacking a category (free-text items without one, or
+  // product-linked items whose product also lacks one) bucketed under a null
+  // key and sorted last as "Uncategorized" (#293).
+  List<MapEntry<String?, List<ShoppingListItem>>> _groupByCategory(List<ShoppingListItem> items) {
+    final groups = <String?, List<ShoppingListItem>>{};
+    for (final item in items) {
+      groups.putIfAbsent(item.categoryName, () => []).add(item);
+    }
+    final entries = groups.entries.toList()
+      ..sort((a, b) {
+        if (a.key == null) return b.key == null ? 0 : 1;
+        if (b.key == null) return -1;
+        return a.key!.toLowerCase().compareTo(b.key!.toLowerCase());
+      });
+    return entries;
   }
 
   Widget _buildItemTile(ShoppingListItem item) {

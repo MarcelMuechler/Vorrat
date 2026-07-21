@@ -513,6 +513,7 @@
   "addAllButton": "Add all",
   "fromStockTag": "From stock",
   "doneSectionLabel": "Done",
+  "uncategorizedSectionLabel": "Uncategorized",
   "settingsConnectionSection": "Connection",
   "settingsPreferencesSection": "Preferences",
   "settingsManageSection": "Manage",
