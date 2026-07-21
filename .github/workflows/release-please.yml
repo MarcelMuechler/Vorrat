@@ -22,7 +22,7 @@ jobs:
       # *other* workflows (a GitHub Actions restriction) -- irrelevant here
       # since everything that needs to react to a new release is a step
       # below in this same job, not a separate tag-triggered workflow.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         id: release
         with:
           config-file: release-please-config.json
@@ -53,7 +53,7 @@ jobs:
       # a shell script, per this repo's existing convention for dynamic
       # values in `run:` steps.
       - if: ${{ steps.release.outputs.pr }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
       - if: ${{ steps.release.outputs.pr }}
@@ -132,10 +132,10 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
       - working-directory: frontend
