@@ -47,7 +47,11 @@ def get_stats(db: Session = Depends(get_db)):
         expiry = _effective_expiry(
             entry.best_before_date, entry.opened_at, entry.product.default_open_shelf_life_days
         )
-        status = _status(expiry, expiring_soon_days)
+        status = _status(
+            expiry,
+            entry.product.expiring_soon_days or expiring_soon_days,
+            entry.product.does_not_spoil,
+        )
         if status == "expired":
             expired += 1
         elif status == "expiring_soon":

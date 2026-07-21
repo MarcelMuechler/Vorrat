@@ -40,6 +40,17 @@ class Product(Base):
     )
     default_best_before_days: Mapped[int | None] = mapped_column(nullable=True)
     default_open_shelf_life_days: Mapped[int | None] = mapped_column(nullable=True)
+    # Shelf-stable goods (rice, canned food, spices) never need a
+    # best-before-date-driven status (#292) -- when set, stock.py's _status
+    # always reports "ok" for this product's entries regardless of
+    # best_before_date, instead of forcing users to pick a fake far-future
+    # date just to silence expiry tracking.
+    does_not_spoil: Mapped[bool] = mapped_column(Boolean, server_default="0", default=False)
+    # Per-product override (#292) for the global Settings.expiring_soon_days
+    # threshold -- e.g. fresh fish wants a tighter window than the household
+    # default, canned goods a looser one. Null falls back to the global
+    # setting; stock.py's _status resolves the effective value.
+    expiring_soon_days: Mapped[int | None] = mapped_column(nullable=True)
     # No sensible instance-wide default -- "low" is entirely product-specific
     # (0.2kg of flour vs. 1 jar of jam mean very different things). Null means
     # the low-stock feature is simply off for that product.

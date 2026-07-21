@@ -37,6 +37,62 @@ def test_stock_entry_in_the_past_is_expired(client):
     assert _status_of(client, entry_id) == "expired"
 
 
+def test_does_not_spoil_product_is_always_ok(client):
+    # #292: shelf-stable goods (rice, canned food) opt out of expiry tracking
+    # entirely -- status must stay "ok" even for a best_before_date in the past.
+    product = client.post(
+        "/api/products", json={"name": "Canned Beans", "does_not_spoil": True}
+    ).json()
+    assert product["does_not_spoil"] is True
+    entry = client.post(
+        "/api/stock",
+        json={
+            "product_id": product["id"],
+            "amount": 1,
+            "best_before_date": (date.today() - timedelta(days=30)).isoformat(),
+        },
+    ).json()
+    assert _status_of(client, entry["id"]) == "ok"
+
+
+def test_product_expiring_soon_days_override_takes_precedence_over_global(client):
+    # #292: a product can request a tighter/looser expiring-soon window than
+    # the household default (config.py default is 3 days).
+    product = client.post(
+        "/api/products", json={"name": "Fresh Fish", "expiring_soon_days": 10}
+    ).json()
+    assert product["expiring_soon_days"] == 10
+    entry = client.post(
+        "/api/stock",
+        json={
+            "product_id": product["id"],
+            "amount": 1,
+            "best_before_date": (date.today() + timedelta(days=5)).isoformat(),
+        },
+    ).json()
+    # 5 days out is beyond the global 3-day default, but within the
+    # product's own 10-day override.
+    assert _status_of(client, entry["id"]) == "expiring_soon"
+
+
+def test_product_without_expiring_soon_days_override_uses_global_default(client):
+    product = client.post(
+        "/api/products", json={"name": "Bread"}
+    ).json()
+    assert product["expiring_soon_days"] is None
+    entry = client.post(
+        "/api/stock",
+        json={
+            "product_id": product["id"],
+            "amount": 1,
+            "best_before_date": (date.today() + timedelta(days=5)).isoformat(),
+        },
+    ).json()
+    # 5 days out is beyond the global 3-day default, and there's no
+    # per-product override, so it falls back to "ok".
+    assert _status_of(client, entry["id"]) == "ok"
+
+
 def test_add_stock_rejects_unknown_product(client):
     response = client.post("/api/stock", json={"product_id": 999, "amount": 1})
     assert response.status_code == 404

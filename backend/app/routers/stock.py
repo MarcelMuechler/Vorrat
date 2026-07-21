@@ -49,7 +49,9 @@ def _effective_expiry(
     return min(candidates) if candidates else None
 
 
-def _status(expiry: date | None, expiring_soon_days: int) -> str:
+def _status(expiry: date | None, expiring_soon_days: int, does_not_spoil: bool = False) -> str:
+    if does_not_spoil:
+        return "ok"
     if expiry is None:
         return "ok"
     today = date.today()
@@ -127,7 +129,11 @@ def _query_stock(
                 product_quantity_unit=entry.product.quantity_unit,
                 location_name=entry.location.name if entry.location else None,
                 effective_expiry_date=expiry,
-                status=_status(expiry, expiring_soon_days),
+                status=_status(
+                    expiry,
+                    entry.product.expiring_soon_days or expiring_soon_days,
+                    entry.product.does_not_spoil,
+                ),
             )
         )
     return items

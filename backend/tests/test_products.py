@@ -11,6 +11,32 @@ def test_create_and_get_product(client):
     assert response.json()["name"] == "Milk"
 
 
+def test_create_product_defaults_does_not_spoil_false_and_no_expiring_soon_override(client):
+    response = client.post("/api/products", json={"name": "Milk"})
+    body = response.json()
+    assert body["does_not_spoil"] is False
+    assert body["expiring_soon_days"] is None
+
+
+def test_create_product_rejects_non_positive_expiring_soon_days(client):
+    response = client.post(
+        "/api/products", json={"name": "Milk", "expiring_soon_days": 0}
+    )
+    assert response.status_code == 422
+
+
+def test_update_product_sets_does_not_spoil_and_expiring_soon_days(client):
+    product = client.post("/api/products", json={"name": "Rice"}).json()
+    response = client.patch(
+        f"/api/products/{product['id']}",
+        json={"does_not_spoil": True, "expiring_soon_days": 14},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["does_not_spoil"] is True
+    assert body["expiring_soon_days"] == 14
+
+
 def test_get_product_not_found(client):
     response = client.get("/api/products/999")
     assert response.status_code == 404
