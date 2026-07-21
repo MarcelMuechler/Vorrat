@@ -1,3 +1,6 @@
+import socket
+
+
 def test_create_and_get_product(client):
     response = client.post("/api/products", json={"name": "Milk", "barcode": "1234567890123"})
     assert response.status_code == 201
@@ -130,9 +133,10 @@ def test_update_product_cleans_up_previously_uploaded_image_when_replaced(client
 class _FakeStreamResponse:
     """Stands in for httpx.stream()'s context-manager response."""
 
-    def __init__(self, content_type, chunks):
-        self.headers = {"content-type": content_type}
+    def __init__(self, content_type, chunks, is_redirect=False, headers=None):
+        self.headers = headers if headers is not None else {"content-type": content_type}
         self._chunks = chunks
+        self.is_redirect = is_redirect
 
     def raise_for_status(self):
         pass
@@ -154,6 +158,11 @@ def test_cache_remote_image_aborts_without_buffering_past_the_size_cap(monkeypat
     from app.routers import products as products_router
 
     monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+    # This test is about the streaming/size-cap behavior, not the SSRF host
+    # check (that has its own tests below) -- skip host resolution so a
+    # sandboxed/offline test run doesn't hinge on how "example.invalid"
+    # happens to resolve (or fail to).
+    monkeypatch.setattr(products_router, "_assert_public_host", lambda url: None)
     oversized_chunk = b"x" * (products_router._MAX_IMAGE_BYTES + 1)
     monkeypatch.setattr(
         products_router.httpx,
@@ -165,6 +174,109 @@ def test_cache_remote_image_aborts_without_buffering_past_the_size_cap(monkeypat
 
     assert result is None
     assert list(tmp_path.iterdir()) == []
+
+
+def _stream_never_called(*args, **kwargs):
+    raise AssertionError("must not make an outbound request to a non-public host")
+
+
+def test_cache_remote_image_rejects_loopback_ip_literal(monkeypatch, tmp_path):
+    from app.routers import products as products_router
+
+    monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+    monkeypatch.setattr(products_router.httpx, "stream", _stream_never_called)
+
+    result = products_router._cache_remote_image("http://127.0.0.1/secret.png", product_id=1)
+
+    assert result is None
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_cache_remote_image_rejects_link_local_metadata_ip_literal(monkeypatch, tmp_path):
+    from app.routers import products as products_router
+
+    monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+    monkeypatch.setattr(products_router.httpx, "stream", _stream_never_called)
+
+    result = products_router._cache_remote_image(
+        "http://169.254.169.254/latest/meta-data/", product_id=1
+    )
+
+    assert result is None
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_cache_remote_image_rejects_private_rfc1918_ip_literal(monkeypatch, tmp_path):
+    from app.routers import products as products_router
+
+    monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+    monkeypatch.setattr(products_router.httpx, "stream", _stream_never_called)
+
+    result = products_router._cache_remote_image("http://10.1.2.3/nas-admin.png", product_id=1)
+
+    assert result is None
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_cache_remote_image_rejects_redirect_to_a_private_ip(monkeypatch, tmp_path):
+    # follow_redirects would otherwise let a first hop to an innocuous
+    # public-resolving host redirect on to an internal target and bypass an
+    # initial-URL-only host check (#288) -- the host must be rechecked after
+    # every hop, not just before the first request.
+    from app.routers import products as products_router
+
+    monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+
+    def fake_getaddrinfo(host, *args, **kwargs):
+        ip = "1.1.1.1" if host == "safe.example.invalid" else "127.0.0.1"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, 0))]
+
+    monkeypatch.setattr(products_router.socket, "getaddrinfo", fake_getaddrinfo)
+
+    calls = {"n": 0}
+
+    def fake_stream(method, url, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _FakeStreamResponse(
+                "", [], is_redirect=True, headers={"location": "http://internal.example.invalid/secret"}
+            )
+        raise AssertionError("must not follow a redirect to a private-resolving host")
+
+    monkeypatch.setattr(products_router.httpx, "stream", fake_stream)
+
+    result = products_router._cache_remote_image(
+        "http://safe.example.invalid/photo.jpg", product_id=1
+    )
+
+    assert result is None
+    assert calls["n"] == 1
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_cache_remote_image_still_caches_a_normal_public_image(monkeypatch, tmp_path):
+    # The happy path must keep working: a public-resolving host, no
+    # redirects, an allowed content-type -- still gets fetched and saved.
+    from app.routers import products as products_router
+
+    monkeypatch.setattr(products_router, "UPLOADS_DIR", tmp_path)
+    monkeypatch.setattr(
+        products_router.socket,
+        "getaddrinfo",
+        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("1.1.1.1", 0))],
+    )
+    monkeypatch.setattr(
+        products_router.httpx,
+        "stream",
+        lambda *args, **kwargs: _FakeStreamResponse("image/png", [b"\x89PNG\r\n\x1a\n" + b"0" * 16]),
+    )
+
+    result = products_router._cache_remote_image("https://cdn.example.invalid/photo.png", product_id=1)
+
+    assert result is not None
+    assert result.startswith("/uploads/")
+    saved = tmp_path / result.removeprefix("/uploads/")
+    assert saved.exists()
 
 
 def test_refresh_product_from_off_returns_503_when_off_is_unreachable(client, monkeypatch):

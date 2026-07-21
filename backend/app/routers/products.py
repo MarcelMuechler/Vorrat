@@ -1,5 +1,8 @@
+import ipaddress
+import socket
 import uuid
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -39,6 +42,46 @@ _ALLOWED_IMAGE_TYPES = {
     "image/gif": ".gif",
 }
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024
+# Caps the manual redirect-following loop in _cache_remote_image -- generous
+# enough for any legitimate CDN hop chain, but bounded so a malicious/broken
+# host can't make this loop indefinitely.
+_MAX_REDIRECTS = 5
+
+
+class _UnsafeRedirectTargetError(Exception):
+    """Raised by _assert_public_host when a URL's host resolves to a
+    loopback/link-local/private address, so _cache_remote_image's caller can
+    treat it exactly like any other fetch failure (network error, bad
+    content-type, ...): drop the image, don't raise past this function."""
+
+
+def _assert_public_host(url: str) -> None:
+    """Resolves url's hostname to its IP address(es) and raises if any of
+    them is loopback, link-local, or private (RFC1918/RFC4193 etc.) -- the
+    SSRF guard for _cache_remote_image (#288). image_url is free-text (must
+    accept both Open Food Facts' CDN and arbitrary pasted external URLs, see
+    _delete_local_upload's comment), so without this a pasted/OFF-relayed URL
+    could point this server's own outbound fetch at localhost, a LAN device,
+    or a link-local metadata endpoint -- and since v1 has no auth and CORS is
+    wide open, that's reachable via CSRF from any website.
+
+    Checks the *resolved* IP, never just the hostname string, so a DNS name
+    that resolves to an internal address (DNS rebinding) is caught the same
+    way a literal internal IP or a name like 'localhost' is. Must be called
+    again after every redirect hop, not just the initial URL -- otherwise
+    httpx's follow_redirects would let a first hop to an innocuous public
+    host redirect on to an internal target and bypass this entirely."""
+    host = urlparse(url).hostname
+    if not host:
+        raise _UnsafeRedirectTargetError(f"URL has no host: {url}")
+    try:
+        resolved = socket.getaddrinfo(host, None)
+    except socket.gaierror as exc:
+        raise _UnsafeRedirectTargetError(f"DNS resolution failed for host: {host}") from exc
+    for *_rest, sockaddr in resolved:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local:
+            raise _UnsafeRedirectTargetError(f"{host} resolves to a non-public address: {ip}")
 
 
 @router.get("", response_model=list[ProductRead])
@@ -117,20 +160,39 @@ def _cache_remote_image(url: str, product_id: int) -> str | None:
     Streams the response and aborts as soon as _MAX_IMAGE_BYTES is exceeded,
     rather than buffering the whole body first -- a malicious/misbehaving
     external host can't use an unbounded Content-Length to force this process
-    to hold an arbitrarily large response in memory."""
+    to hold an arbitrarily large response in memory.
+
+    Follows redirects manually (follow_redirects=False, up to _MAX_REDIRECTS
+    hops) instead of handing that off to httpx, re-running _assert_public_host
+    on each hop's target -- an initial-URL-only host check would otherwise be
+    bypassable by redirecting from an allowed host to an internal one (#288)."""
     try:
-        with httpx.stream("GET", url, timeout=5.0, follow_redirects=True) as response:
-            response.raise_for_status()
-            content_type = response.headers.get("content-type", "").split(";")[0].strip()
-            ext = _ALLOWED_IMAGE_TYPES.get(content_type)
-            if ext is None:
-                return None
-            content = bytearray()
-            for chunk in response.iter_bytes():
-                content += chunk
-                if len(content) > _MAX_IMAGE_BYTES:
+        current_url = url
+        for _ in range(_MAX_REDIRECTS + 1):
+            _assert_public_host(current_url)
+            with httpx.stream("GET", current_url, timeout=5.0, follow_redirects=False) as response:
+                if response.is_redirect:
+                    location = response.headers.get("location")
+                    if not location:
+                        return None
+                    current_url = urljoin(current_url, location)
+                    continue
+                response.raise_for_status()
+                content_type = response.headers.get("content-type", "").split(";")[0].strip()
+                ext = _ALLOWED_IMAGE_TYPES.get(content_type)
+                if ext is None:
                     return None
-    except httpx.HTTPError:
+                content = bytearray()
+                for chunk in response.iter_bytes():
+                    content += chunk
+                    if len(content) > _MAX_IMAGE_BYTES:
+                        return None
+            break
+        else:
+            # Exhausted _MAX_REDIRECTS hops without reaching a non-redirect
+            # response -- treat like any other malformed/misbehaving host.
+            return None
+    except (httpx.HTTPError, _UnsafeRedirectTargetError):
         return None
     filename = f"{product_id}-{uuid.uuid4().hex[:12]}{ext}"
     (UPLOADS_DIR / filename).write_bytes(content)
