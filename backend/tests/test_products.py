@@ -1,5 +1,7 @@
 import socket
 
+from sqlalchemy import event
+
 
 def test_create_and_get_product(client):
     response = client.post("/api/products", json={"name": "Milk", "barcode": "1234567890123"})
@@ -292,3 +294,36 @@ def test_refresh_product_from_off_returns_503_when_off_is_unreachable(client, mo
 
     response = client.post(f"/api/products/{product['id']}/refresh-from-off")
     assert response.status_code == 503
+
+
+def test_products_list_has_no_n_plus_one_barcode_queries(client, db_engine):
+    """GET /api/products must load every product's alternate barcodes in one
+    extra query (selectinload), not one per product. Without it: 1 main query
+    + N barcode queries; with it: 2 total. Allow 3 to absorb SQLite pragmas.
+    """
+    for i in range(1, 4):
+        product = client.post(
+            "/api/products", json={"name": f"Product {i}", "barcode": f"MAIN_{i}"}
+        ).json()
+        for j in range(1, 3):
+            client.post(f"/api/products/{product['id']}/barcodes", json={"code": f"ALT_{i}_{j}"})
+
+    count = 0
+
+    def _count(*_args):
+        nonlocal count
+        count += 1
+
+    event.listen(db_engine, "before_cursor_execute", _count)
+    try:
+        response = client.get("/api/products")
+    finally:
+        event.remove(db_engine, "before_cursor_execute", _count)
+
+    assert response.status_code == 200
+    products = response.json()
+    assert len(products) == 3
+    for product in products:
+        assert len(product["extra_barcodes"]) == 2
+
+    assert count <= 3, f"expected <= 3 queries with selectinload applied, got {count} (N+1 back?)"

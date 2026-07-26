@@ -23,7 +23,28 @@ from app.routers import products as products_router  # noqa: E402
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch) -> Iterator[TestClient]:
+def db_engine() -> Iterator[object]:
+    """The engine behind the `client` fixture below, exposed separately so a
+    test can attach SQLAlchemy event listeners to it -- e.g. counting
+    statements to catch a re-introduced N+1 (see test_products.py)."""
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_fk(dbapi_connection, _):
+        dbapi_connection.execute("PRAGMA foreign_keys=ON")
+
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture()
+def client(db_engine, tmp_path, monkeypatch) -> Iterator[TestClient]:
     """A TestClient wired to a fresh, isolated SQLite database instead of the
     real vorrat.db. Uses an in-memory database on a StaticPool (a single
     shared connection) rather than a plain "sqlite://:memory:" engine --
@@ -39,16 +60,7 @@ def client(tmp_path, monkeypatch) -> Iterator[TestClient]:
     dependency override, disposes the engine) after every test so tests
     can't leak state into each other.
     """
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    @event.listens_for(engine, "connect")
-    def _enable_sqlite_fk(dbapi_connection, _):
-        dbapi_connection.execute("PRAGMA foreign_keys=ON")
-
+    engine = db_engine
     TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
 
@@ -70,4 +82,3 @@ def client(tmp_path, monkeypatch) -> Iterator[TestClient]:
     finally:
         app.dependency_overrides.pop(get_db, None)
         Base.metadata.drop_all(bind=engine)
-        engine.dispose()
