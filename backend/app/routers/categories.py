@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Category, Product
-from app.schemas import CategoryCreate, CategoryRead, CategoryUpdate
+from app.schemas import NamedRead, NamedWrite
 
 router = APIRouter(prefix="/api/categories", tags=["categories"])
 
@@ -18,7 +18,7 @@ def _find_by_name_ci(db: Session, name: str) -> Category | None:
     return db.query(Category).filter(func.lower(Category.name) == name.lower()).first()
 
 
-@router.get("", response_model=list[CategoryRead])
+@router.get("", response_model=list[NamedRead])
 def list_categories(
     limit: int | None = Query(None, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -32,8 +32,8 @@ def list_categories(
     return query.all()
 
 
-@router.post("", response_model=CategoryRead, status_code=201)
-def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
+@router.post("", response_model=NamedRead, status_code=201)
+def create_category(payload: NamedWrite, db: Session = Depends(get_db)):
     if _find_by_name_ci(db, payload.name):
         raise HTTPException(409, "A category with that name already exists")
     category = Category(name=payload.name)
@@ -47,8 +47,8 @@ def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
     return category
 
 
-@router.patch("/{category_id}", response_model=CategoryRead)
-def update_category(category_id: int, payload: CategoryUpdate, db: Session = Depends(get_db)):
+@router.patch("/{category_id}", response_model=NamedRead)
+def update_category(category_id: int, payload: NamedWrite, db: Session = Depends(get_db)):
     category = db.get(Category, category_id)
     if not category:
         raise HTTPException(404, "Category not found")
