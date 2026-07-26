@@ -1,9 +1,5 @@
-import 'dart:convert';
+import 'persisted_list.dart';
 
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-const _prefsKey = 'scan_history';
 const _maxEntries = 20;
 
 class ScanHistoryEntry {
@@ -29,33 +25,20 @@ class ScanHistoryEntry {
 /// Barcodes that were successfully looked up before (whether or not the user
 /// went on to save a product), most-recent-first, so re-adding something
 /// bought regularly doesn't mean scanning it from scratch every time.
-class ScanHistory extends ChangeNotifier {
-  List<ScanHistoryEntry> _entries = [];
-
-  List<ScanHistoryEntry> get entries => List.unmodifiable(_entries);
-
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_prefsKey);
-    if (raw == null) return;
-    final list = jsonDecode(raw) as List;
-    _entries = list.map((e) => ScanHistoryEntry.fromJson(e)).toList();
-    notifyListeners();
-  }
+class ScanHistory extends PersistedList<ScanHistoryEntry> {
+  ScanHistory()
+    : super(
+        prefsKey: 'scan_history',
+        fromJson: ScanHistoryEntry.fromJson,
+        toJson: (entry) => entry.toJson(),
+      );
 
   /// Records a lookup, moving an existing entry for the same barcode to the
   /// front (with the latest name) instead of duplicating it.
-  Future<void> add(String barcode, String name) async {
-    _entries = [
+  Future<void> add(String barcode, String name) => replaceEntries(
+    [
       ScanHistoryEntry(barcode: barcode, name: name, scannedAt: DateTime.now()),
-      ..._entries.where((e) => e.barcode != barcode),
-    ].take(_maxEntries).toList();
-    await _save();
-    notifyListeners();
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, jsonEncode(_entries.map((e) => e.toJson()).toList()));
-  }
+      ...entries.where((e) => e.barcode != barcode),
+    ].take(_maxEntries).toList(),
+  );
 }
