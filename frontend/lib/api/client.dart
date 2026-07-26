@@ -80,10 +80,14 @@ String apiFailureReason(Object error, AppLocalizations l10n) {
   return error is ApiException ? error.reason(l10n) : '$error';
 }
 
-void _checkOk(http.Response res) {
+/// Throws [ApiException] unless [res] is 2xx, and otherwise hands it back --
+/// so every verb helper below can wrap its own response and no call site can
+/// forget the check.
+http.Response _checked(http.Response res) {
   if (res.statusCode < 200 || res.statusCode >= 300) {
     throw ApiException(res.statusCode, res.body);
   }
+  return res;
 }
 
 /// Extension-based guess, matching the backend's own whitelist
@@ -140,34 +144,32 @@ class ApiClient {
   // these four instead of calling package:http directly, so the bounded
   // [_timeout] lives in exactly one place per verb rather than being
   // sprinkled across every call site.
-  Future<http.Response> _get(String path, [Map<String, String>? query]) {
-    return http.get(_uri(path, query)).timeout(_timeout);
+  Future<http.Response> _get(String path, [Map<String, String>? query]) async {
+    return _checked(await http.get(_uri(path, query)).timeout(_timeout));
   }
 
-  Future<http.Response> _post(String path, [Object? body]) {
-    return http
-        .post(
-          _uri(path),
-          headers: body == null ? null : {'content-type': 'application/json'},
-          body: body == null ? null : jsonEncode(body),
-        )
-        .timeout(_timeout);
+  Future<http.Response> _post(String path, [Object? body]) async {
+    return _checked(
+      await http
+          .post(
+            _uri(path),
+            headers: body == null ? null : {'content-type': 'application/json'},
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(_timeout),
+    );
   }
 
-  Future<http.Response> _patch(String path, Object body) {
-    return http
-        .patch(_uri(path), headers: {'content-type': 'application/json'}, body: jsonEncode(body))
-        .timeout(_timeout);
+  Future<http.Response> _patch(String path, Object body) async {
+    return _checked(
+      await http
+          .patch(_uri(path), headers: {'content-type': 'application/json'}, body: jsonEncode(body))
+          .timeout(_timeout),
+    );
   }
 
-  Future<http.Response> _delete(String path) {
-    return http.delete(_uri(path)).timeout(_timeout);
-  }
-
-  Future<http.Response> _postJson(String path, Object body) async {
-    final res = await _post(path, body);
-    _checkOk(res);
-    return res;
+  Future<http.Response> _delete(String path) async {
+    return _checked(await http.delete(_uri(path)).timeout(_timeout));
   }
 
   /// Returns the decoded /api/health body (includes "version"), or null if
@@ -185,25 +187,22 @@ class ApiClient {
 
   Future<List<Location>> listLocations() async {
     final res = await _get('/api/locations');
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Location.fromJson(e)).toList();
   }
 
   Future<Location> createLocation(String name) async {
-    final res = await _postJson('/api/locations', {'name': name});
+    final res = await _post('/api/locations', {'name': name});
     return Location.fromJson(jsonDecode(res.body));
   }
 
   Future<Location> renameLocation(int id, String name) async {
     final res = await _patch('/api/locations/$id', {'name': name});
-    _checkOk(res);
     return Location.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteLocation(int id) async {
-    final res = await _delete('/api/locations/$id');
-    _checkOk(res);
+    await _delete('/api/locations/$id');
   }
 
   Future<List<Category>> listCategories({int? limit, int? offset}) async {
@@ -211,29 +210,26 @@ class ApiClient {
     if (limit != null) query['limit'] = '$limit';
     if (offset != null) query['offset'] = '$offset';
     final res = await _get('/api/categories', query);
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Category.fromJson(e)).toList();
   }
 
   Future<Category> createCategory(String name) async {
-    final res = await _postJson('/api/categories', {'name': name});
+    final res = await _post('/api/categories', {'name': name});
     return Category.fromJson(jsonDecode(res.body));
   }
 
   Future<Category> renameCategory(int id, String name) async {
     final res = await _patch('/api/categories/$id', {'name': name});
-    _checkOk(res);
     return Category.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteCategory(int id) async {
-    final res = await _delete('/api/categories/$id');
-    _checkOk(res);
+    await _delete('/api/categories/$id');
   }
 
   Future<Product> createProduct(Map<String, dynamic> payload) async {
-    final res = await _postJson('/api/products', payload);
+    final res = await _post('/api/products', payload);
     return Product.fromJson(jsonDecode(res.body));
   }
 
@@ -243,26 +239,22 @@ class ApiClient {
     if (limit != null) query['limit'] = '$limit';
     if (offset != null) query['offset'] = '$offset';
     final res = await _get('/api/products', query);
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Product.fromJson(e)).toList();
   }
 
   Future<Product> getProduct(int id) async {
     final res = await _get('/api/products/$id');
-    _checkOk(res);
     return Product.fromJson(jsonDecode(res.body));
   }
 
   Future<Product> updateProduct(int id, Map<String, dynamic> payload) async {
     final res = await _patch('/api/products/$id', payload);
-    _checkOk(res);
     return Product.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteProduct(int id) async {
-    final res = await _delete('/api/products/$id');
-    _checkOk(res);
+    await _delete('/api/products/$id');
   }
 
   /// Adds an alternate/extra scannable code for this product (#208) -- e.g.
@@ -271,13 +263,12 @@ class ApiClient {
   /// offering to create a duplicate. Throws [ApiException] (409) if the code
   /// is already used as this or another product's barcode.
   Future<Product> addProductBarcode(int id, String code) async {
-    final res = await _postJson('/api/products/$id/barcodes', {'code': code});
+    final res = await _post('/api/products/$id/barcodes', {'code': code});
     return Product.fromJson(jsonDecode(res.body));
   }
 
   Future<Product> removeProductBarcode(int id, String code) async {
     final res = await _delete('/api/products/$id/barcodes/${Uri.encodeComponent(code)}');
-    _checkOk(res);
     return Product.fromJson(jsonDecode(res.body));
   }
 
@@ -286,7 +277,6 @@ class ApiClient {
   /// and apply via [updateProduct].
   Future<Map<String, dynamic>> refreshProductFromOff(int id) async {
     final res = await _post('/api/products/$id/refresh-from-off');
-    _checkOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -309,8 +299,7 @@ class ApiClient {
         ),
       );
     final streamed = await request.send().timeout(_timeout);
-    final res = await http.Response.fromStream(streamed);
-    _checkOk(res);
+    final res = _checked(await http.Response.fromStream(streamed));
     return Product.fromJson(jsonDecode(res.body));
   }
 
@@ -343,25 +332,23 @@ class ApiClient {
     if (limit != null) query['limit'] = '$limit';
     if (offset != null) query['offset'] = '$offset';
     final res = await _get('/api/stock', query);
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => StockItem.fromJson(e)).toList();
   }
 
   Future<void> addStock(Map<String, dynamic> payload) async {
-    await _postJson('/api/stock', payload);
+    await _post('/api/stock', payload);
   }
 
   Future<void> deleteStock(int id) async {
-    final res = await _delete('/api/stock/$id');
-    _checkOk(res);
+    await _delete('/api/stock/$id');
   }
 
   /// Returns the id of the ConsumptionLog row the backend wrote for this
   /// consume -- callers that offer an Undo action need it to later call
   /// [undoConsumeStock] (#160).
   Future<int> consumeStock(int id, double amount, {String reason = 'used'}) async {
-    final res = await _postJson('/api/stock/$id/consume', {'amount': amount, 'reason': reason});
+    final res = await _post('/api/stock/$id/consume', {'amount': amount, 'reason': reason});
     return (jsonDecode(res.body) as Map<String, dynamic>)['consumption_log_id'] as int;
   }
 
@@ -375,7 +362,7 @@ class ApiClient {
   /// Throws [ApiException] (404) if the log was already undone, or (409) if
   /// it was not created by a single, undoable consume.
   Future<void> undoConsumeStock(int logId) async {
-    await _postJson('/api/stock/undo/$logId', const {});
+    await _post('/api/stock/undo/$logId', const {});
   }
 
   /// Fully consumes (whole remaining amount) every listed entry, logged like
@@ -383,7 +370,7 @@ class ApiClient {
   /// all-or-nothing: if any id doesn't exist, nothing is changed and this
   /// throws [ApiException] instead.
   Future<int> bulkConsumeStock(List<int> entryIds, {String reason = 'used'}) async {
-    final res = await _postJson('/api/stock/bulk/consume', {
+    final res = await _post('/api/stock/bulk/consume', {
       'entry_ids': entryIds,
       'reason': reason,
     });
@@ -393,7 +380,7 @@ class ApiClient {
   /// Deletes every listed entry (logged as 'spoiled', matching [deleteStock]).
   /// Returns the number deleted. All-or-nothing like [bulkConsumeStock].
   Future<int> bulkDeleteStock(List<int> entryIds) async {
-    final res = await _postJson('/api/stock/bulk/delete', {'entry_ids': entryIds});
+    final res = await _post('/api/stock/bulk/delete', {'entry_ids': entryIds});
     return (jsonDecode(res.body) as Map<String, dynamic>)['deleted'] as int;
   }
 
@@ -401,7 +388,7 @@ class ApiClient {
   /// All-or-nothing like [bulkConsumeStock]; also throws if [locationId]
   /// doesn't exist.
   Future<int> bulkMoveStock(List<int> entryIds, int locationId) async {
-    final res = await _postJson('/api/stock/bulk/move', {
+    final res = await _post('/api/stock/bulk/move', {
       'entry_ids': entryIds,
       'location_id': locationId,
     });
@@ -416,15 +403,13 @@ class ApiClient {
     if (until != null) query['until'] = until.toIso8601String().split('T').first;
     if (reason != null) query['reason'] = reason;
     final res = await _get('/api/consumption-log', query);
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => ConsumptionLogEntry.fromJson(e)).toList();
   }
 
   Future<void> markStockOpened(int id) async {
     final today = DateTime.now().toIso8601String().split('T').first;
-    final res = await _patch('/api/stock/$id', {'opened_at': today});
-    _checkOk(res);
+    await _patch('/api/stock/$id', {'opened_at': today});
   }
 
   /// The stock CSV export is downloaded by opening this URL directly
@@ -450,10 +435,11 @@ class ApiClient {
   /// reads it (no multipart parsing needed there) and is the simplest thing
   /// for `package:http` to send after reading a picked file as a string.
   Future<StockImportResult> importStockCsv(String csv) async {
-    final res = await http
-        .post(_uri('/api/stock/import.csv'), headers: {'content-type': 'text/csv'}, body: csv)
-        .timeout(_timeout);
-    _checkOk(res);
+    final res = _checked(
+      await http
+          .post(_uri('/api/stock/import.csv'), headers: {'content-type': 'text/csv'}, body: csv)
+          .timeout(_timeout),
+    );
     return StockImportResult.fromJson(jsonDecode(res.body));
   }
 
@@ -471,25 +457,21 @@ class ApiClient {
     final request = http.MultipartRequest('POST', _uri('/api/backup/restore'))
       ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
     final streamed = await request.send().timeout(_timeout);
-    final res = await http.Response.fromStream(streamed);
-    _checkOk(res);
+    _checked(await http.Response.fromStream(streamed));
   }
 
   Future<int> getExpiringSoonDays() async {
     final res = await _get('/api/settings');
-    _checkOk(res);
     return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
   }
 
   Future<int> setExpiringSoonDays(int days) async {
     final res = await _patch('/api/settings', {'expiring_soon_days': days});
-    _checkOk(res);
     return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
   }
 
   Future<List<ShoppingListItem>> listShoppingList() async {
     final res = await _get('/api/shopping-list');
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => ShoppingListItem.fromJson(e)).toList();
   }
@@ -508,25 +490,22 @@ class ApiClient {
       'unit': ?unit,
       'category_id': ?categoryId,
     };
-    final res = await _postJson('/api/shopping-list', payload);
+    final res = await _post('/api/shopping-list', payload);
     return ShoppingListItem.fromJson(jsonDecode(res.body));
   }
 
   Future<ShoppingListItem> updateShoppingListItem(int id, Map<String, dynamic> payload) async {
     final res = await _patch('/api/shopping-list/$id', payload);
-    _checkOk(res);
     return ShoppingListItem.fromJson(jsonDecode(res.body));
   }
 
   Future<void> deleteShoppingListItem(int id) async {
-    final res = await _delete('/api/shopping-list/$id');
-    _checkOk(res);
+    await _delete('/api/shopping-list/$id');
   }
 
   /// Returns how many done items were removed.
   Future<int> clearDoneShoppingListItems() async {
     final res = await _delete('/api/shopping-list/done');
-    _checkOk(res);
     return (jsonDecode(res.body) as Map<String, dynamic>)['deleted'] as int;
   }
 
@@ -535,17 +514,19 @@ class ApiClient {
   /// empty if everything low-stock is already queued.
   Future<List<ShoppingListItem>> addLowStockToShoppingList() async {
     final res = await _post('/api/shopping-list/add-low-stock');
-    _checkOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => ShoppingListItem.fromJson(e)).toList();
   }
 
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
-    final res = await _get('/api/barcode/$code');
+    // Deliberately bypasses [_get]: a 404 here is a genuine "no such
+    // barcode" answer to act on, not a failure to throw for. Every other
+    // non-2xx still becomes an [ApiException] via [_checked] below.
+    final res = await http.get(_uri('/api/barcode/$code')).timeout(_timeout);
     if (res.statusCode == 404) {
       return BarcodeLookupResult(source: 'none');
     }
-    _checkOk(res);
+    _checked(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final source = body['source'] as String;
     if (source == 'local') {
