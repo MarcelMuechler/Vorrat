@@ -1,8 +1,6 @@
 {
   "@@locale": "de",
 
-  "appTitle": "Vorrat",
-
   "stockTitle": "Bestand",
   "scanTitle": "Scannen",
   "settingsTitle": "Einstellungen",
@@ -17,7 +15,6 @@
   "deleteButton": "Löschen",
   "addButton": "Hinzufügen",
   "removeButton": "Entfernen",
-  "consumeButton": "Verbrauchen",
   "lookUpButton": "Nachschlagen",
   "closeButton": "Schließen",
   "undoButton": "Rückgängig",
@@ -58,7 +55,6 @@
   "expiryBucketNoDate": "Ohne Mindesthaltbarkeitsdatum",
   "sortTooltip": "Sortieren",
   "sortBestBeforeDateLabel": "Mindesthaltbarkeitsdatum",
-  "expiringSoonChip": "Bald ablaufend",
   "statusOk": "OK",
   "statusExpiringSoon": "Bald ablaufend",
   "statusExpired": "Abgelaufen",
