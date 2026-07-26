@@ -27,18 +27,29 @@ alembic revision --autogenerate -m "..."   # new migration after a models.py cha
 uv run pytest                              # isolated unit tests (backend/tests/, in-memory SQLite via TestClient)
 BASE=http://localhost:8000 ./scripts/smoke_test.sh   # curl-based end-to-end regression check
 ```
-Two complementary layers of backend testing: `pytest` (`backend/tests/`) runs fast, isolated
-unit tests against FastAPI's `TestClient` and an in-memory SQLite db (see `tests/conftest.py`'s
-`client` fixture) — no live server needed, extend this in place for new router/db-logic
-coverage. `scripts/smoke_test.sh` stays as the live end-to-end regression check, run against a
-real `uvicorn` instance — extend it in place too for checks that specifically need a live
-server (e.g. exercising the actual HTTP stack/CORS/static file serving), rather than starting a
-third parallel test framework.
+Two complementary layers of backend testing, and the split is deliberate: `pytest`
+(`backend/tests/`) is where essentially all coverage belongs — fast, isolated tests against
+FastAPI's `TestClient` and an in-memory SQLite db (see `tests/conftest.py`'s `client` fixture,
+plus its `db_engine` fixture for tests that need to attach SQLAlchemy event listeners). Default
+to extending it in place for any new router/db-logic coverage.
+
+`scripts/smoke_test.sh` is **not** a second API suite. It is deliberately small (~110 lines) and
+only holds checks a real process and HTTP stack can exercise that `TestClient` cannot: static
+file serving, the HA Ingress `X-Ingress-Path` rewrite, uploaded files served back off disk, CORS
+preflight, `Content-Disposition` downloads, and swapping the SQLite file underneath a live
+engine. One check lives there for a subtler reason — non-finite (`Infinity`/`NaN`) request
+values are rejected by the schema under `TestClient` too, but `TestClient` re-raises the
+resulting encoder error instead of returning the 422 a real server sends.
+
+It previously grew to 1348 lines by accumulating status-code and business-logic assertions that
+pytest already covered; #307 cut it back. Before adding to it, ask whether `TestClient` could
+assert the same thing — if yes, it belongs in `backend/tests/`. Don't start a third parallel
+test framework either way.
 
 Frontend (from `frontend/`):
 ```sh
 flutter analyze     # lint
-flutter test        # the one widget test (app boots to the Stock tab)
+flutter test        # widget tests (test/)
 flutter build web && python3 -m http.server 8090 -d build/web   # serve a web build locally
 ```
 When running the Flutter dev server standalone against a local backend, point Settings →
