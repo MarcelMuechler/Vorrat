@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Location, Product, StockEntry
-from app.schemas import LocationCreate, LocationRead, LocationUpdate
+from app.schemas import NamedRead, NamedWrite
 
 router = APIRouter(prefix="/api/locations", tags=["locations"])
 
@@ -18,13 +18,13 @@ def _find_by_name_ci(db: Session, name: str) -> Location | None:
     return db.query(Location).filter(func.lower(Location.name) == name.lower()).first()
 
 
-@router.get("", response_model=list[LocationRead])
+@router.get("", response_model=list[NamedRead])
 def list_locations(db: Session = Depends(get_db)):
     return db.query(Location).order_by(Location.name).all()
 
 
-@router.post("", response_model=LocationRead, status_code=201)
-def create_location(payload: LocationCreate, db: Session = Depends(get_db)):
+@router.post("", response_model=NamedRead, status_code=201)
+def create_location(payload: NamedWrite, db: Session = Depends(get_db)):
     if _find_by_name_ci(db, payload.name):
         raise HTTPException(409, "A location with that name already exists")
     location = Location(name=payload.name)
@@ -38,8 +38,8 @@ def create_location(payload: LocationCreate, db: Session = Depends(get_db)):
     return location
 
 
-@router.patch("/{location_id}", response_model=LocationRead)
-def update_location(location_id: int, payload: LocationUpdate, db: Session = Depends(get_db)):
+@router.patch("/{location_id}", response_model=NamedRead)
+def update_location(location_id: int, payload: NamedWrite, db: Session = Depends(get_db)):
     location = db.get(Location, location_id)
     if not location:
         raise HTTPException(404, "Location not found")

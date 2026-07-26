@@ -10,39 +10,18 @@ def _strip_name(v: str | None) -> str | None:
     return v.strip() if isinstance(v, str) else v
 
 
-class LocationCreate(BaseModel):
+class NamedWrite(BaseModel):
+    """Create/update body for a table whose only writable field is its name
+    (Location, Category) -- the four per-entity variants were byte-identical."""
+
     name: str = Field(min_length=1)
 
     _strip_name = field_validator("name", mode="before")(_strip_name)
 
 
-class LocationUpdate(BaseModel):
-    name: str = Field(min_length=1)
+class NamedRead(BaseModel):
+    """Read model matching NamedWrite's tables."""
 
-    _strip_name = field_validator("name", mode="before")(_strip_name)
-
-
-class LocationRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    name: str
-    created_at: datetime
-
-
-class CategoryCreate(BaseModel):
-    name: str = Field(min_length=1)
-
-    _strip_name = field_validator("name", mode="before")(_strip_name)
-
-
-class CategoryUpdate(BaseModel):
-    name: str = Field(min_length=1)
-
-    _strip_name = field_validator("name", mode="before")(_strip_name)
-
-
-class CategoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
