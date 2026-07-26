@@ -37,7 +37,7 @@ def escape_csv_formula_injection(value: str | None) -> str | None:
         The value with a leading apostrophe if it starts with a formula character (or an
         apostrophe), otherwise unchanged.
     """
-    if value is None or not isinstance(value, str):
+    if value is None:
         return value
 
     stripped = value.lstrip()
@@ -59,11 +59,8 @@ def unescape_csv_formula_injection(value: str | None) -> str | None:
     Returns:
         The value without the leading apostrophe if it was added as an escape, otherwise unchanged.
     """
-    if value is None or not isinstance(value, str) or len(value) == 0:
+    if value is None:
         return value
 
     # Only strip the apostrophe if it's the very first character (escape was applied)
-    if value[0] == "'":
-        return value[1:]
-
-    return value
+    return value[1:] if value.startswith("'") else value
