@@ -1,8 +1,6 @@
 {
   "@@locale": "en",
 
-  "appTitle": "Vorrat",
-
   "stockTitle": "Stock",
   "scanTitle": "Scan",
   "settingsTitle": "Settings",
@@ -20,7 +18,6 @@
   "deleteButton": "Delete",
   "addButton": "Add",
   "removeButton": "Remove",
-  "consumeButton": "Consume",
   "lookUpButton": "Look up",
   "closeButton": "Close",
   "undoButton": "Undo",
@@ -67,7 +64,6 @@
   "expiryBucketNoDate": "No best-before date",
   "sortTooltip": "Sort",
   "sortBestBeforeDateLabel": "Best-before date",
-  "expiringSoonChip": "Expiring soon",
   "statusOk": "OK",
   "statusExpiringSoon": "Expiring soon",
   "statusExpired": "Expired",
