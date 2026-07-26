@@ -25,18 +25,13 @@ The OFF client is configured via environment variables in `backend/app/config.py
 
 ## Offline Development
 
-### Option 1: Use the Self-Check (No Network)
+### Option 1: Run the Unit Tests (No Network)
 
-The `off_client` module includes a self-check that tests the cache logic without any network calls:
+`tests/test_off_client.py` covers the cache and retry logic with no network calls at all:
 
 ```sh
 cd backend
-python -m app.off_client
-```
-
-Output on success:
-```
-off_client self-check OK
+uv run pytest tests/test_off_client.py
 ```
 
 This validates:
@@ -115,7 +110,7 @@ This hits a real API but avoids the main global instance. Useful for testing reg
 
 ### Option 4: Offline Mode (No Barcode Lookups)
 
-To completely disable barcode lookups (and prevent any OFF API calls), you can mock the `lookup_off` function by wrapping it in your test. See the `if __name__ == "__main__"` self-check block at the bottom of `off_client.py` for examples of how the module tests offline behavior, including simulated network failures and retries.
+To completely disable barcode lookups (and prevent any OFF API calls), you can mock the `lookup_off` function by wrapping it in your test. See `tests/test_off_client.py` for examples of how the module is tested offline, including simulated network failures and retries.
 
 ## Caching Behavior
 
@@ -136,7 +131,7 @@ To test cache behavior during development:
 
 For integration tests or CI workflows that need to run without the real OFF API:
 
-1. **Offline self-check**: Run `python -m app.off_client` to verify cache logic
+1. **Offline unit tests**: Run `uv run pytest tests/test_off_client.py` to verify cache and retry logic
 2. **Mock server**: Start a local mock server (as described in Option 2) and point tests at it via `OFF_BASE_URL`
 3. **Fixture setup**: In a test suite, set `OFF_BASE_URL` to a test double before running integration tests
 
