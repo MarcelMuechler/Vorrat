@@ -5,11 +5,12 @@ import 'package:vorrat/api/client.dart';
 import 'package:vorrat/l10n/app_localizations.dart';
 import 'package:vorrat/models/models.dart';
 import 'package:vorrat/state/settings_provider.dart';
-import 'package:vorrat/widgets/category_field.dart';
+import 'package:vorrat/widgets/named_entity_field.dart';
 
 class FakeApiClient extends ApiClient {
   FakeApiClient() : super(SettingsProvider());
   final List<Category> categories = [Category(id: 1, name: 'Dairy')];
+  final List<Location> locations = [Location(id: 1, name: 'Pantry')];
   int _nextId = 2;
 
   @override
@@ -19,6 +20,16 @@ class FakeApiClient extends ApiClient {
   Future<Category> createCategory(String name) async {
     final created = Category(id: _nextId++, name: name);
     categories.add(created);
+    return created;
+  }
+
+  @override
+  Future<List<Location>> listLocations() async => locations;
+
+  @override
+  Future<Location> createLocation(String name) async {
+    final created = Location(id: _nextId++, name: name);
+    locations.add(created);
     return created;
   }
 }
@@ -36,15 +47,19 @@ void main() {
   testWidgets('resolve() matches an existing category by name without creating a duplicate', (tester) async {
     final api = FakeApiClient();
     Category? reported;
-    final key = GlobalKey<CategoryFieldState>();
+    final key = GlobalKey<NamedEntityFieldState<Category>>();
     await tester.pumpWidget(
       _wrap(
         api,
-        CategoryField(
+        NamedEntityField<Category>(
           key: key,
-          categoryId: null,
-          categoryName: null,
+          initialName: null,
           label: 'Category',
+          clearTooltip: 'Clear',
+          load: (api) => api.listCategories(),
+          create: (api, name) => api.createCategory(name),
+          nameOf: (category) => category.name,
+          errorMessage: (e) => 'failed: $e',
           onChanged: (c) => reported = c,
         ),
       ),
@@ -61,15 +76,19 @@ void main() {
   testWidgets('resolve() creates a new category for text that matches nothing existing', (tester) async {
     final api = FakeApiClient();
     Category? reported;
-    final key = GlobalKey<CategoryFieldState>();
+    final key = GlobalKey<NamedEntityFieldState<Category>>();
     await tester.pumpWidget(
       _wrap(
         api,
-        CategoryField(
+        NamedEntityField<Category>(
           key: key,
-          categoryId: null,
-          categoryName: null,
+          initialName: null,
           label: 'Category',
+          clearTooltip: 'Clear',
+          load: (api) => api.listCategories(),
+          create: (api, name) => api.createCategory(name),
+          nameOf: (category) => category.name,
+          errorMessage: (e) => 'failed: $e',
           onChanged: (c) => reported = c,
         ),
       ),
@@ -86,15 +105,19 @@ void main() {
   testWidgets('resolve() reports null when left blank', (tester) async {
     final api = FakeApiClient();
     Category? reported = Category(id: 99, name: 'placeholder');
-    final key = GlobalKey<CategoryFieldState>();
+    final key = GlobalKey<NamedEntityFieldState<Category>>();
     await tester.pumpWidget(
       _wrap(
         api,
-        CategoryField(
+        NamedEntityField<Category>(
           key: key,
-          categoryId: null,
-          categoryName: null,
+          initialName: null,
           label: 'Category',
+          clearTooltip: 'Clear',
+          load: (api) => api.listCategories(),
+          create: (api, name) => api.createCategory(name),
+          nameOf: (category) => category.name,
+          errorMessage: (e) => 'failed: $e',
           onChanged: (c) => reported = c,
         ),
       ),
@@ -111,17 +134,21 @@ void main() {
     (tester) async {
       final api = FakeApiClient();
       Category? saved;
-      final key = GlobalKey<CategoryFieldState>();
+      final key = GlobalKey<NamedEntityFieldState<Category>>();
       await tester.pumpWidget(
         _wrap(
           api,
           Column(
             children: [
-              CategoryField(
+              NamedEntityField<Category>(
                 key: key,
-                categoryId: null,
-                categoryName: null,
+                initialName: null,
                 label: 'Category',
+                clearTooltip: 'Clear',
+                load: (api) => api.listCategories(),
+                create: (api, name) => api.createCategory(name),
+                nameOf: (category) => category.name,
+                errorMessage: (e) => 'failed: $e',
                 onChanged: (c) => saved = c,
               ),
               ElevatedButton(
@@ -146,4 +173,36 @@ void main() {
       expect(saved?.name, 'Frozen');
     },
   );
+
+  // #338: the same field now backs locations, so a product's default
+  // location can be typed inline instead of sending the user off to the
+  // locations screen and back.
+  testWidgets('resolve() creates a location that does not exist yet', (tester) async {
+    final api = FakeApiClient();
+    Location? reported;
+    final key = GlobalKey<NamedEntityFieldState<Location>>();
+    await tester.pumpWidget(
+      _wrap(
+        api,
+        NamedEntityField<Location>(
+          key: key,
+          initialName: null,
+          label: 'Location',
+          clearTooltip: 'Clear',
+          load: (api) => api.listLocations(),
+          create: (api, name) => api.createLocation(name),
+          nameOf: (location) => location.name,
+          errorMessage: (e) => 'failed: $e',
+          onChanged: (l) => reported = l,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Cellar');
+    await key.currentState!.resolve();
+
+    expect(reported?.name, 'Cellar');
+    expect(api.locations.map((l) => l.name), ['Pantry', 'Cellar']);
+  });
 }

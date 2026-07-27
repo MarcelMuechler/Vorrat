@@ -5,7 +5,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../util/format.dart';
-import 'category_field.dart';
+import 'named_entity_field.dart';
 
 /// Edit form for a free-text shopping list item (#122) -- product-linked
 /// items already get their name/unit from the Product and can't have their
@@ -37,7 +37,7 @@ class _EditShoppingListItemSheetState extends State<EditShoppingListItemSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _amountController;
   late final TextEditingController _unitController;
-  final _categoryFieldKey = GlobalKey<CategoryFieldState>();
+  final _categoryFieldKey = GlobalKey<NamedEntityFieldState<Category>>();
   int? _categoryId;
   bool _saving = false;
 
@@ -130,11 +130,15 @@ class _EditShoppingListItemSheetState extends State<EditShoppingListItemSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            CategoryField(
+            NamedEntityField<Category>(
               key: _categoryFieldKey,
-              categoryId: _categoryId,
-              categoryName: widget.item.categoryName,
+              initialName: widget.item.categoryName,
               label: l10n.categoryLabel,
+              clearTooltip: l10n.clearCategoryTooltip,
+              load: (api) => api.listCategories(),
+              create: (api, name) => api.createCategory(name),
+              nameOf: (category) => category.name,
+              errorMessage: (e) => l10n.couldNotAddCategory('$e'),
               onChanged: (category) => setState(() => _categoryId = category?.id),
             ),
             const SizedBox(height: 16),

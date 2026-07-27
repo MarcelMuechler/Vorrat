@@ -23,6 +23,7 @@
   "nameLabel": "Name",
   "categoryLabel": "Kategorie",
   "clearCategoryTooltip": "Kategorie entfernen",
+  "clearLocationTooltip": "Standort entfernen",
   "amountFieldLabel": "Menge",
   "decreaseAmountTooltip": "Menge verringern",
   "increaseAmountTooltip": "Menge erhöhen",

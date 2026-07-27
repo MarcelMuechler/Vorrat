@@ -7,7 +7,7 @@ import '../models/models.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/format.dart';
-import '../widgets/category_field.dart';
+import '../widgets/named_entity_field.dart';
 import '../widgets/prompt_validated.dart';
 import '../widgets/quantity_unit_field.dart';
 
@@ -24,7 +24,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final TextEditingController _nameController;
-  final _categoryFieldKey = GlobalKey<CategoryFieldState>();
+  final _categoryFieldKey = GlobalKey<NamedEntityFieldState<Category>>();
   int? _categoryId;
   late final TextEditingController _amountController;
   late String _quantityUnit;
@@ -266,15 +266,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (widget.existingProduct == null) ...[
-                  CategoryField(
+                  NamedEntityField<Category>(
                     key: _categoryFieldKey,
-                    categoryId: _categoryId,
                     // OFF's suggestion is prefilled as real, editable text
                     // (not just a hint) -- the field's own clear button
                     // removes it in one tap if unwanted (#70). Suppressed
                     // entirely if the setting to suggest one is off (#71).
-                    categoryName: _offCategorySuggestion,
+                    initialName: _offCategorySuggestion,
                     label: l10n.categoryLabel,
+                    clearTooltip: l10n.clearCategoryTooltip,
+                    load: (api) => api.listCategories(),
+                    create: (api, name) => api.createCategory(name),
+                    nameOf: (category) => category.name,
+                    errorMessage: (e) => l10n.couldNotAddCategory('$e'),
                     onChanged: (category) => setState(() => _categoryId = category?.id),
                   ),
                   const SizedBox(height: 12),
