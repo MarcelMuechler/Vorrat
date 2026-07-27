@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -50,4 +51,16 @@ String formatAmount(double amount) {
     text = text.replaceFirst(RegExp(r'\.$'), '');
   }
   return text;
+}
+
+/// Formats a price/value with the household's configured currency (#324).
+/// `NumberFormat.simpleCurrency` (from `intl`, already a dependency) handles
+/// symbol placement and decimal separator per locale, and falls back to
+/// showing the code itself for anything it doesn't recognize -- so an
+/// unusual [currency] degrades to "USD 4.50" rather than failing.
+String formatMoney(BuildContext context, double value, String currency) {
+  return NumberFormat.simpleCurrency(
+    locale: Localizations.localeOf(context).toString(),
+    name: currency,
+  ).format(value);
 }

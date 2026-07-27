@@ -213,7 +213,13 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
             const SizedBox(height: 16),
             TextField(
               controller: _priceController,
-              decoration: InputDecoration(labelText: l10n.priceFieldLabel, isDense: true),
+              // The code in the label is what makes it unambiguous what's
+              // being asked for (#324) -- the field itself stays a plain
+              // number, since that's what the API stores.
+              decoration: InputDecoration(
+                labelText: l10n.priceFieldLabelWithCurrency(context.read<StockProvider>().currency),
+                isDense: true,
+              ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 16),

@@ -485,14 +485,19 @@ class ApiClient {
     _checked(await http.Response.fromStream(streamed));
   }
 
-  Future<int> getExpiringSoonDays() async {
+  Future<AppSettingsData> getSettings() async {
     final res = await _get('/api/settings');
-    return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
+    return AppSettingsData.fromJson(jsonDecode(res.body));
   }
 
-  Future<int> setExpiringSoonDays(int days) async {
-    final res = await _patch('/api/settings', {'expiring_soon_days': days});
-    return (jsonDecode(res.body) as Map<String, dynamic>)['expiring_soon_days'] as int;
+  /// A real PATCH: omitted fields are left alone by the backend, so callers
+  /// can change one setting without knowing the others.
+  Future<AppSettingsData> updateSettings({int? expiringSoonDays, String? currency}) async {
+    final res = await _patch('/api/settings', {
+      'expiring_soon_days': ?expiringSoonDays,
+      'currency': ?currency,
+    });
+    return AppSettingsData.fromJson(jsonDecode(res.body));
   }
 
   Future<List<ShoppingListItem>> listShoppingList() async {

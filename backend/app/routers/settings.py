@@ -36,7 +36,10 @@ def read_settings(db: Session = Depends(get_db)):
 @router.patch("", response_model=AppSettingsRead)
 def update_settings(payload: AppSettingsUpdate, db: Session = Depends(get_db)):
     row = get_app_settings(db)
-    row.expiring_soon_days = payload.expiring_soon_days
+    # exclude_unset so omitting a field leaves it alone -- this is a PATCH.
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(row, key, value)
     db.commit()
     db.refresh(row)
     return row

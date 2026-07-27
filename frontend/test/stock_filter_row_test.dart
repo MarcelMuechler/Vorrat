@@ -36,7 +36,8 @@ class FakeApiClient extends ApiClient {
       [Category(id: 1, name: 'Konserven und Eingemachtes')];
 
   @override
-  Future<int> getExpiringSoonDays() async => 3;
+  Future<AppSettingsData> getSettings() async =>
+      AppSettingsData(expiringSoonDays: 3, currency: 'EUR');
 }
 
 void main() {

@@ -41,7 +41,8 @@ class FakeApiClient extends ApiClient {
   Future<List<Category>> listCategories({int? limit, int? offset}) async => [];
 
   @override
-  Future<int> getExpiringSoonDays() async => 3;
+  Future<AppSettingsData> getSettings() async =>
+      AppSettingsData(expiringSoonDays: 3, currency: 'EUR');
 
   @override
   Future<int> bulkConsumeStock(List<int> entryIds, {String reason = 'used'}) async {

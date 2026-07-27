@@ -78,6 +78,9 @@ class StockProvider extends ChangeNotifier {
   StockSort sort = StockSort.bestBeforeDate;
   StockViewMode viewMode = StockViewMode.flat;
   int expiringSoonDays = 3;
+  // Formats every price in the app (#324). Defaults to the backend's own
+  // default so the first frame doesn't render a currency-less number.
+  String currency = 'EUR';
 
   // Monotonic request generation (#233): the debounced search in
   // stock_overview_screen.dart can fire overlapping refreshes without
@@ -214,9 +217,11 @@ class StockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadExpiringSoonDays() async {
+  Future<void> loadSettings() async {
     try {
-      expiringSoonDays = await api.getExpiringSoonDays();
+      final settings = await api.getSettings();
+      expiringSoonDays = settings.expiringSoonDays;
+      currency = settings.currency;
       notifyListeners();
     } catch (_) {
       // Keep the built-in default (matches the backend's own fallback) --

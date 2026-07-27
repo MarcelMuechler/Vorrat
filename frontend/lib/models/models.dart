@@ -259,6 +259,21 @@ class ConsumptionLogEntry {
       );
 }
 
+/// The runtime-editable app settings (`/api/settings`).
+class AppSettingsData {
+  final int expiringSoonDays;
+  // ISO 4217 code used purely to format prices for display (#324) -- nothing
+  // is converted anywhere, so this is a label, not a unit.
+  final String currency;
+
+  AppSettingsData({required this.expiringSoonDays, required this.currency});
+
+  factory AppSettingsData.fromJson(Map<String, dynamic> json) => AppSettingsData(
+        expiringSoonDays: json['expiring_soon_days'],
+        currency: json['currency'] ?? 'EUR',
+      );
+}
+
 /// Totals for a consumption-log window (#321's /summary endpoint): entry
 /// counts and what they were worth at their snapshotted prices. Unpriced
 /// entries are counted but add nothing, so the values are lower bounds.
