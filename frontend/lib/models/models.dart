@@ -231,6 +231,9 @@ class ConsumptionLogEntry {
   // changed since. Null for rows written before this field existed and
   // never backfilled.
   final String? quantityUnit;
+  // Per-unit price snapshotted at consume time, same reasoning as
+  // [quantityUnit]. Null when the batch was never priced.
+  final double? price;
   final DateTime createdAt;
 
   ConsumptionLogEntry({
@@ -240,6 +243,7 @@ class ConsumptionLogEntry {
     required this.amount,
     required this.reason,
     this.quantityUnit,
+    this.price,
     required this.createdAt,
   });
 
@@ -250,7 +254,32 @@ class ConsumptionLogEntry {
         amount: (json['amount'] as num).toDouble(),
         reason: json['reason'],
         quantityUnit: json['quantity_unit'],
+        price: (json['price'] as num?)?.toDouble(),
         createdAt: DateTime.parse(json['created_at']),
+      );
+}
+
+/// Totals for a consumption-log window (#321's /summary endpoint): entry
+/// counts and what they were worth at their snapshotted prices. Unpriced
+/// entries are counted but add nothing, so the values are lower bounds.
+class ConsumptionSummary {
+  final int usedEntries;
+  final double usedValue;
+  final int spoiledEntries;
+  final double spoiledValue;
+
+  ConsumptionSummary({
+    required this.usedEntries,
+    required this.usedValue,
+    required this.spoiledEntries,
+    required this.spoiledValue,
+  });
+
+  factory ConsumptionSummary.fromJson(Map<String, dynamic> json) => ConsumptionSummary(
+        usedEntries: json['used_entries'],
+        usedValue: (json['used_value'] as num).toDouble(),
+        spoiledEntries: json['spoiled_entries'],
+        spoiledValue: (json['spoiled_value'] as num).toDouble(),
       );
 }
 

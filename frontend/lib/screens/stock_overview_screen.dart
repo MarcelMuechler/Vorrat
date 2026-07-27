@@ -14,6 +14,7 @@ import '../util/status.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/stock_item_actions.dart';
 import '../widgets/undo_snackbar.dart';
+import 'consumption_history_screen.dart';
 import 'product_batches_screen.dart';
 import 'product_detail_screen.dart';
 import 'settings_screen.dart';
@@ -457,6 +458,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
             PopupMenuItem(value: StockViewMode.grouped, child: Text(l10n.viewModeGrouped)),
             PopupMenuItem(value: StockViewMode.breakdown, child: Text(l10n.viewModeBreakdown)),
           ],
+        ),
+        IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: l10n.consumptionHistoryTitle,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ConsumptionHistoryScreen()),
+          ),
         ),
         PopupMenuButton<StockSort>(
           icon: const Icon(Icons.sort),

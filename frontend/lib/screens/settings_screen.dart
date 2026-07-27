@@ -31,7 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _testResult;
   bool _testing = false;
   bool _savingExpiringSoon = false;
-  int? _wastedThisMonth;
 
   @override
   void initState() {
@@ -39,22 +38,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _controller = TextEditingController(text: context.read<SettingsProvider>().serverUrl);
     _expiringSoonController = TextEditingController(text: '${context.read<StockProvider>().expiringSoonDays}');
     _loadExpiringSoonDays();
-    _loadWasteSummary();
-  }
-
-  Future<void> _loadWasteSummary() async {
-    final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    try {
-      final entries = await context.read<ApiClient>().listConsumptionLog(
-        since: startOfMonth,
-        reason: 'spoiled',
-      );
-      if (mounted) setState(() => _wastedThisMonth = entries.length);
-    } catch (_) {
-      // Silent -- this is a small supplementary stat, not worth its own
-      // error state on top of the rest of the screen's.
-    }
   }
 
   Future<void> _loadExpiringSoonDays() async {
@@ -118,20 +101,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _exportStockCsv() async {
     final l10n = AppLocalizations.of(context)!;
     final url = context.read<ApiClient>().exportStockCsvUrl();
-    try {
-      await openInBrowser(url.toString());
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.couldNotExport('$e'))));
-      }
-    }
-  }
-
-  Future<void> _exportConsumptionLogCsv() async {
-    final l10n = AppLocalizations.of(context)!;
-    final url = context.read<ApiClient>().exportConsumptionLogCsvUrl();
     try {
       await openInBrowser(url.toString());
     } catch (e) {
@@ -465,17 +434,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: Text(l10n.importCsvSubtitle),
                   onTap: _importStockCsv,
                 ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.file_download_outlined),
-                  title: Text(l10n.exportConsumptionLogCsvTitle),
-                  subtitle: Text(l10n.exportConsumptionLogCsvSubtitle),
-                  onTap: _exportConsumptionLogCsv,
-                ),
-                if (_wastedThisMonth != null) ...[
-                  const Divider(),
-                  Text(l10n.spoiledThisMonth(_wastedThisMonth!)),
-                ],
               ]),
               _section(context, l10n.settingsBackupSection, [
                 ListTile(
