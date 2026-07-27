@@ -119,6 +119,14 @@ class ApiClient {
   /// (#233). [checkHealth] keeps its own shorter, self-contained timeout.
   static const Duration _timeout = Duration(seconds: 15);
 
+  /// Uploads are user-initiated transfers, not interactive requests: a backup
+  /// restore may be up to 500 MB (the backend's `_MAX_RESTORE_BYTES`) over
+  /// household WiFi to a Raspberry Pi, and the server-side validation and file
+  /// swap follow the upload. Under [_timeout] the client gave up while the
+  /// server went on to finish, reporting a *successful* restore as failed and
+  /// inviting a retry on top of an in-flight one (#335).
+  static const Duration _uploadTimeout = Duration(minutes: 10);
+
   // Empty serverUrl means "relative to current origin" — correct for the
   // web build served by the backend itself (direct or via HA Ingress, which
   // forwards API paths the same way it forwards the HTML/JS). Native builds
@@ -298,7 +306,7 @@ class ApiClient {
           contentType: _imageContentType(filename),
         ),
       );
-    final streamed = await request.send().timeout(_timeout);
+    final streamed = await request.send().timeout(_uploadTimeout);
     final res = _checked(await http.Response.fromStream(streamed));
     return Product.fromJson(jsonDecode(res.body));
   }
@@ -438,7 +446,7 @@ class ApiClient {
     final res = _checked(
       await http
           .post(_uri('/api/stock/import.csv'), headers: {'content-type': 'text/csv'}, body: csv)
-          .timeout(_timeout),
+          .timeout(_uploadTimeout),
     );
     return StockImportResult.fromJson(jsonDecode(res.body));
   }
@@ -456,7 +464,7 @@ class ApiClient {
   Future<void> restoreBackup(List<int> bytes, String filename) async {
     final request = http.MultipartRequest('POST', _uri('/api/backup/restore'))
       ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
-    final streamed = await request.send().timeout(_timeout);
+    final streamed = await request.send().timeout(_uploadTimeout);
     _checked(await http.Response.fromStream(streamed));
   }
 
