@@ -384,7 +384,6 @@
   "importCsvTitle": "Import stock (CSV)",
   "importCsvSubtitle": "Add stock from a spreadsheet in the same format as the export",
   "exportConsumptionLogCsvTitle": "Export consumption/waste log (CSV)",
-  "exportConsumptionLogCsvSubtitle": "Download usage and waste history as a spreadsheet",
   "downloadBackupTitle": "Download backup",
   "downloadBackupSubtitle": "Save a full snapshot of the database",
   "restoreBackupTitle": "Restore from file",
@@ -409,10 +408,18 @@
       "error": { "type": "String" }
     }
   },
-  "spoiledThisMonth": "{count, plural, =0{Nothing marked spoiled this month.} =1{1 batch marked spoiled this month.} other{{count} batches marked spoiled this month.}}",
-  "@spoiledThisMonth": {
-    "placeholders": { "count": { "type": "int" } }
-  },
+  "consumptionHistoryTitle": "History",
+  "historyRangeLastDays": "Last {days} days",
+  "@historyRangeLastDays": {"placeholders": {"days": {"type": "int"}}},
+  "historyRangeAll": "All",
+  "historyReasonAll": "All",
+  "historyEmpty": "Nothing used or discarded in this range.",
+  "historyLoadError": "Could not load history: {error}",
+  "@historyLoadError": {"placeholders": {"error": {"type": "String"}}},
+  "historyUsedSummary": "{count, plural, =0{Nothing used} =1{1 batch used} other{{count} batches used}} — worth {value}",
+  "@historyUsedSummary": {"placeholders": {"count": {"type": "int"}, "value": {"type": "String"}}},
+  "historySpoiledSummary": "{count, plural, =0{Nothing thrown away} =1{1 batch thrown away} other{{count} batches thrown away}} — worth {value}",
+  "@historySpoiledSummary": {"placeholders": {"count": {"type": "int"}, "value": {"type": "String"}}},
   "pairDeviceHint": "Pair another device: open Settings → Scan to connect on it, then scan this code.",
   "scanQrTitle": "Scan server QR code",
 

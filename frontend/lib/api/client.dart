@@ -422,6 +422,16 @@ class ApiClient {
     return list.map((e) => ConsumptionLogEntry.fromJson(e)).toList();
   }
 
+  /// Counts and values for the same window [listConsumptionLog] takes --
+  /// summed server-side from each row's snapshotted price (#321).
+  Future<ConsumptionSummary> consumptionSummary({DateTime? since, DateTime? until}) async {
+    final query = <String, String>{};
+    if (since != null) query['since'] = since.toIso8601String().split('T').first;
+    if (until != null) query['until'] = until.toIso8601String().split('T').first;
+    final res = await _get('/api/consumption-log/summary', query);
+    return ConsumptionSummary.fromJson(jsonDecode(res.body));
+  }
+
   Future<void> markStockOpened(int id) async {
     final today = DateTime.now().toIso8601String().split('T').first;
     await _patch('/api/stock/$id', {'opened_at': today});
