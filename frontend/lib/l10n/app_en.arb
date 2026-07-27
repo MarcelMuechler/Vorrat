@@ -188,6 +188,14 @@
     "placeholders": { "name": { "type": "String" } }
   },
   "scannedDiscarded": "Discarded \"{name}\".",
+  "scannedUsedAmount": "Used {amount} of \"{name}\".",
+  "@scannedUsedAmount": {
+    "placeholders": { "name": { "type": "String" }, "amount": { "type": "String" } }
+  },
+  "scannedDiscardedAmount": "Discarded {amount} of \"{name}\".",
+  "@scannedDiscardedAmount": {
+    "placeholders": { "name": { "type": "String" }, "amount": { "type": "String" } }
+  },
   "@scannedDiscarded": {
     "placeholders": { "name": { "type": "String" } }
   },
@@ -246,6 +254,8 @@
   "lowStockChip": "Low stock",
   "targetStockLevelLabel": "Target stock level",
   "targetStockLevelHint": "e.g. 5 — add-low-stock restocks up to this amount instead of just 1",
+  "defaultConsumeAmountLabel": "Amount one scan uses",
+  "defaultConsumeAmountHint": "e.g. 0.2 — how much a Use/Discard scan takes off this product, instead of the whole batch",
   "doesNotSpoilLabel": "Does not spoil",
   "doesNotSpoilHint": "Shelf-stable goods (rice, canned food, spices) — always shown as ok, no best-before date needed",
   "expiringSoonDaysOverrideLabel": "Expiring-soon window (days)",

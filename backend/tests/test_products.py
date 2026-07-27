@@ -327,3 +327,28 @@ def test_products_list_has_no_n_plus_one_barcode_queries(client, db_engine):
         assert len(product["extra_barcodes"]) == 2
 
     assert count <= 3, f"expected <= 3 queries with selectinload applied, got {count} (N+1 back?)"
+
+
+def test_default_consume_amount_round_trips(client):
+    # #332: opt-in per-product default for how much one scan consumes, so a
+    # 1 kg bag of flour doesn't vanish when someone takes 200 g.
+    product = client.post(
+        "/api/products", json={"name": "Flour", "quantity_unit": "kg", "default_consume_amount": 0.2}
+    ).json()
+    assert product["default_consume_amount"] == 0.2
+
+    updated = client.patch(
+        f"/api/products/{product['id']}", json={"default_consume_amount": 0.25}
+    ).json()
+    assert updated["default_consume_amount"] == 0.25
+
+    # Nullable and opt-in: products left alone keep the whole-batch behaviour.
+    plain = client.post("/api/products", json={"name": "Yoghurt"}).json()
+    assert plain["default_consume_amount"] is None
+
+
+def test_default_consume_amount_must_be_positive(client):
+    response = client.post(
+        "/api/products", json={"name": "Flour", "default_consume_amount": 0}
+    )
+    assert response.status_code == 422
