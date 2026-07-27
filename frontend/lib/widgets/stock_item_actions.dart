@@ -34,6 +34,9 @@ class StockItemActions extends StatefulWidget {
   // doc). Returns whether the batch was actually deleted -- e.g. false if
   // its confirmation dialog was cancelled.
   final Future<bool> Function() onDelete;
+  // Optional -- only the batch list offers it (#319). Null everywhere else
+  // keeps those action rows exactly as they were.
+  final VoidCallback? onEdit;
   final Object dismissibleKey;
   // When set, renders as a colored-left-border/tinted card instead of a
   // plain row -- the Stock overview's "needs attention" section (#199 wireframe
@@ -53,6 +56,7 @@ class StockItemActions extends StatefulWidget {
     required this.onOpen,
     required this.onConsume,
     required this.onDelete,
+    this.onEdit,
     required this.dismissibleKey,
     this.emphasizeStatus,
   });
@@ -156,6 +160,11 @@ class _StockItemActionsState extends State<StockItemActions> {
                     l10n.spoiledLabel,
                     () => _promptAndConsume(l10n.spoilSomeOfTitle(widget.productName), 'spoiled'),
                   ),
+                  if (widget.onEdit != null)
+                    _StockAction(Icons.edit_outlined, l10n.editBatchTitle, () {
+                      widget.onEdit!();
+                      setState(() => _expanded = false);
+                    }),
                 ];
                 // Keep icon+label buttons whenever the single-line Row is
                 // guaranteed to fit; below the breakpoint (only the narrowest
@@ -164,7 +173,11 @@ class _StockItemActionsState extends State<StockItemActions> {
                 // buttons with the label carried by a Tooltip (#222). This
                 // replaced a Wrap (#221), whose second line made the row's
                 // height unpredictable.
-                final iconOnly = constraints.maxWidth < _labelBreakpoint;
+                // The measured worst case assumed at most three buttons; a
+                // fourth (Edit, #319) needs proportionally more room before
+                // labels are safe. Three or fewer keeps the measured value.
+                final breakpoint = actions.length > 3 ? _labelBreakpoint * actions.length / 3 : _labelBreakpoint;
+                final iconOnly = constraints.maxWidth < breakpoint;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

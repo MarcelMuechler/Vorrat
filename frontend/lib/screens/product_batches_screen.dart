@@ -159,6 +159,18 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
     if (added == true) await _refresh();
   }
 
+  // Same sheet as _addBatch, prefilled and PATCHing instead of POSTing --
+  // the only previous way to fix a batch was delete-and-re-add, which logs
+  // waste that never happened (#319).
+  Future<void> _editBatch(StockItem item) async {
+    final product = _product ?? Product(id: widget.productId, name: widget.productName);
+    final saved = await AddBatchSheet.show(context, product, entry: item);
+    if (saved == true) {
+      await _refresh();
+      if (mounted) await context.read<StockProvider>().refresh();
+    }
+  }
+
   Future<void> _editProduct() async {
     final product = _product;
     if (product == null) return;
@@ -404,6 +416,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
       onOpen: () => _markOpened(item),
       onConsume: (amount, reason) => _consume(item, amount, reason),
       onDelete: () => _confirmDelete(item),
+      onEdit: () => _editBatch(item),
     );
   }
 }
