@@ -222,6 +222,10 @@
   "duplicateProductCreateNew": "Create new",
   "duplicateProductUseExisting": "Use existing",
   "addToStockTitle": "Add to stock",
+  "boughtMessage": "Bought \"{name}\".",
+  "@boughtMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
   "offReviewHint": "From Open Food Facts — check before saving.",
   "noBestBeforeDate": "No best-before date",
   "bestBeforeLabel": "Best before: {date}",
