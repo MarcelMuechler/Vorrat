@@ -86,6 +86,26 @@ This CSV is **not** a full backup/restore format. It deliberately does **not** e
 
 Those live on `Product`, not `StockEntry`, and are shared across every stock entry for that product — round-tripping them through a per-entry stock file would mean silently rewriting shared product data every time someone edits and re-imports a CSV. Manage them via the product screens instead.
 
+## Consumption log export
+
+`GET /api/consumption-log/export.csv` (export only — there is no import counterpart) writes one
+row per consumed or spoiled batch, accepting the same `since`/`until`/`reason` query parameters
+as `GET /api/consumption-log`:
+
+| Column | Description |
+|--------|-------------|
+| `created_at` | When the batch was consumed or discarded (UTC). |
+| `product_name` | Name of the product at export time. |
+| `amount` | How much left stock. |
+| `quantity_unit` | Unit the amount is in. |
+| `reason` | `used` or `spoiled`. |
+| `price` | Per-unit price snapshotted from the stock entry at consume time, so later price changes don't rewrite history. Empty when the entry had no price. |
+
+`amount * price` is what that row was worth; `GET /api/consumption-log/summary` returns the same
+sum server-side (`used_value` / `spoiled_value`, plus entry counts) over an optional
+`since`/`until` window. Unpriced rows are counted but add nothing to the value, so both are
+lower bounds whenever some stock was never priced.
+
 ## Tips
 
 - **Round-trip**: Export, edit, and re-import to bulk update stock. The `status` column from export is ignored on import, so no special cleanup is needed. Note that import always creates new stock entries rather than updating existing ones by id, so re-importing an unedited export duplicates every row.
