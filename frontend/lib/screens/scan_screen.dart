@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -61,10 +63,8 @@ bool isPlausibleBarcode(String value, [BarcodeFormat? format]) {
 /// batch when no default is set. Prompting instead would defeat the
 /// no-prompt mode (#69); a measured product just needs the amount recorded
 /// once, on the product.
-double _scanAmount(Product product, StockItem batch) {
-  final preferred = product.defaultConsumeAmount;
-  return preferred == null ? batch.amount : (preferred < batch.amount ? preferred : batch.amount);
-}
+double _scanAmount(Product product, StockItem batch) =>
+    min(product.defaultConsumeAmount ?? batch.amount, batch.amount);
 
 /// "0.25 l" -- in the snackbar so a wrong default is visible immediately
 /// rather than discovered a week later.

@@ -102,24 +102,16 @@ def test_export_consumption_log_csv(client):
     assert lines[1].endswith(",1.25")
 
 
-def test_consumption_log_summary_values_used_and_spoiled_separately(client):
-    _consume(client, amount=2, reason="used", price=1.5)  # 3.0
-    _consume(client, amount=1, reason="spoiled", price=4.0)  # 4.0
-    _consume(client, amount=5, reason="spoiled")  # unpriced: counted, adds nothing
+def test_consumption_log_rows_carry_the_snapshotted_price(client):
+    """The history screen values a window by folding `amount * price` over
+    these rows (#321), so the per-unit price has to be on each one -- and
+    unpriced rows have to arrive as null, not 0, so they count without
+    silently valuing themselves at nothing."""
+    _consume(client, amount=2, reason="used", price=1.5)
+    _consume(client, amount=5, reason="spoiled")
 
-    summary = client.get("/api/consumption-log/summary").json()
-    assert summary == {
-        "used_entries": 1,
-        "used_value": 3.0,
-        "spoiled_entries": 2,
-        "spoiled_value": 4.0,
-    }
-
-
-def test_consumption_log_summary_respects_the_window(client):
-    _consume(client, amount=1, reason="spoiled", price=2.0)
-
-    tomorrow = date.today() + timedelta(days=1)
-    summary = client.get("/api/consumption-log/summary", params={"since": tomorrow.isoformat()}).json()
-    assert summary["spoiled_entries"] == 0
-    assert summary["spoiled_value"] == 0.0
+    entries = client.get("/api/consumption-log").json()
+    by_reason = {entry["reason"]: entry for entry in entries}
+    assert by_reason["used"]["price"] == 1.5
+    assert by_reason["used"]["amount"] == 2
+    assert by_reason["spoiled"]["price"] is None

@@ -173,11 +173,10 @@ class _StockItemActionsState extends State<StockItemActions> {
                 // buttons with the label carried by a Tooltip (#222). This
                 // replaced a Wrap (#221), whose second line made the row's
                 // height unpredictable.
-                // The measured worst case assumed at most three buttons; a
-                // fourth (Edit, #319) needs proportionally more room before
-                // labels are safe. Three or fewer keeps the measured value.
-                final breakpoint = actions.length > 3 ? _labelBreakpoint * actions.length / 3 : _labelBreakpoint;
-                final iconOnly = constraints.maxWidth < breakpoint;
+                // The measured worst case assumed three buttons (open, use,
+                // spoil -- all unconditional); a fourth (Edit, #319) needs
+                // proportionally more room before labels are safe.
+                final iconOnly = constraints.maxWidth < _labelBreakpoint * actions.length / 3;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

@@ -221,17 +221,6 @@ class ConsumptionLogItem(ConsumptionLogRead):
     product_name: str
 
 
-class ConsumptionLogSummary(BaseModel):
-    """Totals for a consumption-log window (#321). Values are summed from
-    each row's snapshotted per-unit price; unpriced rows are counted but add
-    nothing, so the values are lower bounds, matching StatsRead.total_value."""
-
-    used_entries: int
-    used_value: float
-    spoiled_entries: int
-    spoiled_value: float
-
-
 class AppSettingsRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

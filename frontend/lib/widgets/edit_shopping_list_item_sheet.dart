@@ -137,7 +137,6 @@ class _EditShoppingListItemSheetState extends State<EditShoppingListItemSheet> {
               clearTooltip: l10n.clearCategoryTooltip,
               load: (api) => api.listCategories(),
               create: (api, name) => api.createCategory(name),
-              nameOf: (category) => category.name,
               errorMessage: (e) => l10n.couldNotAddCategory('$e'),
               onChanged: (category) => setState(() => _categoryId = category?.id),
             ),

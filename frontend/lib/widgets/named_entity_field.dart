@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/client.dart';
+import '../models/models.dart';
 
 /// An autocomplete over an existing name-only entity (Category, Location)
 /// where typing a name that matches nothing creates it (#73/#338), rather
@@ -10,21 +11,25 @@ import '../api/client.dart';
 /// concrete UX complaint about grocy.
 ///
 /// Generic over the entity because Category and Location are the same shape
-/// on both sides (they even share `named_crud.py` on the backend); the
-/// caller supplies how to list, create and name one.
+/// on both sides (they even share `named_crud.py` on the backend, and
+/// [NamedEntity] on this one); the caller supplies how to list and create.
 ///
 /// State is public (`NamedEntityFieldState`) so a save button can hold a
 /// `GlobalKey<NamedEntityFieldState<T>>` and call [resolve] right before
 /// reading the result -- simply tapping Save right after typing a brand-new
 /// name is a real race against this field's own async blur/submit-triggered
 /// resolution (which calls the backend to create it) otherwise.
-class NamedEntityField<T extends Object> extends StatefulWidget {
+class NamedEntityField<T extends NamedEntity> extends StatefulWidget {
   final String? initialName;
+  /// Prefill by id instead, for the common case where the owning record
+  /// stores only the id (a Product's `default_location_id`) -- the name is
+  /// filled in from the list this field loads anyway, so the form doesn't
+  /// have to fetch the same list itself just to resolve one name.
+  final int? initialId;
   final String label;
   final String clearTooltip;
   final Future<List<T>> Function(ApiClient api) load;
   final Future<T> Function(ApiClient api, String name) create;
-  final String Function(T entity) nameOf;
   /// Localized message for a failed create -- built by the caller, which has
   /// the right l10n string for its entity.
   final String Function(Object error) errorMessage;
@@ -32,12 +37,12 @@ class NamedEntityField<T extends Object> extends StatefulWidget {
 
   const NamedEntityField({
     super.key,
-    required this.initialName,
+    this.initialName,
+    this.initialId,
     required this.label,
     required this.clearTooltip,
     required this.load,
     required this.create,
-    required this.nameOf,
     required this.errorMessage,
     required this.onChanged,
   });
@@ -46,8 +51,9 @@ class NamedEntityField<T extends Object> extends StatefulWidget {
   State<NamedEntityField<T>> createState() => NamedEntityFieldState<T>();
 }
 
-class NamedEntityFieldState<T extends Object> extends State<NamedEntityField<T>> {
+class NamedEntityFieldState<T extends NamedEntity> extends State<NamedEntityField<T>> {
   List<T> _options = [];
+  bool _loaded = false;
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
 
@@ -69,7 +75,17 @@ class NamedEntityFieldState<T extends Object> extends State<NamedEntityField<T>>
   Future<void> _load() async {
     try {
       final options = await widget.load(context.read<ApiClient>());
-      if (mounted) setState(() => _options = options);
+      if (!mounted) return;
+      setState(() {
+        _options = options;
+        _loaded = true;
+        // Only if nothing has been typed in the meantime -- the list arrives
+        // asynchronously and must never overwrite the user.
+        if (widget.initialId != null && _controller.text.isEmpty) {
+          _controller.text =
+              options.where((o) => o.id == widget.initialId).map((o) => o.name).firstOrNull ?? '';
+        }
+      });
     } catch (_) {
       // Autocomplete just has no suggestions -- typing still works and can
       // still create a new entry on submit.
@@ -79,7 +95,7 @@ class NamedEntityFieldState<T extends Object> extends State<NamedEntityField<T>>
   T? _findByName(String name) {
     final trimmed = name.trim().toLowerCase();
     for (final option in _options) {
-      if (widget.nameOf(option).toLowerCase() == trimmed) return option;
+      if (option.name.toLowerCase() == trimmed) return option;
     }
     return null;
   }
@@ -97,6 +113,12 @@ class NamedEntityFieldState<T extends Object> extends State<NamedEntityField<T>>
   Future<T?> resolve() async {
     final trimmed = _controller.text.trim();
     if (trimmed.isEmpty) {
+      // An empty [initialId] field whose list never arrived is showing blank
+      // because the load failed, not because anything was cleared -- report
+      // nothing rather than letting a save wipe the existing selection.
+      // Tapping the clear button reports null directly, so this doesn't get
+      // in the way of clearing it on purpose.
+      if (widget.initialId != null && !_loaded) return null;
       widget.onChanged(null);
       return null;
     }
@@ -131,11 +153,11 @@ class NamedEntityFieldState<T extends Object> extends State<NamedEntityField<T>>
     return RawAutocomplete<T>(
       textEditingController: _controller,
       focusNode: _focusNode,
-      displayStringForOption: widget.nameOf,
+      displayStringForOption: (option) => option.name,
       optionsBuilder: (value) {
         if (value.text.isEmpty) return _options;
         final query = value.text.toLowerCase();
-        return _options.where((o) => widget.nameOf(o).toLowerCase().contains(query));
+        return _options.where((o) => o.name.toLowerCase().contains(query));
       },
       onSelected: widget.onChanged,
       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -171,7 +193,7 @@ class NamedEntityFieldState<T extends Object> extends State<NamedEntityField<T>>
               itemCount: options.length,
               itemBuilder: (context, index) {
                 final option = options.elementAt(index);
-                return ListTile(title: Text(widget.nameOf(option)), onTap: () => onSelected(option));
+                return ListTile(title: Text(option.name), onTap: () => onSelected(option));
               },
             ),
           ),

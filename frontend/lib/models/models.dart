@@ -1,5 +1,15 @@
-class Location {
+/// Anything that is just an id and a user-typed name -- Category and Location
+/// are the same shape on both sides (they even share `named_crud.py` on the
+/// backend), which is what lets one [NamedEntityField] serve both.
+abstract class NamedEntity {
+  int get id;
+  String get name;
+}
+
+class Location implements NamedEntity {
+  @override
   final int id;
+  @override
   final String name;
 
   Location({required this.id, required this.name});
@@ -8,8 +18,10 @@ class Location {
       Location(id: json['id'], name: json['name']);
 }
 
-class Category {
+class Category implements NamedEntity {
+  @override
   final int id;
+  @override
   final String name;
 
   Category({required this.id, required this.name});
@@ -277,30 +289,6 @@ class AppSettingsData {
   factory AppSettingsData.fromJson(Map<String, dynamic> json) => AppSettingsData(
         expiringSoonDays: json['expiring_soon_days'],
         currency: json['currency'] ?? 'EUR',
-      );
-}
-
-/// Totals for a consumption-log window (#321's /summary endpoint): entry
-/// counts and what they were worth at their snapshotted prices. Unpriced
-/// entries are counted but add nothing, so the values are lower bounds.
-class ConsumptionSummary {
-  final int usedEntries;
-  final double usedValue;
-  final int spoiledEntries;
-  final double spoiledValue;
-
-  ConsumptionSummary({
-    required this.usedEntries,
-    required this.usedValue,
-    required this.spoiledEntries,
-    required this.spoiledValue,
-  });
-
-  factory ConsumptionSummary.fromJson(Map<String, dynamic> json) => ConsumptionSummary(
-        usedEntries: json['used_entries'],
-        usedValue: (json['used_value'] as num).toDouble(),
-        spoiledEntries: json['spoiled_entries'],
-        spoiledValue: (json['spoiled_value'] as num).toDouble(),
       );
 }
 

@@ -398,18 +398,10 @@ def merge_product(product_id: int, payload: ProductMerge, db: Session = Depends(
     if duplicate.id == keeper.id:
         raise HTTPException(400, "Cannot merge a product into itself")
 
-    db.query(StockEntry).filter(StockEntry.product_id == duplicate.id).update(
-        {StockEntry.product_id: keeper.id}
-    )
-    db.query(ConsumptionLog).filter(ConsumptionLog.product_id == duplicate.id).update(
-        {ConsumptionLog.product_id: keeper.id}
-    )
-    db.query(ShoppingListItem).filter(ShoppingListItem.product_id == duplicate.id).update(
-        {ShoppingListItem.product_id: keeper.id}
-    )
-    db.query(ProductBarcode).filter(ProductBarcode.product_id == duplicate.id).update(
-        {ProductBarcode.product_id: keeper.id}
-    )
+    for model in (StockEntry, ConsumptionLog, ShoppingListItem, ProductBarcode):
+        db.query(model).filter(model.product_id == duplicate.id).update(
+            {model.product_id: keeper.id}
+        )
     # The duplicate's primary code survives as one of the keeper's alternates
     # -- that's the whole point of merging two rows for one physical item:
     # scanning either code afterwards has to resolve to the keeper. Skipped

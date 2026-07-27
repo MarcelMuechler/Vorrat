@@ -1,4 +1,5 @@
 import os
+import shutil
 import sqlite3
 import tempfile
 import zipfile
@@ -147,8 +148,7 @@ def _extract_photos(archive: zipfile.ZipFile) -> None:
         if not name:
             continue
         with archive.open(info) as src, open(uploads / name, "wb") as dst:
-            while chunk := src.read(1024 * 1024):
-                dst.write(chunk)
+            shutil.copyfileobj(src, dst)
 
 
 @router.post("/restore")
@@ -190,8 +190,7 @@ def restore_backup(file: UploadFile = File(...)):
             archive = _open_backup_zip(upload_path)
             fd, tmp_path = tempfile.mkstemp(dir=target_dir, suffix=".upload-db")
             with os.fdopen(fd, "wb") as out, archive.open(_ZIP_DB_MEMBER) as src:
-                while chunk := src.read(1024 * 1024):
-                    out.write(chunk)
+                shutil.copyfileobj(src, out)
 
         # A quick magic-bytes check first: PRAGMA schema_version alone
         # doesn't reject this -- SQLite treats an empty/all-zero file as a

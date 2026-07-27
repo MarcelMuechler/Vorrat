@@ -27,8 +27,10 @@ const _ranges = <int?>[7, 30, null];
 class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
   int? _days = 30;
   String? _reason;
+  /// The whole window, unfiltered -- the reason chips narrow it in [_visible]
+  /// rather than refetching, so the summary above the list can stay a fold
+  /// over these same rows instead of a second round trip.
   List<ConsumptionLogEntry> _entries = [];
-  ConsumptionSummary? _summary;
   bool _loading = true;
   String? _error;
 
@@ -41,25 +43,17 @@ class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
   DateTime? get _since =>
       _days == null ? null : DateTime.now().subtract(Duration(days: _days! - 1));
 
+  List<ConsumptionLogEntry> get _visible =>
+      _reason == null ? _entries : _entries.where((e) => e.reason == _reason).toList();
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
       _error = null;
     });
-    final api = context.read<ApiClient>();
     try {
-      // The summary is deliberately server-side rather than summed from
-      // [_entries]: it must stay right when the reason filter narrows the
-      // list, and it's the same window either way.
-      final results = await Future.wait([
-        api.listConsumptionLog(since: _since, reason: _reason),
-        api.consumptionSummary(since: _since),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _entries = results[0] as List<ConsumptionLogEntry>;
-        _summary = results[1] as ConsumptionSummary;
-      });
+      final entries = await context.read<ApiClient>().listConsumptionLog(since: _since);
+      if (mounted) setState(() => _entries = entries);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -136,15 +130,12 @@ class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
                                 : l10n.spoiledLabel,
                       ),
                       selected: _reason == reason,
-                      onSelected: (_) {
-                        setState(() => _reason = reason);
-                        _load();
-                      },
+                      onSelected: (_) => setState(() => _reason = reason),
                     ),
                 ],
               ),
             ),
-            if (_summary != null) _buildSummary(context, l10n, _summary!),
+            _buildSummary(context, l10n),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 32),
@@ -152,7 +143,7 @@ class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
               )
             else if (_error != null)
               Padding(padding: const EdgeInsets.all(16), child: Text(l10n.historyLoadError('$_error')))
-            else if (_entries.isEmpty)
+            else if (_visible.isEmpty)
               EmptyState(icon: Icons.history, message: l10n.historyEmpty)
             else
               ..._buildGroupedEntries(context, l10n),
@@ -162,16 +153,27 @@ class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
     );
   }
 
-  Widget _buildSummary(BuildContext context, AppLocalizations l10n, ConsumptionSummary summary) {
+  /// Counts and values for the whole window, folded from [_entries] -- always
+  /// the full range regardless of the reason chips, and unaffected by them.
+  /// Entries with no price are counted but add nothing, so the values are
+  /// lower bounds, matching how the stock total treats unpriced batches.
+  Widget _buildSummary(BuildContext context, AppLocalizations l10n) {
     final currency = context.read<StockProvider>().currency;
+    Iterable<ConsumptionLogEntry> byReason(String reason) =>
+        _entries.where((e) => e.reason == reason);
+    String value(String reason) => formatMoney(
+      context,
+      byReason(reason).fold(0.0, (sum, e) => sum + e.amount * (e.price ?? 0)),
+      currency,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.historyUsedSummary(summary.usedEntries, formatMoney(context, summary.usedValue, currency))),
+          Text(l10n.historyUsedSummary(byReason('used').length, value('used'))),
           Text(
-            l10n.historySpoiledSummary(summary.spoiledEntries, formatMoney(context, summary.spoiledValue, currency)),
+            l10n.historySpoiledSummary(byReason('spoiled').length, value('spoiled')),
             style: TextStyle(color: statusColor('expired')),
           ),
         ],
@@ -184,7 +186,7 @@ class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
   List<Widget> _buildGroupedEntries(BuildContext context, AppLocalizations l10n) {
     final widgets = <Widget>[];
     DateTime? currentDay;
-    for (final entry in _entries) {
+    for (final entry in _visible) {
       final local = entry.createdAt.toLocal();
       final day = DateTime(local.year, local.month, local.day);
       if (currentDay != day) {

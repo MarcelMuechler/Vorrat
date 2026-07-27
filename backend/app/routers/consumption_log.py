@@ -4,12 +4,11 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func
 from sqlalchemy.orm import Session, contains_eager
 
 from app.db import get_db
 from app.models import ConsumptionLog, Product
-from app.schemas import ConsumptionLogItem, ConsumptionLogRead, ConsumptionLogSummary
+from app.schemas import ConsumptionLogItem, ConsumptionLogRead
 from app.utils import escape_csv_formula_injection
 
 router = APIRouter(prefix="/api/consumption-log", tags=["consumption-log"])
@@ -64,39 +63,6 @@ def list_consumption_log(
     db: Session = Depends(get_db),
 ):
     return _query_consumption_log(db, since, until, reason)
-
-
-@router.get("/summary", response_model=ConsumptionLogSummary)
-def consumption_log_summary(
-    since: date | None = None,
-    until: date | None = None,
-    db: Session = Depends(get_db),
-):
-    """What left the pantry in a window, split by reason and valued at the
-    price snapshotted on each row. Entries with no price are counted but
-    contribute nothing to the value -- same "unpriced is skipped, not free"
-    semantics as stats.py's total_value, so both are lower bounds whenever
-    some entries were never priced."""
-    query = db.query(
-        ConsumptionLog.reason,
-        func.count(ConsumptionLog.id),
-        func.sum(ConsumptionLog.amount * ConsumptionLog.price),
-    )
-    if since is not None:
-        query = query.filter(ConsumptionLog.created_at >= _local_midnight_utc(since))
-    if until is not None:
-        query = query.filter(
-            ConsumptionLog.created_at < _local_midnight_utc(until + timedelta(days=1))
-        )
-    totals = {reason: (count, value or 0.0) for reason, count, value in query.group_by(ConsumptionLog.reason)}
-    used_entries, used_value = totals.get("used", (0, 0.0))
-    spoiled_entries, spoiled_value = totals.get("spoiled", (0, 0.0))
-    return ConsumptionLogSummary(
-        used_entries=used_entries,
-        used_value=used_value,
-        spoiled_entries=spoiled_entries,
-        spoiled_value=spoiled_value,
-    )
 
 
 @router.get("/export.csv")

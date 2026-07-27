@@ -34,9 +34,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _defaultConsumeAmountController;
   late bool _doesNotSpoil;
   int? _selectedLocationId;
-  String? _selectedLocationName;
   String? _imageUrl;
-  bool _loadingLocations = true;
   bool _saving = false;
   bool _refreshingFromOff = false;
   bool _uploadingImage = false;
@@ -83,7 +81,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _imageUrl = p.imageUrl;
     _extraBarcodes = List<String>.from(p.extraBarcodes);
     _newBarcodeController = TextEditingController();
-    _loadLocations();
   }
 
   @override
@@ -99,20 +96,21 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     super.dispose();
   }
 
-  /// The product only carries its default location's *id*, and the field
-  /// below needs a name to prefill -- so the list is still fetched once here,
-  /// and the body waits for it rather than flashing an empty field.
-  Future<void> _loadLocations() async {
-    final locations = await context.read<ApiClient>().listLocations();
-    if (!mounted) return;
-    setState(() {
-      _selectedLocationName = locations
-          .where((location) => location.id == _selectedLocationId)
-          .map((location) => location.name)
-          .firstOrNull;
-      _loadingLocations = false;
-    });
-  }
+  /// Everything both [_save] and [_duplicate] write. Name and image are the
+  /// caller's business: the copy takes a new name and no photo.
+  Map<String, dynamic> _payload() => {
+        'category_id': _categoryId,
+        'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
+        'default_location_id': _selectedLocationId,
+        'default_best_before_days':
+            _doesNotSpoil ? null : int.tryParse(_bestBeforeDaysController.text),
+        'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
+        'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
+        'target_stock_level': double.tryParse(_targetStockLevelController.text),
+        'default_consume_amount': double.tryParse(_defaultConsumeAmountController.text),
+        'does_not_spoil': _doesNotSpoil,
+        'expiring_soon_days': int.tryParse(_expiringSoonDaysController.text),
+      };
 
   /// Creates a second product carrying every default of this one -- unit,
   /// location, shelf lives, thresholds -- under a new name, then opens it for
@@ -134,18 +132,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     setState(() => _saving = true);
     final api = context.read<ApiClient>();
     try {
-      final created = await api.createProduct({
-        'name': name,
-        'category_id': _categoryId,
-        'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
-        'default_location_id': _selectedLocationId,
-        'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
-        'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
-        'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
-        'target_stock_level': double.tryParse(_targetStockLevelController.text),
-        'does_not_spoil': _doesNotSpoil,
-        'expiring_soon_days': int.tryParse(_expiringSoonDaysController.text),
-      });
+      final created = await api.createProduct({'name': name, ..._payload()});
       if (!mounted) return;
       // Replace rather than stack: going "back" from the copy should land on
       // wherever the original was opened from, not on the original's form.
@@ -176,16 +163,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     try {
       await api.updateProduct(widget.product.id, {
         'name': _nameController.text,
-        'category_id': _categoryId,
-        'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
-        'default_location_id': _selectedLocationId,
-        'default_best_before_days': _doesNotSpoil ? null : int.tryParse(_bestBeforeDaysController.text),
-        'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
-        'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
-        'target_stock_level': double.tryParse(_targetStockLevelController.text),
-        'default_consume_amount': double.tryParse(_defaultConsumeAmountController.text),
-        'does_not_spoil': _doesNotSpoil,
-        'expiring_soon_days': int.tryParse(_expiringSoonDaysController.text),
+        ..._payload(),
         'image_url': _imageUrl,
       });
       if (!mounted) return;
@@ -402,201 +380,194 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
             ),
         ],
       ),
-      body: _loadingLocations
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (_imageUrl != null) ...[
+            Center(
+              child: Image.network(
+                context.read<ApiClient>().resolveImageUrl(_imageUrl!),
+                height: 120,
+                errorBuilder: (_, _, _) => const SizedBox(),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (_imageUrl != null) ...[
-                  Center(
-                    child: Image.network(
-                      context.read<ApiClient>().resolveImageUrl(_imageUrl!),
-                      height: 120,
-                      errorBuilder: (_, _, _) => const SizedBox(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: _uploadingImage
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.photo_camera),
-                        tooltip: l10n.takePhotoTooltip,
-                        onPressed: _uploadingImage ? null : () => _pickImage(ImageSource.camera),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.photo_library),
-                        tooltip: l10n.choosePhotoTooltip,
-                        onPressed: _uploadingImage ? null : () => _pickImage(ImageSource.gallery),
-                      ),
-                    ],
-                  ),
+                IconButton(
+                  icon: _uploadingImage
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.photo_camera),
+                  tooltip: l10n.takePhotoTooltip,
+                  onPressed: _uploadingImage ? null : () => _pickImage(ImageSource.camera),
                 ),
-                const SizedBox(height: 12),
-                if (_barcode != null) ...[
-                  Text(l10n.barcodeLabel(_barcode!)),
-                  const SizedBox(height: 12),
-                ],
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.nameLabel),
-                ),
-                const SizedBox(height: 12),
-                Text(l10n.extraBarcodesLabel, style: Theme.of(context).textTheme.labelLarge),
-                Text(l10n.extraBarcodesHint, style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 8),
-                if (_extraBarcodes.isNotEmpty)
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      for (final code in _extraBarcodes)
-                        Chip(
-                          label: Text(code),
-                          onDeleted: _barcodeBusy ? null : () => _removeExtraBarcode(code),
-                          deleteButtonTooltipMessage: l10n.removeBarcodeTooltip,
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _newBarcodeController,
-                        decoration: InputDecoration(labelText: l10n.addBarcodeTooltip),
-                        onSubmitted: (_) {
-                          if (!_barcodeBusy) _addExtraBarcode();
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      tooltip: l10n.addBarcodeTooltip,
-                      onPressed: _barcodeBusy ? null : _addExtraBarcode,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                NamedEntityField<Category>(
-                  key: _categoryFieldKey,
-                  initialName: _categoryName,
-                  label: l10n.categoryLabel,
-                  clearTooltip: l10n.clearCategoryTooltip,
-                  load: (api) => api.listCategories(),
-                  create: (api, name) => api.createCategory(name),
-                  nameOf: (category) => category.name,
-                  errorMessage: (e) => l10n.couldNotAddCategory('$e'),
-                  onChanged: (category) => setState(() {
-                    _categoryId = category?.id;
-                    _categoryName = category?.name;
-                  }),
-                ),
-                const SizedBox(height: 12),
-                QuantityUnitField(
-                  value: _quantityUnit,
-                  label: l10n.quantityUnitLabel,
-                  onChanged: (value) => setState(() => _quantityUnit = value),
-                ),
-                const SizedBox(height: 12),
-                // Same inline-create field as the category above (#338):
-                // a dropdown made the form a dead end whenever the location
-                // you wanted didn't exist yet.
-                NamedEntityField<Location>(
-                  key: _locationFieldKey,
-                  initialName: _selectedLocationName,
-                  label: l10n.defaultLocationLabel,
-                  clearTooltip: l10n.clearLocationTooltip,
-                  load: (api) => api.listLocations(),
-                  create: (api, name) => api.createLocation(name),
-                  nameOf: (location) => location.name,
-                  errorMessage: (e) => l10n.couldNotAddLocation('$e'),
-                  onChanged: (location) => setState(() {
-                    _selectedLocationId = location?.id;
-                    _selectedLocationName = location?.name;
-                  }),
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.doesNotSpoilLabel),
-                  subtitle: Text(l10n.doesNotSpoilHint),
-                  value: _doesNotSpoil,
-                  onChanged: (value) => setState(() => _doesNotSpoil = value),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _expiringSoonDaysController,
-                  decoration: InputDecoration(
-                    labelText: l10n.expiringSoonDaysOverrideLabel,
-                    hintText: l10n.expiringSoonDaysOverrideHint,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _bestBeforeDaysController,
-                  enabled: !_doesNotSpoil,
-                  decoration: InputDecoration(
-                    labelText: l10n.defaultBestBeforeDaysLabel,
-                    hintText: l10n.defaultBestBeforeDaysHint,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _openShelfLifeDaysController,
-                  decoration: InputDecoration(
-                    labelText: l10n.openShelfLifeLabel,
-                    hintText: l10n.openShelfLifeHint,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _lowStockThresholdController,
-                  decoration: InputDecoration(
-                    labelText: l10n.lowStockThresholdLabel,
-                    hintText: l10n.lowStockThresholdHint,
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _targetStockLevelController,
-                  decoration: InputDecoration(
-                    labelText: l10n.targetStockLevelLabel,
-                    hintText: l10n.targetStockLevelHint,
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _defaultConsumeAmountController,
-                  decoration: InputDecoration(
-                    labelText: l10n.defaultConsumeAmountLabel,
-                    hintText: l10n.defaultConsumeAmountHint,
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(l10n.saveButton),
+                IconButton(
+                  icon: const Icon(Icons.photo_library),
+                  tooltip: l10n.choosePhotoTooltip,
+                  onPressed: _uploadingImage ? null : () => _pickImage(ImageSource.gallery),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          if (_barcode != null) ...[
+            Text(l10n.barcodeLabel(_barcode!)),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(labelText: l10n.nameLabel),
+          ),
+          const SizedBox(height: 12),
+          Text(l10n.extraBarcodesLabel, style: Theme.of(context).textTheme.labelLarge),
+          Text(l10n.extraBarcodesHint, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          if (_extraBarcodes.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final code in _extraBarcodes)
+                  Chip(
+                    label: Text(code),
+                    onDeleted: _barcodeBusy ? null : () => _removeExtraBarcode(code),
+                    deleteButtonTooltipMessage: l10n.removeBarcodeTooltip,
+                  ),
+              ],
+            ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newBarcodeController,
+                  decoration: InputDecoration(labelText: l10n.addBarcodeTooltip),
+                  onSubmitted: (_) {
+                    if (!_barcodeBusy) _addExtraBarcode();
+                  },
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: l10n.addBarcodeTooltip,
+                onPressed: _barcodeBusy ? null : _addExtraBarcode,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          NamedEntityField<Category>(
+            key: _categoryFieldKey,
+            initialName: _categoryName,
+            label: l10n.categoryLabel,
+            clearTooltip: l10n.clearCategoryTooltip,
+            load: (api) => api.listCategories(),
+            create: (api, name) => api.createCategory(name),
+            errorMessage: (e) => l10n.couldNotAddCategory('$e'),
+            onChanged: (category) => setState(() {
+              _categoryId = category?.id;
+              _categoryName = category?.name;
+            }),
+          ),
+          const SizedBox(height: 12),
+          QuantityUnitField(
+            value: _quantityUnit,
+            label: l10n.quantityUnitLabel,
+            onChanged: (value) => setState(() => _quantityUnit = value),
+          ),
+          const SizedBox(height: 12),
+          // Same inline-create field as the category above (#338):
+          // a dropdown made the form a dead end whenever the location
+          // you wanted didn't exist yet.
+          NamedEntityField<Location>(
+            key: _locationFieldKey,
+            initialId: _selectedLocationId,
+            label: l10n.defaultLocationLabel,
+            clearTooltip: l10n.clearLocationTooltip,
+            load: (api) => api.listLocations(),
+            create: (api, name) => api.createLocation(name),
+            errorMessage: (e) => l10n.couldNotAddLocation('$e'),
+            onChanged: (location) => setState(() => _selectedLocationId = location?.id),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.doesNotSpoilLabel),
+            subtitle: Text(l10n.doesNotSpoilHint),
+            value: _doesNotSpoil,
+            onChanged: (value) => setState(() => _doesNotSpoil = value),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _expiringSoonDaysController,
+            decoration: InputDecoration(
+              labelText: l10n.expiringSoonDaysOverrideLabel,
+              hintText: l10n.expiringSoonDaysOverrideHint,
+            ),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _bestBeforeDaysController,
+            enabled: !_doesNotSpoil,
+            decoration: InputDecoration(
+              labelText: l10n.defaultBestBeforeDaysLabel,
+              hintText: l10n.defaultBestBeforeDaysHint,
+            ),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _openShelfLifeDaysController,
+            decoration: InputDecoration(
+              labelText: l10n.openShelfLifeLabel,
+              hintText: l10n.openShelfLifeHint,
+            ),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _lowStockThresholdController,
+            decoration: InputDecoration(
+              labelText: l10n.lowStockThresholdLabel,
+              hintText: l10n.lowStockThresholdHint,
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _targetStockLevelController,
+            decoration: InputDecoration(
+              labelText: l10n.targetStockLevelLabel,
+              hintText: l10n.targetStockLevelHint,
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _defaultConsumeAmountController,
+            decoration: InputDecoration(
+              labelText: l10n.defaultConsumeAmountLabel,
+              hintText: l10n.defaultConsumeAmountHint,
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(l10n.saveButton),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -32,15 +32,17 @@ def _renormalize(conn, table: str, column: str) -> None:
         normalized = normalize_barcode(code)
         taken.add(code)
         if normalized != code:
-            updates.append((row_id, code, normalized))
-    for row_id, code, normalized in updates:
+            updates.append((row_id, normalized))
+    for row_id, normalized in updates:
         if normalized in taken:
             continue
         conn.execute(
             sa.text(f"UPDATE {table} SET {column} = :new WHERE id = :id"),
             {"new": normalized, "id": row_id},
         )
-        taken.discard(code)
+        # The code being replaced is never freed for reuse: normalize_barcode
+        # only ever produces 13-digit codes, so no other row can normalize
+        # *to* the 12/8-digit form this one is vacating.
         taken.add(normalized)
 
 

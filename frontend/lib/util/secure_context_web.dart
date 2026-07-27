@@ -9,5 +9,4 @@ import 'dart:html' as html;
 /// `mobile_scanner` reports `unsupported`. That is a property of the origin,
 /// not of the device, and saying "not supported on this device" sends the user
 /// away from the one setting that would fix it (#329).
-bool get cameraBlockedByInsecureOrigin =>
-    html.window.isSecureContext == false && html.window.navigator.mediaDevices == null;
+bool get cameraBlockedByInsecureOrigin => html.window.isSecureContext == false;

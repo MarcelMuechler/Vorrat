@@ -58,7 +58,6 @@ void main() {
           clearTooltip: 'Clear',
           load: (api) => api.listCategories(),
           create: (api, name) => api.createCategory(name),
-          nameOf: (category) => category.name,
           errorMessage: (e) => 'failed: $e',
           onChanged: (c) => reported = c,
         ),
@@ -87,7 +86,6 @@ void main() {
           clearTooltip: 'Clear',
           load: (api) => api.listCategories(),
           create: (api, name) => api.createCategory(name),
-          nameOf: (category) => category.name,
           errorMessage: (e) => 'failed: $e',
           onChanged: (c) => reported = c,
         ),
@@ -116,7 +114,6 @@ void main() {
           clearTooltip: 'Clear',
           load: (api) => api.listCategories(),
           create: (api, name) => api.createCategory(name),
-          nameOf: (category) => category.name,
           errorMessage: (e) => 'failed: $e',
           onChanged: (c) => reported = c,
         ),
@@ -147,7 +144,6 @@ void main() {
                 clearTooltip: 'Clear',
                 load: (api) => api.listCategories(),
                 create: (api, name) => api.createCategory(name),
-                nameOf: (category) => category.name,
                 errorMessage: (e) => 'failed: $e',
                 onChanged: (c) => saved = c,
               ),
@@ -191,7 +187,6 @@ void main() {
           clearTooltip: 'Clear',
           load: (api) => api.listLocations(),
           create: (api, name) => api.createLocation(name),
-          nameOf: (location) => location.name,
           errorMessage: (e) => 'failed: $e',
           onChanged: (l) => reported = l,
         ),
@@ -205,4 +200,58 @@ void main() {
     expect(reported?.name, 'Cellar');
     expect(api.locations.map((l) => l.name), ['Pantry', 'Cellar']);
   });
+
+  testWidgets('initialId prefills the name from the loaded list', (tester) async {
+    final api = FakeApiClient();
+    await tester.pumpWidget(
+      _wrap(
+        api,
+        NamedEntityField<Location>(
+          initialId: 1,
+          label: 'Location',
+          clearTooltip: 'Clear',
+          load: (api) => api.listLocations(),
+          create: (api, name) => api.createLocation(name),
+          errorMessage: (e) => 'failed: $e',
+          onChanged: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pantry'), findsOneWidget);
+  });
+
+  testWidgets('an initialId field whose list failed to load reports nothing on resolve', (tester) async {
+    // The form no longer blocks on this list, so a blank field can mean "the
+    // load failed" -- resolving it must not clear the selection the owning
+    // record already has.
+    final api = _FailingApiClient();
+    var reportCount = 0;
+    final key = GlobalKey<NamedEntityFieldState<Location>>();
+    await tester.pumpWidget(
+      _wrap(
+        api,
+        NamedEntityField<Location>(
+          key: key,
+          initialId: 1,
+          label: 'Location',
+          clearTooltip: 'Clear',
+          load: (api) => api.listLocations(),
+          create: (api, name) => api.createLocation(name),
+          errorMessage: (e) => 'failed: $e',
+          onChanged: (_) => reportCount++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(await key.currentState!.resolve(), isNull);
+    expect(reportCount, 0);
+  });
+}
+
+class _FailingApiClient extends FakeApiClient {
+  @override
+  Future<List<Location>> listLocations() async => throw Exception('offline');
 }
