@@ -19,7 +19,11 @@ from app.config import settings
 from app.db import Base
 
 target_metadata = Base.metadata
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# `db_url` lets a programmatic caller point a migration run at some other
+# file than the configured live database -- backup.py's restore migrates the
+# *uploaded* db before swapping it in (#326), so a failed migration leaves the
+# live one untouched.
+config.set_main_option("sqlalchemy.url", config.attributes.get("db_url") or settings.database_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

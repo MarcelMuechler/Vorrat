@@ -2,7 +2,11 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
@@ -22,7 +26,21 @@ _SQLITE_HEADER = b"SQLite format 3\x00"
 # foreign database (e.g. a fresh `sqlite3 x.db "VACUUM"`) passes the magic
 # header and PRAGMA schema_version checks below but has neither of these,
 # and would otherwise silently wipe the live DB via os.replace.
-_REQUIRED_TABLES = ("products", "stock_entries")
+_REQUIRED_TABLES = ("products", "stock_entries", "alembic_version")
+
+# backend/alembic, from backend/app/routers/backup.py -- the same directory
+# the container's start-up `alembic upgrade head` uses.
+_ALEMBIC_DIR = Path(__file__).resolve().parents[2] / "alembic"
+
+
+def _alembic_config(db_url: str) -> Config:
+    """A Config with no .ini file on purpose: env.py only calls
+    `fileConfig(config.config_file_name)` when there is one, and that would
+    reconfigure (and by default disable) the running server's loggers."""
+    config = Config()
+    config.set_main_option("script_location", str(_ALEMBIC_DIR))
+    config.attributes["db_url"] = db_url
+    return config
 
 
 def _db_path() -> str:
@@ -61,9 +79,12 @@ def download_backup():
 
 @router.post("/restore")
 def restore_backup(file: UploadFile = File(...)):
-    """Replaces the live DB file with the upload. Restoring a backup taken
-    from an older schema version (before a later Alembic migration) is the
-    caller's responsibility -- this endpoint does not attempt to migrate it.
+    """Replaces the live DB file with the upload. A backup taken from an
+    older schema version is migrated up to head *before* the swap (#326) --
+    migrations otherwise only run at container start, so an old backup
+    restored mid-process would leave the running code querying columns that
+    don't exist yet. Migrating the upload rather than the live file means a
+    migration that fails leaves the live database untouched.
 
     A plain `def`, not `async def`, like download_backup above -- everything
     this does (file copy, sqlite3 connect, engine.dispose(), os.replace) is
@@ -102,6 +123,10 @@ def restore_backup(file: UploadFile = File(...)):
                         "SELECT name FROM sqlite_master WHERE type = 'table'"
                     )
                 }
+                uploaded_revision = None
+                if "alembic_version" in existing_tables:
+                    row = check.execute("SELECT version_num FROM alembic_version").fetchone()
+                    uploaded_revision = row[0] if row else None
             finally:
                 check.close()
         except sqlite3.DatabaseError:
@@ -119,6 +144,26 @@ def restore_backup(file: UploadFile = File(...)):
                     f"(missing expected table(s): {', '.join(missing_tables)})"
                 ),
             )
+
+        config = _alembic_config(f"sqlite:///{tmp_path}")
+        script = ScriptDirectory.from_config(config)
+        head = script.get_current_head()
+        if uploaded_revision != head:
+            # walk_revisions() only yields head and its ancestors, so
+            # membership is exactly "this app knows how to upgrade it".
+            # Anything else -- a revision from a newer Vorrat (no downgrade
+            # path exists) or from an unrelated history -- is rejected rather
+            # than swapped in for the running code to choke on.
+            if uploaded_revision not in {rev.revision for rev in script.walk_revisions()}:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Backup was taken at schema revision {uploaded_revision or 'unknown'}, "
+                        f"which this version of Vorrat doesn't know (it expects {head}). "
+                        "Restore it on the version it came from, or update Vorrat first."
+                    ),
+                )
+            command.upgrade(config, "head")
 
         # Drop the pool's open connections to the old file first -- otherwise
         # the swap below can leave a writer holding a handle to the replaced
