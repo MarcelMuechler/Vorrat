@@ -45,6 +45,10 @@ class Product(Base):
     # always reports "ok" for this product's entries regardless of
     # best_before_date, instead of forcing users to pick a fake far-future
     # date just to silence expiry tracking.
+    # Opt-in per-product default for how much one scan in Consume/Discard
+    # mode takes (#332). Null keeps the whole-batch behaviour, which is right
+    # for a yoghurt pot and wrong for a 1 kg bag of flour.
+    default_consume_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     does_not_spoil: Mapped[bool] = mapped_column(Boolean, server_default="0", default=False)
     # Per-product override (#292) for the global Settings.expiring_soon_days
     # threshold -- e.g. fresh fish wants a tighter window than the household

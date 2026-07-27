@@ -25,10 +25,15 @@ class FakeApiClient extends ApiClient {
   // connection to the backend itself.
   bool offUnavailable = false;
 
+  Product? product;
+
   @override
   Future<BarcodeLookupResult> lookupBarcode(String code) async {
     if (offUnavailable) throw ApiException(503, '{"source": "none", "reason": "off_unreachable"}');
-    return BarcodeLookupResult(source: 'local', localProduct: Product(id: 1, name: 'Jam', barcode: code));
+    return BarcodeLookupResult(
+      source: 'local',
+      localProduct: product ?? Product(id: 1, name: 'Jam', barcode: code),
+    );
   }
 
   @override
@@ -189,6 +194,51 @@ void main() {
 
     expect(api.consumeCalls, [
       {'id': 1, 'amount': 5.0, 'reason': 'spoiled'},
+    ]);
+  });
+
+  // #332: whole-batch consume is right for a yoghurt pot and wrong for a
+  // 1 kg bag of flour -- one scan used to make the whole bag vanish.
+  testWidgets('Use mode takes the product default amount when one is set', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    api.product = Product(id: 1, name: 'Flour', quantityUnit: 'kg', defaultConsumeAmount: 0.2);
+    api.batches = [
+      StockItem(id: 1, productId: 1, amount: 1, productName: 'Flour', status: 'ok'),
+    ];
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Use'));
+    await tester.pumpAndSettle();
+
+    await _enterBarcode(tester, '1234567890123');
+
+    expect(api.consumeCalls, [
+      {'id': 1, 'amount': 0.2, 'reason': 'used'},
+    ]);
+    // The snackbar names what it took, so a wrong default is visible now
+    // rather than a week later.
+    expect(find.textContaining('0.2 kg'), findsOneWidget);
+  });
+
+  testWidgets('a default larger than the batch is capped at what is there', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    api.product = Product(id: 1, name: 'Flour', quantityUnit: 'kg', defaultConsumeAmount: 5);
+    api.batches = [
+      StockItem(id: 1, productId: 1, amount: 1, productName: 'Flour', status: 'ok'),
+    ];
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Use'));
+    await tester.pumpAndSettle();
+
+    await _enterBarcode(tester, '1234567890123');
+
+    expect(api.consumeCalls, [
+      {'id': 1, 'amount': 1.0, 'reason': 'used'},
     ]);
   });
 

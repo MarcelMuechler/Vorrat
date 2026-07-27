@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
 import '../state/stock_provider.dart';
+import '../util/format.dart';
 import '../util/secure_context.dart';
 import '../widgets/add_batch_sheet.dart';
 import 'pending_scans_screen.dart';
@@ -54,6 +55,20 @@ bool isPlausibleBarcode(String value, [BarcodeFormat? format]) {
       return format == null ? RegExp(r'^\d{6,14}$').hasMatch(trimmed) : true;
   }
 }
+
+/// How much one scan takes in Consume/Discard mode: the product's opt-in
+/// default (#332), capped at what's actually in the batch, or the whole
+/// batch when no default is set. Prompting instead would defeat the
+/// no-prompt mode (#69); a measured product just needs the amount recorded
+/// once, on the product.
+double _scanAmount(Product product, StockItem batch) {
+  final preferred = product.defaultConsumeAmount;
+  return preferred == null ? batch.amount : (preferred < batch.amount ? preferred : batch.amount);
+}
+
+/// "0.25 l" -- in the snackbar so a wrong default is visible immediately
+/// rather than discovered a week later.
+String _amountLabel(Product product, double amount) => '${formatAmount(amount)} ${product.quantityUnit}';
 
 class _ScanScreenState extends State<ScanScreen> {
   bool _handling = false;
@@ -244,17 +259,21 @@ class _ScanScreenState extends State<ScanScreen> {
         // is the soonest-expiring one, opened or not.
         final opened = batches.where((b) => b.openedAt != null);
         final toConsume = opened.isNotEmpty ? opened.first : batch;
-        await stock.consume(toConsume.id, toConsume.amount, reason: 'used');
+        final usedAmount = _scanAmount(product, toConsume);
+        await stock.consume(toConsume.id, usedAmount, reason: 'used');
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.scannedUsed(product.name))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.scannedUsedAmount(product.name, _amountLabel(product, usedAmount)))),
+        );
       case ScanMode.discard:
-        await stock.consume(batch.id, batch.amount, reason: 'spoiled');
+        final discardedAmount = _scanAmount(product, batch);
+        await stock.consume(batch.id, discardedAmount, reason: 'spoiled');
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.scannedDiscarded(product.name))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.scannedDiscardedAmount(product.name, _amountLabel(product, discardedAmount))),
+          ),
+        );
     }
   }
 

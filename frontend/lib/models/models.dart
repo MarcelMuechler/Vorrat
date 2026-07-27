@@ -35,6 +35,10 @@ class Product {
   final int? defaultOpenShelfLifeDays;
   final double? lowStockThreshold;
   final double? targetStockLevel;
+  // #332: how much one scan in Consume/Discard mode takes. Null keeps the
+  // whole-batch behaviour, which is right for a yoghurt pot and wrong for a
+  // 1 kg bag of flour.
+  final double? defaultConsumeAmount;
   // #292: shelf-stable goods (rice, canned food, spices) opt out of
   // expiry-based status entirely -- stock.py's _status always reports "ok"
   // for this product's entries regardless of best_before_date.
@@ -58,6 +62,7 @@ class Product {
     this.defaultOpenShelfLifeDays,
     this.lowStockThreshold,
     this.targetStockLevel,
+    this.defaultConsumeAmount,
     this.doesNotSpoil = false,
     this.expiringSoonDays,
   });
@@ -76,6 +81,7 @@ class Product {
         defaultOpenShelfLifeDays: json['default_open_shelf_life_days'],
         lowStockThreshold: (json['low_stock_threshold'] as num?)?.toDouble(),
         targetStockLevel: (json['target_stock_level'] as num?)?.toDouble(),
+        defaultConsumeAmount: (json['default_consume_amount'] as num?)?.toDouble(),
         doesNotSpoil: json['does_not_spoil'] as bool? ?? false,
         expiringSoonDays: json['expiring_soon_days'],
       );

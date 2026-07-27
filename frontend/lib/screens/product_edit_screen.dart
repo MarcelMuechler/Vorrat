@@ -30,6 +30,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _lowStockThresholdController;
   late final TextEditingController _targetStockLevelController;
   late final TextEditingController _expiringSoonDaysController;
+  late final TextEditingController _defaultConsumeAmountController;
   late bool _doesNotSpoil;
   int? _selectedLocationId;
   String? _selectedLocationName;
@@ -73,6 +74,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _expiringSoonDaysController = TextEditingController(
       text: p.expiringSoonDays == null ? '' : '${p.expiringSoonDays}',
     );
+    _defaultConsumeAmountController = TextEditingController(
+      text: p.defaultConsumeAmount == null ? '' : '${p.defaultConsumeAmount}',
+    );
     _doesNotSpoil = p.doesNotSpoil;
     _selectedLocationId = p.defaultLocationId;
     _imageUrl = p.imageUrl;
@@ -89,6 +93,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _lowStockThresholdController.dispose();
     _targetStockLevelController.dispose();
     _expiringSoonDaysController.dispose();
+    _defaultConsumeAmountController.dispose();
     _newBarcodeController.dispose();
     super.dispose();
   }
@@ -128,6 +133,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
         'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
         'target_stock_level': double.tryParse(_targetStockLevelController.text),
+        'default_consume_amount': double.tryParse(_defaultConsumeAmountController.text),
         'does_not_spoil': _doesNotSpoil,
         'expiring_soon_days': int.tryParse(_expiringSoonDaysController.text),
         'image_url': _imageUrl,
@@ -515,6 +521,15 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.targetStockLevelLabel,
                     hintText: l10n.targetStockLevelHint,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _defaultConsumeAmountController,
+                  decoration: InputDecoration(
+                    labelText: l10n.defaultConsumeAmountLabel,
+                    hintText: l10n.defaultConsumeAmountHint,
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
