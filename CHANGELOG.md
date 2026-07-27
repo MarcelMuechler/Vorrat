@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/MarcelMuechler/Vorrat/compare/v1.1.0...v1.2.0) (2026-07-27)
+
+
+### Features
+
+* add a currency setting and format prices with it ([73bb3ae](https://github.com/MarcelMuechler/Vorrat/commit/73bb3ae704ecb29b3ae189bcfff2958d656e1e20)), closes [#324](https://github.com/MarcelMuechler/Vorrat/issues/324)
+* **backend:** surface the value of what left stock ([b4da7fd](https://github.com/MarcelMuechler/Vorrat/commit/b4da7fd92f77ee054f929c267f95b7fd92b319b9)), closes [#321](https://github.com/MarcelMuechler/Vorrat/issues/321)
+* consume a per-product default amount instead of the whole batch ([f3ac6fb](https://github.com/MarcelMuechler/Vorrat/commit/f3ac6fbcea00f1ca5d90fc553b8d93468f4fca41)), closes [#332](https://github.com/MarcelMuechler/Vorrat/issues/332)
+* **frontend:** add an in-app consumption/waste history screen ([5dd59aa](https://github.com/MarcelMuechler/Vorrat/commit/5dd59aa1e2612d4fd23228d71994072cde442f31)), closes [#322](https://github.com/MarcelMuechler/Vorrat/issues/322)
+* **frontend:** consume an already-opened batch before a sealed one ([93777e2](https://github.com/MarcelMuechler/Vorrat/commit/93777e22aecb1557c233c676fd14aded2f0cb89e)), closes [#331](https://github.com/MarcelMuechler/Vorrat/issues/331)
+* **frontend:** duplicate a product to reuse its defaults ([27183f8](https://github.com/MarcelMuechler/Vorrat/commit/27183f8c209c172482801ebb8e955d541ba876bd)), closes [#334](https://github.com/MarcelMuechler/Vorrat/issues/334)
+* **frontend:** let a new location be typed straight into the product form ([478162b](https://github.com/MarcelMuechler/Vorrat/commit/478162bc0cae3def9e68a18ec43f7f80b32dd55b)), closes [#338](https://github.com/MarcelMuechler/Vorrat/issues/338)
+* **frontend:** offer to add a ticked-off shopping list item to stock ([29e4abd](https://github.com/MarcelMuechler/Vorrat/commit/29e4abdbb5fbbc698a561126d8c4e15e4a788789)), closes [#323](https://github.com/MarcelMuechler/Vorrat/issues/323)
+* merge a duplicate product into another ([9a2ad19](https://github.com/MarcelMuechler/Vorrat/commit/9a2ad1938b2a679555283523dbbca4c3ed467090)), closes [#333](https://github.com/MarcelMuechler/Vorrat/issues/333)
+
 ## [1.1.0](https://github.com/MarcelMuechler/Vorrat/compare/v1.0.0...v1.1.0) (2026-07-27)
 
 
