@@ -348,6 +348,13 @@ class ApiClient {
     await _post('/api/stock', payload);
   }
 
+  /// Partial update of one batch. The alternative -- delete and re-add --
+  /// writes a `spoiled` consumption-log row, so correcting a typo showed up
+  /// as food waste that never happened (#319).
+  Future<void> updateStock(int id, Map<String, dynamic> payload) async {
+    await _patch('/api/stock/$id', payload);
+  }
+
   Future<void> deleteStock(int id) async {
     await _delete('/api/stock/$id');
   }

@@ -219,6 +219,7 @@
     "placeholders": { "error": { "type": "String" } }
   },
   "editProductTitle": "Edit product",
+  "editBatchTitle": "Edit batch",
   "refreshFromOffTooltip": "Refresh from Open Food Facts",
   "generateQrLabelTooltip": "Generate QR label",
   "showQrLabelTooltip": "Show QR label",

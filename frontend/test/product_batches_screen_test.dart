@@ -13,6 +13,7 @@ class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
   bool opened = false;
   bool addStockCalled = false;
+  Map<String, dynamic>? updatedStock;
 
   @override
   Future<List<StockItem>> listStock({
@@ -45,6 +46,11 @@ class FakeApiClient extends ApiClient {
   @override
   Future<void> addStock(Map<String, dynamic> payload) async {
     addStockCalled = true;
+  }
+
+  @override
+  Future<void> updateStock(int id, Map<String, dynamic> payload) async {
+    updatedStock = {'id': id, ...payload};
   }
 }
 
@@ -224,5 +230,38 @@ void main() {
     );
 
     semanticsHandle.dispose();
+  });
+
+  // #319: correcting a batch used to mean delete-and-re-add, and delete
+  // writes a "spoiled" consumption-log row -- so a typo fix showed up as
+  // food waste. The batch tile's Edit action reuses the add sheet, prefilled,
+  // and PATCHes the entry instead.
+  testWidgets('editing a batch patches it instead of deleting and re-adding', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    await tester.pumpWidget(_app(api, settings));
+    await tester.pumpAndSettle();
+
+    // Expand the batch row (the banner above shows the same amount, so the
+    // row's own "2" is the last match), then edit it.
+    await tester.tap(find.text('2').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+
+    // Prefilled from the batch, not the "1" a fresh add would start with.
+    final amountField = find.descendant(of: find.byType(AddBatchSheet), matching: find.byType(TextField)).first;
+    expect(tester.widget<TextField>(amountField).controller!.text, '2');
+
+    await tester.enterText(amountField, '6');
+    await tester.tap(
+      find.descendant(of: find.byType(AddBatchSheet), matching: find.widgetWithText(FilledButton, 'Save')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(api.updatedStock, isNotNull);
+    expect(api.updatedStock!['id'], 1);
+    expect(api.updatedStock!['amount'], 6);
+    expect(api.addStockCalled, isFalse);
   });
 }

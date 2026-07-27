@@ -16,17 +16,24 @@ import '../util/format.dart';
 class AddBatchSheet extends StatefulWidget {
   final Product product;
 
-  const AddBatchSheet({super.key, required this.product});
+  /// When set, the sheet edits this existing batch (PATCH) instead of adding
+  /// a new one -- same fields, prefilled. Without it, fixing a mistyped date
+  /// or amount meant delete-and-re-add, and delete writes a `spoiled`
+  /// consumption-log row, so data-entry corrections showed up as food waste
+  /// that never happened (#319).
+  final StockItem? entry;
 
-  /// Returns true once a batch was actually added, or null if the sheet was
-  /// cancelled/dismissed without saving.
-  static Future<bool?> show(BuildContext context, Product product) {
+  const AddBatchSheet({super.key, required this.product, this.entry});
+
+  /// Returns true once a batch was actually added/saved, or null if the sheet
+  /// was cancelled/dismissed without saving.
+  static Future<bool?> show(BuildContext context, Product product, {StockItem? entry}) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: AddBatchSheet(product: product),
+        child: AddBatchSheet(product: product, entry: entry),
       ),
     );
   }
@@ -47,12 +54,17 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController(text: '1');
-    _priceController = TextEditingController();
-    _selectedLocationId = widget.product.defaultLocationId;
-    final defaultDays = widget.product.defaultBestBeforeDays;
-    if (defaultDays != null && !widget.product.doesNotSpoil) {
-      _bestBeforeDate = DateTime.now().add(Duration(days: defaultDays));
+    final entry = widget.entry;
+    _amountController = TextEditingController(text: entry == null ? '1' : formatAmount(entry.amount));
+    _priceController = TextEditingController(text: entry?.price == null ? '' : '${entry!.price}');
+    _selectedLocationId = entry?.locationId ?? widget.product.defaultLocationId;
+    if (entry != null) {
+      _bestBeforeDate = entry.bestBeforeDate;
+    } else {
+      final defaultDays = widget.product.defaultBestBeforeDays;
+      if (defaultDays != null && !widget.product.doesNotSpoil) {
+        _bestBeforeDate = DateTime.now().add(Duration(days: defaultDays));
+      }
     }
     _loadLocations();
   }
@@ -111,15 +123,20 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
     final price = double.tryParse(_priceController.text);
     setState(() => _saving = true);
     final api = context.read<ApiClient>();
+    final entry = widget.entry;
     try {
-      await api.addStock({
-        'product_id': widget.product.id,
+      final payload = {
         'location_id': _selectedLocationId,
         'amount': amount,
         'best_before_date':
             widget.product.doesNotSpoil ? null : _bestBeforeDate?.toIso8601String().split('T').first,
         'price': price,
-      });
+      };
+      if (entry == null) {
+        await api.addStock({'product_id': widget.product.id, ...payload});
+      } else {
+        await api.updateStock(entry.id, payload);
+      }
       if (!mounted) return;
       await context.read<StockProvider>().refresh();
       if (!mounted) return;
@@ -264,7 +281,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(l10n.addButton),
+                        : Text(widget.entry == null ? l10n.addButton : l10n.saveButton),
                   ),
                 ),
               ],
