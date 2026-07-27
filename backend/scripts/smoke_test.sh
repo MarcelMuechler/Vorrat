@@ -90,13 +90,11 @@ case "$DISPOSITION" in
   *) fail "expected a stock.csv attachment disposition, got '$DISPOSITION'" ;;
 esac
 
-echo "== backup: download a snapshot (expect a valid SQLite file, #212) =="
-BACKUP_FILE=$(mktemp /tmp/vorrat-smoke-backup.XXXXXX.db)
+echo "== backup: download a snapshot (expect a zip holding vorrat.db, #212/#325) =="
+BACKUP_FILE=$(mktemp /tmp/vorrat-smoke-backup.XXXXXX.zip)
 curl -sf -o "$BACKUP_FILE" "$BASE/api/backup"
-# grep -a (not a bash command-substitution capture) so the binary content's
-# null bytes don't trip bash's "ignored null byte in input" warning.
-head -c 16 "$BACKUP_FILE" | grep -aq "^SQLite format 3" \
-  || fail "downloaded backup is not a valid SQLite file"
+python3 -c "import sys, zipfile; sys.exit(0 if 'vorrat.db' in zipfile.ZipFile(sys.argv[1]).namelist() else 1)" "$BACKUP_FILE" \
+  || fail "downloaded backup is not a zip containing vorrat.db"
 
 echo "== backup: round trip -- data created after the snapshot disappears once it's restored =="
 MARKER_ID=$(curl -sf -X POST "$BASE/api/locations" \

@@ -23,7 +23,8 @@ Self-hosted household stock/inventory management — a Grocy alternative.
 - Shopping list, with a one-tap "add low stock" shortcut
 - Categories and locations management
 - CSV import/export of stock
-- In-app SQLite backup/restore from Settings
+- In-app backup/restore from Settings — a zip of the database plus the uploaded product
+  photos; restoring an older backup migrates it forward
 - Deployable as a Home Assistant add-on (with a `/api/stats` REST sensor for
   automations), or standalone via Docker
 
