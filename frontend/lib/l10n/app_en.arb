@@ -278,6 +278,19 @@
 
   "deleteProductTitle": "Delete product?",
   "deleteProductConfirm": "This deletes \"{name}\". Products still in stock can't be deleted.",
+  "mergeProductAction": "Merge into…",
+  "mergeProductPickTitle": "Merge \"{name}\" into which product?",
+  "@mergeProductPickTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "mergeProductConfirm": "Moves all stock, history and barcodes of \"{from}\" to \"{into}\", then deletes \"{from}\".",
+  "@mergeProductConfirm": {
+    "placeholders": { "from": { "type": "String" }, "into": { "type": "String" } }
+  },
+  "couldNotMergeProduct": "Could not merge: {error}",
+  "@couldNotMergeProduct": {
+    "placeholders": { "error": { "type": "String" } }
+  },
   "@deleteProductConfirm": {
     "placeholders": { "name": { "type": "String" } }
   },

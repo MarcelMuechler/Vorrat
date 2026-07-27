@@ -89,6 +89,12 @@ class ProductRead(BaseModel):
     created_at: datetime
 
 
+class ProductMerge(BaseModel):
+    """Body for POST /api/products/{id}/merge -- the product being kept."""
+
+    into_product_id: int
+
+
 class ProductBarcodeCreate(BaseModel):
     code: str = Field(min_length=1)
 

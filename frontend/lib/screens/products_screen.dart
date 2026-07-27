@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../state/stock_provider.dart';
 import '../widgets/refreshable_list.dart';
 import 'product_batches_screen.dart';
 import 'product_edit_screen.dart';
@@ -92,6 +93,54 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteProduct('$e'))));
+      }
+    }
+  }
+
+  /// Folds one product into another (#333). Until this existed there was no
+  /// way back from a duplicate: delete_product refuses while stock exists, so
+  /// the only route was deleting every batch by hand -- which logs waste that
+  /// never happened -- and re-entering it against the other product.
+  Future<void> _merge(Product product) async {
+    final l10n = AppLocalizations.of(context)!;
+    final candidates = _products.where((p) => p.id != product.id).toList();
+    if (candidates.isEmpty) return;
+    final target = await showDialog<Product>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.mergeProductPickTitle(product.name)),
+        children: [
+          for (final candidate in candidates)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, candidate),
+              child: Text(candidate.name),
+            ),
+        ],
+      ),
+    );
+    if (target == null || !mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.mergeProductAction),
+        content: Text(l10n.mergeProductConfirm(product.name, target.name)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancelButton)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.mergeProductAction)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await context.read<ApiClient>().mergeProduct(product.id, target.id);
+      await _refresh();
+      // Stock rows moved between products -- anything already loaded is stale.
+      if (mounted) await context.read<StockProvider>().refresh();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotMergeProduct('$e'))));
       }
     }
   }
@@ -202,10 +251,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: l10n.deleteButton,
-                      onPressed: () => _delete(product),
+                    // An overflow rather than a third icon: merging is rare
+                    // enough not to earn a permanent slot, and the row is
+                    // already tight on a phone.
+                    PopupMenuButton<void Function()>(
+                      onSelected: (action) => action(),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: () => _merge(product),
+                          child: Text(l10n.mergeProductAction),
+                        ),
+                        PopupMenuItem(
+                          value: () => _delete(product),
+                          child: Text(l10n.deleteButton),
+                        ),
+                      ],
                     ),
                   ],
                 ),
