@@ -127,6 +127,7 @@
   "duplicateProductCreateNew": "Neu anlegen",
   "duplicateProductUseExisting": "Vorhandenes verwenden",
   "addToStockTitle": "Zum Bestand hinzufügen",
+  "boughtMessage": "\"{name}\" gekauft.",
   "offReviewHint": "Von Open Food Facts — vor dem Speichern prüfen.",
   "noBestBeforeDate": "Kein Mindesthaltbarkeitsdatum",
   "bestBeforeLabel": "Mindestens haltbar bis: {date}",

@@ -23,17 +23,26 @@ class AddBatchSheet extends StatefulWidget {
   /// that never happened (#319).
   final StockItem? entry;
 
-  const AddBatchSheet({super.key, required this.product, this.entry});
+  /// Prefills the amount when the caller already knows it -- e.g. ticking a
+  /// shopping-list item off carries the amount that was on the list (#323).
+  final double? initialAmount;
+
+  const AddBatchSheet({super.key, required this.product, this.entry, this.initialAmount});
 
   /// Returns true once a batch was actually added/saved, or null if the sheet
   /// was cancelled/dismissed without saving.
-  static Future<bool?> show(BuildContext context, Product product, {StockItem? entry}) {
+  static Future<bool?> show(
+    BuildContext context,
+    Product product, {
+    StockItem? entry,
+    double? initialAmount,
+  }) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: AddBatchSheet(product: product, entry: entry),
+        child: AddBatchSheet(product: product, entry: entry, initialAmount: initialAmount),
       ),
     );
   }
@@ -55,7 +64,9 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
   void initState() {
     super.initState();
     final entry = widget.entry;
-    _amountController = TextEditingController(text: entry == null ? '1' : formatAmount(entry.amount));
+    _amountController = TextEditingController(
+      text: formatAmount(entry?.amount ?? widget.initialAmount ?? 1),
+    );
     _priceController = TextEditingController(text: entry?.price == null ? '' : '${entry!.price}');
     _selectedLocationId = entry?.locationId ?? widget.product.defaultLocationId;
     if (entry != null) {

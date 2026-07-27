@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../util/format.dart';
 import '../state/stock_provider.dart';
 import '../util/status.dart';
+import '../widgets/add_batch_sheet.dart';
 import '../widgets/edit_shopping_list_item_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/undo_snackbar.dart';
@@ -104,11 +105,46 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     try {
       await context.read<ApiClient>().updateShoppingListItem(item.id, {'done': !item.done});
       await _refresh();
+      // Ticking is also how people mark "not available at the shop", so this
+      // offers rather than writes (#323). Free-text items have no product to
+      // stock, so they keep today's silent behaviour.
+      if (mounted && !item.done && item.productId != null) _offerAddToStock(item);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.couldNotUpdateShoppingListItem('$e'))));
+      }
+    }
+  }
+
+  void _offerAddToStock(ShoppingListItem item) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.boughtMessage(item.name)),
+        action: SnackBarAction(label: l10n.addToStockTitle, onPressed: () => _addToStock(item)),
+      ),
+    );
+  }
+
+  /// Opens the same sheet the Scan tab uses, prefilled from what's already
+  /// known: the amount off the list, and (via the sheet itself) the product's
+  /// default location and best-before days. Price is left empty on purpose --
+  /// standing at the till with the receipt is the one moment anyone would
+  /// realistically fill it in.
+  Future<void> _addToStock(ShoppingListItem item) async {
+    final l10n = AppLocalizations.of(context)!;
+    final api = context.read<ApiClient>();
+    try {
+      final product = await api.getProduct(item.productId!);
+      if (!mounted) return;
+      await AddBatchSheet.show(context, product, initialAmount: item.amount);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
       }
     }
   }
