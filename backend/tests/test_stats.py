@@ -43,6 +43,23 @@ def test_stats_counts_expired_and_expiring_soon(client):
     assert body["earliest_expiry"] == (date.today() - timedelta(days=1)).isoformat()
 
 
+def test_stats_earliest_expiry_skips_does_not_spoil(client):
+    canned = client.post(
+        "/api/products", json={"name": "Tomatoes", "does_not_spoil": True}
+    ).json()
+    _add_entry(client, canned["id"], best_before_date=date.today() - timedelta(days=1))
+
+    body = client.get("/api/stats").json()
+    assert body["expired"] == 0
+    assert body["earliest_expiry"] is None
+
+    perishable = _add_product(client)
+    _add_entry(client, perishable["id"], best_before_date=date.today() + timedelta(days=5))
+
+    body = client.get("/api/stats").json()
+    assert body["earliest_expiry"] == (date.today() + timedelta(days=5)).isoformat()
+
+
 def test_stats_low_stock_products_matches_threshold(client):
     product = client.post(
         "/api/products", json={"name": "Flour", "low_stock_threshold": 2}

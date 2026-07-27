@@ -56,7 +56,14 @@ def get_stats(db: Session = Depends(get_db)):
             expired += 1
         elif status == "expiring_soon":
             expiring_soon += 1
-        if expiry is not None and (earliest_expiry is None or expiry < earliest_expiry):
+        # does_not_spoil products keep whatever date is printed on the pack but
+        # never count as expiring, so they must not drive earliest_expiry either
+        # -- otherwise the HA sensor reports a date the UI shows as green (#320).
+        if (
+            expiry is not None
+            and not entry.product.does_not_spoil
+            and (earliest_expiry is None or expiry < earliest_expiry)
+        ):
             earliest_expiry = expiry
 
     low_stock_products = low_stock_products_query(db).count()
