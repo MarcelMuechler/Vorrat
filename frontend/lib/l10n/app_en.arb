@@ -227,6 +227,11 @@
     "placeholders": { "error": { "type": "String" } }
   },
   "editProductTitle": "Edit product",
+  "duplicateProductActionTitle": "Duplicate",
+  "duplicateProductCopyName": "{name} (copy)",
+  "@duplicateProductCopyName": {
+    "placeholders": { "name": { "type": "String" } }
+  },
   "editBatchTitle": "Edit batch",
   "refreshFromOffTooltip": "Refresh from Open Food Facts",
   "generateQrLabelTooltip": "Generate QR label",

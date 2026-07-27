@@ -7,6 +7,7 @@ import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../widgets/named_entity_field.dart';
+import '../widgets/prompt_validated.dart';
 import '../widgets/quantity_unit_field.dart';
 
 class ProductEditScreen extends StatefulWidget {
@@ -106,6 +107,55 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
           .firstOrNull;
       _loadingLocations = false;
     });
+  }
+
+  /// Creates a second product carrying every default of this one -- unit,
+  /// location, shelf lives, thresholds -- under a new name, then opens it for
+  /// editing (#334). Ten sorts of yoghurt otherwise means typing the same
+  /// nine fields ten times. Name, barcode and photo are deliberately not
+  /// copied: those are what actually differ between the copies.
+  Future<void> _duplicate() async {
+    final l10n = AppLocalizations.of(context)!;
+    final name = await promptValidated<String>(
+      context,
+      title: l10n.duplicateProductActionTitle,
+      actionLabel: l10n.duplicateProductActionTitle,
+      initialText: l10n.duplicateProductCopyName(_nameController.text),
+      labelText: l10n.nameLabel,
+      parse: (text) => text.trim().isEmpty ? null : text.trim(),
+      invalidMessage: l10n.nameRequired,
+    );
+    if (name == null || !mounted) return;
+    setState(() => _saving = true);
+    final api = context.read<ApiClient>();
+    try {
+      final created = await api.createProduct({
+        'name': name,
+        'category_id': _categoryId,
+        'quantity_unit': _quantityUnit.isEmpty ? 'pcs' : _quantityUnit,
+        'default_location_id': _selectedLocationId,
+        'default_best_before_days': int.tryParse(_bestBeforeDaysController.text),
+        'default_open_shelf_life_days': int.tryParse(_openShelfLifeDaysController.text),
+        'low_stock_threshold': double.tryParse(_lowStockThresholdController.text),
+        'target_stock_level': double.tryParse(_targetStockLevelController.text),
+        'does_not_spoil': _doesNotSpoil,
+        'expiring_soon_days': int.tryParse(_expiringSoonDaysController.text),
+      });
+      if (!mounted) return;
+      // Replace rather than stack: going "back" from the copy should land on
+      // wherever the original was opened from, not on the original's form.
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => ProductEditScreen(product: created)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _save() async {
@@ -322,6 +372,11 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       appBar: AppBar(
         title: Text(l10n.editProductTitle),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.copy_all_outlined),
+            tooltip: l10n.duplicateProductActionTitle,
+            onPressed: _saving ? null : _duplicate,
+          ),
           IconButton(
             icon: _generatingQrLabel
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))

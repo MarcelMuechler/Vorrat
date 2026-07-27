@@ -134,6 +134,8 @@
   "fetchedFromOff": "Von Open Food Facts abgerufen — prüfen und dann speichern.",
   "couldNotRefresh": "Aktualisieren fehlgeschlagen: {error}",
   "editProductTitle": "Produkt bearbeiten",
+  "duplicateProductActionTitle": "Duplizieren",
+  "duplicateProductCopyName": "{name} (Kopie)",
   "editBatchTitle": "Charge bearbeiten",
   "refreshFromOffTooltip": "Von Open Food Facts aktualisieren",
   "generateQrLabelTooltip": "QR-Etikett erstellen",
