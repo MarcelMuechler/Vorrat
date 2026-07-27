@@ -172,6 +172,12 @@ docker compose up -d
 
 No authentication in v1 — intended for a trusted home network / Home Assistant Ingress.
 
+**Barcode scanning in a browser needs HTTPS.** Browsers only hand out the camera on a secure
+context, so the web app opened over a plain `http://<lan-ip>:8099` URL cannot scan — the app
+says so in Settings and on the Scan tab. Either put the app behind a TLS reverse proxy, reach
+it through Home Assistant Ingress, or install the Android app (which talks to the same LAN URL
+and is unaffected).
+
 ### Environment variables
 
 The backend reads these environment variables to configure runtime behavior:

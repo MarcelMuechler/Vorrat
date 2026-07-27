@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../state/scan_history.dart';
 import '../state/scan_queue.dart';
 import '../state/stock_provider.dart';
+import '../util/secure_context.dart';
 import '../widgets/add_batch_sheet.dart';
 import 'pending_scans_screen.dart';
 import 'product_detail_screen.dart';
@@ -357,7 +358,10 @@ extension _FirstOrNull<T> on List<T> {
 String _cameraErrorMessage(AppLocalizations l10n, MobileScannerException error) {
   switch (error.errorCode) {
     case MobileScannerErrorCode.unsupported:
-      return l10n.cameraUnsupported;
+      // On web the same error code covers "this browser/device has no camera
+      // API" and "the page isn't a secure context, so the camera API was
+      // withheld" -- only the second is fixable by the user (#329).
+      return cameraBlockedByInsecureOrigin ? l10n.cameraInsecureOrigin : l10n.cameraUnsupported;
     case MobileScannerErrorCode.permissionDenied:
       return l10n.cameraPermissionDenied;
     case MobileScannerErrorCode.genericError:

@@ -12,6 +12,7 @@ import '../state/scan_queue.dart';
 import '../state/settings_provider.dart';
 import '../state/stock_provider.dart';
 import '../util/open_url.dart';
+import '../util/secure_context.dart';
 import 'categories_screen.dart';
 import 'locations_screen.dart';
 import 'pending_scans_screen.dart';
@@ -362,7 +363,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: EdgeInsets.zero,
                   secondary: const Icon(Icons.qr_code_scanner),
                   title: Text(l10n.barcodeScanningTitle),
-                  subtitle: Text(l10n.barcodeScanningSubtitle),
+                  // Say why the camera won't come up here rather than letting
+                  // the user turn scanning on and hit a dead end on the scan
+                  // tab (#329) -- browsers withhold the camera API entirely on
+                  // a plain-HTTP LAN origin.
+                  subtitle: Text(
+                    cameraBlockedByInsecureOrigin ? l10n.cameraInsecureOrigin : l10n.barcodeScanningSubtitle,
+                  ),
                   value: settings.scanEnabled,
                   onChanged: settings.setScanEnabled,
                 ),

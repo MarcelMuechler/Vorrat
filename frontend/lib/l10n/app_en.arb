@@ -415,6 +415,7 @@
   "scanQrTitle": "Scan server QR code",
 
   "cameraUnsupported": "Scanning is not supported on this device.",
+  "cameraInsecureOrigin": "Barcode scanning needs a secure connection. Open Vorrat over HTTPS or through Home Assistant, or install the app.",
   "cameraPermissionDenied": "Camera permission denied. Allow camera access to scan barcodes.",
   "cameraGenericError": "Could not start the camera.",
   "cameraUnavailable": "Scanning is unavailable right now.",

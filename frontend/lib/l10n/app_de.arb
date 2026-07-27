@@ -238,6 +238,7 @@
   "scanQrTitle": "Server-QR-Code scannen",
 
   "cameraUnsupported": "Scannen wird auf diesem Gerät nicht unterstützt.",
+  "cameraInsecureOrigin": "Barcode-Scannen benötigt eine sichere Verbindung. Öffne Vorrat über HTTPS oder Home Assistant, oder installiere die App.",
   "cameraPermissionDenied": "Kamerazugriff verweigert. Erlaube den Kamerazugriff, um Barcodes zu scannen.",
   "cameraGenericError": "Kamera konnte nicht gestartet werden.",
   "cameraUnavailable": "Scannen ist momentan nicht verfügbar.",
