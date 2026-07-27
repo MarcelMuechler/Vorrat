@@ -207,7 +207,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _restoreBackup() async {
-    const typeGroup = XTypeGroup(label: 'backup', extensions: ['db']);
+    // .zip is what the backend hands out now (db + product photos, #325);
+    // .db stays selectable so older backups can still be restored.
+    const typeGroup = XTypeGroup(label: 'backup', extensions: ['zip', 'db']);
     final file = await openFile(acceptedTypeGroups: [typeGroup]);
     if (file == null || !mounted) return;
     final l10n = AppLocalizations.of(context)!;

@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import tempfile
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +22,13 @@ router = APIRouter(prefix="/api/backup", tags=["backup"])
 # unbounded upload (mirrors stock.py's IMPORT_CSV_MAX_BYTES pattern).
 _MAX_RESTORE_BYTES = 500 * 1024 * 1024
 _SQLITE_HEADER = b"SQLite format 3\x00"
+_ZIP_HEADER = b"PK\x03\x04"
+# Member names inside a backup zip. Uploaded product photos live outside the
+# database (referenced only as `/uploads/<file>`), so a db-only backup
+# restored onto a new host brought back every product with a broken image
+# (#325).
+_ZIP_DB_MEMBER = "vorrat.db"
+_ZIP_UPLOADS_PREFIX = "uploads/"
 # Tables that must exist for an uploaded file to plausibly be a Vorrat
 # backup rather than just any well-formed SQLite file -- an empty or
 # foreign database (e.g. a fresh `sqlite3 x.db "VACUUM"`) passes the magic
@@ -52,29 +60,95 @@ def _db_path() -> str:
     return env_settings.database_url.split("///", 1)[1]
 
 
+def _uploads_dir() -> Path:
+    # Same directory main.py mounts at /uploads and products.py writes to.
+    return Path(env_settings.uploads_dir)
+
+
 @router.get("")
 def download_backup():
-    """Streams a point-in-time snapshot of the live DB, taken via sqlite3's
-    backup API rather than copying the file directly -- a plain file copy
-    could race a concurrent writer and ship a torn/corrupt snapshot."""
-    fd, tmp_path = tempfile.mkstemp(suffix=".db")
+    """Streams a zip of the database plus the uploaded product photos.
+
+    The db snapshot is taken via sqlite3's backup API rather than copying the
+    file directly -- a plain file copy could race a concurrent writer and ship
+    a torn/corrupt snapshot."""
+    fd, db_tmp = tempfile.mkstemp(suffix=".db")
     os.close(fd)
-    source = sqlite3.connect(_db_path())
+    fd, zip_tmp = tempfile.mkstemp(suffix=".zip")
+    os.close(fd)
     try:
-        target = sqlite3.connect(tmp_path)
+        source = sqlite3.connect(_db_path())
         try:
-            source.backup(target)
+            target = sqlite3.connect(db_tmp)
+            try:
+                source.backup(target)
+            finally:
+                target.close()
         finally:
-            target.close()
+            source.close()
+
+        with zipfile.ZipFile(zip_tmp, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.write(db_tmp, _ZIP_DB_MEMBER)
+            uploads = _uploads_dir()
+            if uploads.is_dir():
+                # Flat by construction -- products.py writes "<id>-<hex>.jpg"
+                # straight into this directory, no subdirectories.
+                for photo in sorted(uploads.iterdir()):
+                    if photo.is_file():
+                        archive.write(photo, _ZIP_UPLOADS_PREFIX + photo.name)
     finally:
-        source.close()
-    filename = f"vorrat-backup-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.db"
+        os.unlink(db_tmp)
+
+    filename = f"vorrat-backup-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.zip"
     return FileResponse(
-        tmp_path,
-        media_type="application/x-sqlite3",
+        zip_tmp,
+        media_type="application/zip",
         filename=filename,
-        background=BackgroundTask(os.unlink, tmp_path),
+        background=BackgroundTask(os.unlink, zip_tmp),
     )
+
+
+def _open_backup_zip(path: str) -> zipfile.ZipFile:
+    try:
+        archive = zipfile.ZipFile(path)
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Uploaded file is not a readable zip archive")
+    try:
+        if _ZIP_DB_MEMBER not in archive.namelist():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Backup archive contains no {_ZIP_DB_MEMBER} -- not a Vorrat backup",
+            )
+        # The upload itself is capped as it streams in; this caps what it
+        # expands to, so a small zip bomb can't fill the disk.
+        if sum(info.file_size for info in archive.infolist()) > _MAX_RESTORE_BYTES:
+            raise HTTPException(status_code=413, detail="Backup archive contents too large")
+    except HTTPException:
+        archive.close()
+        raise
+    return archive
+
+
+def _extract_photos(archive: zipfile.ZipFile) -> None:
+    """Writes the archive's `uploads/` members into the live uploads dir.
+
+    Only the basename of each member is used, so a crafted archive can't
+    write outside that directory. ponytail: overwrites and adds, never
+    deletes -- photos belonging to products the restored db doesn't have are
+    left as harmless orphans rather than risking a half-emptied directory if
+    extraction fails partway.
+    """
+    uploads = _uploads_dir()
+    uploads.mkdir(parents=True, exist_ok=True)
+    for info in archive.infolist():
+        if info.is_dir() or not info.filename.startswith(_ZIP_UPLOADS_PREFIX):
+            continue
+        name = os.path.basename(info.filename)
+        if not name:
+            continue
+        with archive.open(info) as src, open(uploads / name, "wb") as dst:
+            while chunk := src.read(1024 * 1024):
+                dst.write(chunk)
 
 
 @router.post("/restore")
@@ -86,6 +160,10 @@ def restore_backup(file: UploadFile = File(...)):
     don't exist yet. Migrating the upload rather than the live file means a
     migration that fails leaves the live database untouched.
 
+    Accepts either the zip this endpoint's counterpart now produces (db plus
+    uploaded photos, #325) or a bare `.db` file, which is what older versions
+    handed out -- those backups still have to restore.
+
     A plain `def`, not `async def`, like download_backup above -- everything
     this does (file copy, sqlite3 connect, engine.dispose(), os.replace) is
     blocking, and FastAPI runs a sync route in a threadpool automatically,
@@ -94,7 +172,9 @@ def restore_backup(file: UploadFile = File(...)):
     the duration of the restore."""
     target_path = _db_path()
     target_dir = os.path.dirname(os.path.abspath(target_path)) or "."
-    fd, tmp_path = tempfile.mkstemp(dir=target_dir, suffix=".upload")
+    fd, upload_path = tempfile.mkstemp(dir=target_dir, suffix=".upload")
+    tmp_path = upload_path
+    archive = None
     try:
         with os.fdopen(fd, "wb") as out:
             written = 0
@@ -103,6 +183,15 @@ def restore_backup(file: UploadFile = File(...)):
                 if written > _MAX_RESTORE_BYTES:
                     raise HTTPException(status_code=413, detail="Backup upload too large")
                 out.write(chunk)
+
+        with open(upload_path, "rb") as f:
+            is_zip = f.read(len(_ZIP_HEADER)) == _ZIP_HEADER
+        if is_zip:
+            archive = _open_backup_zip(upload_path)
+            fd, tmp_path = tempfile.mkstemp(dir=target_dir, suffix=".upload-db")
+            with os.fdopen(fd, "wb") as out, archive.open(_ZIP_DB_MEMBER) as src:
+                while chunk := src.read(1024 * 1024):
+                    out.write(chunk)
 
         # A quick magic-bytes check first: PRAGMA schema_version alone
         # doesn't reject this -- SQLite treats an empty/all-zero file as a
@@ -170,7 +259,14 @@ def restore_backup(file: UploadFile = File(...)):
         # (now unlinked) file. SQLAlchemy reconnects lazily on next use.
         engine.dispose()
         os.replace(tmp_path, target_path)
+        if archive is not None:
+            # After the swap: the photos belong to the db that's now live, and
+            # the db is the part whose validation can still reject the upload.
+            _extract_photos(archive)
     finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+        if archive is not None:
+            archive.close()
+        for path in {tmp_path, upload_path}:
+            if os.path.exists(path):
+                os.unlink(path)
     return {"status": "ok"}

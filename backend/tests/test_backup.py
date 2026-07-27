@@ -1,4 +1,6 @@
+import io
 import sqlite3
+import zipfile
 
 from alembic import command
 from alembic.script import ScriptDirectory
@@ -51,19 +53,26 @@ def _read_marker(path):
         conn.close()
 
 
-def test_download_backup_streams_a_point_in_time_snapshot(client, tmp_path, monkeypatch):
+def test_download_backup_ships_the_db_and_the_uploaded_photos(client, tmp_path, monkeypatch):
+    # #325: photos live outside the db (referenced only as /uploads/<file>),
+    # so a db-only backup restored every product with a broken image.
     db_path = tmp_path / "source.db"
     _make_sqlite_file(db_path, "hello")
     monkeypatch.setattr(env_settings, "database_url", f"sqlite:///{db_path}")
+    # The client fixture already points uploads_dir at tmp_path/uploads.
+    (tmp_path / "uploads" / "7-abc123.jpg").write_bytes(b"photo-bytes")
 
     response = client.get("/api/backup")
 
     assert response.status_code == 200
-    assert response.headers["content-type"] == "application/x-sqlite3"
+    assert response.headers["content-type"] == "application/zip"
     assert "vorrat-backup-" in response.headers["content-disposition"]
+    assert response.headers["content-disposition"].endswith('.zip"')
 
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    assert archive.read("uploads/7-abc123.jpg") == b"photo-bytes"
     downloaded = tmp_path / "downloaded.db"
-    downloaded.write_bytes(response.content)
+    downloaded.write_bytes(archive.read("vorrat.db"))
     assert _read_marker(downloaded) == "hello"
 
 
@@ -209,4 +218,76 @@ def test_restore_backup_rejects_an_unknown_schema_revision(client, tmp_path, mon
 
     assert response.status_code == 400
     assert "f00dfeed1234" in response.json()["detail"]
+    assert _read_marker(target_path) == "old"
+
+
+def _make_backup_zip(path, db_source, photos):
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.write(db_source, "vorrat.db")
+        for name, content in photos.items():
+            archive.writestr(f"uploads/{name}", content)
+
+
+def test_restore_backup_accepts_a_zip_and_restores_the_photos(client, tmp_path, monkeypatch):
+    target_path = tmp_path / "target7.db"
+    _make_sqlite_file(target_path, "old")
+    monkeypatch.setattr(env_settings, "database_url", f"sqlite:///{target_path}")
+    monkeypatch.setattr(backup_router, "engine", create_engine(f"sqlite:///{target_path}"))
+
+    inner_db = tmp_path / "inner.db"
+    _make_vorrat_sqlite_file(inner_db, "new")
+    zip_path = tmp_path / "backup.zip"
+    _make_backup_zip(zip_path, inner_db, {"7-abc123.jpg": b"photo-bytes"})
+
+    with open(zip_path, "rb") as f:
+        response = client.post(
+            "/api/backup/restore",
+            files={"file": ("backup.zip", f, "application/zip")},
+        )
+
+    assert response.status_code == 200
+    assert _read_marker(target_path) == "new"
+    assert (tmp_path / "uploads" / "7-abc123.jpg").read_bytes() == b"photo-bytes"
+
+
+def test_restore_backup_zip_cannot_write_outside_the_uploads_dir(client, tmp_path, monkeypatch):
+    # Only the basename of each uploads/ member is used, so a crafted archive
+    # can't traverse out of the uploads directory.
+    target_path = tmp_path / "target8.db"
+    _make_sqlite_file(target_path, "old")
+    monkeypatch.setattr(env_settings, "database_url", f"sqlite:///{target_path}")
+    monkeypatch.setattr(backup_router, "engine", create_engine(f"sqlite:///{target_path}"))
+
+    inner_db = tmp_path / "inner2.db"
+    _make_vorrat_sqlite_file(inner_db, "new")
+    zip_path = tmp_path / "evil.zip"
+    _make_backup_zip(zip_path, inner_db, {"../../escaped.txt": b"nope"})
+
+    with open(zip_path, "rb") as f:
+        response = client.post(
+            "/api/backup/restore",
+            files={"file": ("backup.zip", f, "application/zip")},
+        )
+
+    assert response.status_code == 200
+    assert not (tmp_path / "escaped.txt").exists()
+    assert (tmp_path / "uploads" / "escaped.txt").read_bytes() == b"nope"
+
+
+def test_restore_backup_rejects_a_zip_without_a_database(client, tmp_path, monkeypatch):
+    target_path = tmp_path / "target9.db"
+    _make_sqlite_file(target_path, "old")
+    monkeypatch.setattr(env_settings, "database_url", f"sqlite:///{target_path}")
+
+    zip_path = tmp_path / "photos-only.zip"
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.writestr("uploads/1-a.jpg", b"photo")
+
+    with open(zip_path, "rb") as f:
+        response = client.post(
+            "/api/backup/restore",
+            files={"file": ("backup.zip", f, "application/zip")},
+        )
+
+    assert response.status_code == 400
     assert _read_marker(target_path) == "old"
