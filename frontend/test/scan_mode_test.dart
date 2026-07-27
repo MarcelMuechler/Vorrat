@@ -134,6 +134,64 @@ void main() {
     ]);
   });
 
+  // #331: an opened jar goes off long before a sealed one with a later date,
+  // and _effective_expiry only knows that when the product has an open shelf
+  // life set. Consume mode therefore reaches for the opened batch even though
+  // the sealed one sorts first by expiry.
+  testWidgets('Use mode prefers an already-opened batch over a sealed one', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    api.batches = [
+      StockItem(id: 1, productId: 1, amount: 5, productName: 'Jam', status: 'ok'),
+      StockItem(
+        id: 2,
+        productId: 1,
+        amount: 3,
+        productName: 'Jam',
+        status: 'ok',
+        openedAt: DateTime(2026, 7, 1),
+      ),
+    ];
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Use'));
+    await tester.pumpAndSettle();
+
+    await _enterBarcode(tester, '1234567890123');
+
+    expect(api.consumeCalls, [
+      {'id': 2, 'amount': 3.0, 'reason': 'used'},
+    ]);
+  });
+
+  testWidgets('Discard mode still takes the soonest-expiring batch, opened or not', (tester) async {
+    final settings = SettingsProvider();
+    final api = FakeApiClient(settings);
+    api.batches = [
+      StockItem(id: 1, productId: 1, amount: 5, productName: 'Jam', status: 'expired'),
+      StockItem(
+        id: 2,
+        productId: 1,
+        amount: 3,
+        productName: 'Jam',
+        status: 'ok',
+        openedAt: DateTime(2026, 7, 1),
+      ),
+    ];
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+
+    await _enterBarcode(tester, '1234567890123');
+
+    expect(api.consumeCalls, [
+      {'id': 1, 'amount': 5.0, 'reason': 'spoiled'},
+    ]);
+  });
+
   testWidgets('Open mode marks the batch opened, no amount involved', (tester) async {
     final settings = SettingsProvider();
     final api = FakeApiClient(settings);

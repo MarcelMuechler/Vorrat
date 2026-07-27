@@ -236,7 +236,15 @@ class _ScanScreenState extends State<ScanScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.scannedOpened(product.name))));
       case ScanMode.consume:
-        await stock.consume(batch.id, batch.amount, reason: 'used');
+        // Use up what's already open before breaking into a sealed one
+        // (#331). An opened jar goes off long before an unopened one with a
+        // later date, and _effective_expiry only knows that when the product
+        // has default_open_shelf_life_days set -- which most won't. Discard
+        // below deliberately keeps batches.first: what you throw away really
+        // is the soonest-expiring one, opened or not.
+        final opened = batches.where((b) => b.openedAt != null);
+        final toConsume = opened.isNotEmpty ? opened.first : batch;
+        await stock.consume(toConsume.id, toConsume.amount, reason: 'used');
         if (!mounted) return;
         ScaffoldMessenger.of(
           context,
