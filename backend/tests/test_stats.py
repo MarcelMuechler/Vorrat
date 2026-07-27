@@ -25,6 +25,7 @@ def test_stats_on_empty_db(client):
         "low_stock_products": 0,
         "earliest_expiry": None,
         "total_value": 0.0,
+        "attention": [],
     }
 
 
@@ -58,6 +59,32 @@ def test_stats_earliest_expiry_skips_does_not_spoil(client):
 
     body = client.get("/api/stats").json()
     assert body["earliest_expiry"] == (date.today() + timedelta(days=5)).isoformat()
+
+
+def test_stats_attention_names_what_needs_using_up(client):
+    # #327: the counters alone can only produce "3 items expired"; HA needs
+    # the names to say which. Soonest first, and capped.
+    product = client.post("/api/products", json={"name": "Milk", "quantity_unit": "l"}).json()
+    _add_entry(client, product["id"], amount=1, best_before_date=date.today() + timedelta(days=1))
+    _add_entry(client, product["id"], amount=2, best_before_date=date.today() - timedelta(days=2))
+    _add_entry(client, product["id"], amount=3, best_before_date=date.today() + timedelta(days=90))
+
+    attention = client.get("/api/stats").json()["attention"]
+    assert [item["status"] for item in attention] == ["expired", "expiring_soon"]
+    assert attention[0] == {
+        "product": "Milk",
+        "amount": 2,
+        "unit": "l",
+        "expiry": (date.today() - timedelta(days=2)).isoformat(),
+        "status": "expired",
+    }
+
+
+def test_stats_attention_skips_does_not_spoil(client):
+    canned = client.post("/api/products", json={"name": "Beans", "does_not_spoil": True}).json()
+    _add_entry(client, canned["id"], best_before_date=date.today() - timedelta(days=1))
+
+    assert client.get("/api/stats").json()["attention"] == []
 
 
 def test_stats_low_stock_products_matches_threshold(client):

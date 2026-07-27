@@ -222,6 +222,18 @@ class AppSettingsUpdate(BaseModel):
     expiring_soon_days: int = Field(gt=0)
 
 
+class StatsAttentionItem(BaseModel):
+    """One expired/expiring-soon batch, in the flattest shape a Home
+    Assistant `rest` sensor can template over (#327) -- a sensor's state is
+    capped at 255 chars, so the names have to arrive as JSON attributes."""
+
+    product: str
+    amount: float
+    unit: str
+    expiry: date
+    status: str
+
+
 class StatsRead(BaseModel):
     total_products: int
     total_stock_entries: int
@@ -234,6 +246,10 @@ class StatsRead(BaseModel):
     # free), so this is a lower bound whenever some entries are unpriced.
     # 0 (not null) when nothing is priced, matching the other counters here.
     total_value: float
+    # The batches behind the `expired`/`expiring_soon` counters, soonest
+    # first, capped at _MAX_ATTENTION_ITEMS -- so an HA notification can name
+    # what's going off instead of only counting it.
+    attention: list[StatsAttentionItem]
 
 
 class ShoppingListItemCreate(BaseModel):
