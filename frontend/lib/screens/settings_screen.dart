@@ -142,6 +142,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Runs an upload behind a non-dismissible spinner. These calls get minutes,
+  /// not the interactive 15 s (#335), so without something on screen the app
+  /// looks wedged -- and a second tap would start a competing upload.
+  Future<T> _withUploadProgress<T>(Future<T> Function() upload) async {
+    final l10n = AppLocalizations.of(context)!;
+    final dialog = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Expanded(child: Text(l10n.uploadInProgress)),
+          ],
+        ),
+      ),
+    );
+    try {
+      return await upload();
+    } finally {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      await dialog;
+    }
+  }
+
   Future<void> _importStockCsv() async {
     const typeGroup = XTypeGroup(label: 'csv', extensions: ['csv'], mimeTypes: ['text/csv']);
     final file = await openFile(acceptedTypeGroups: [typeGroup]);
@@ -151,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final stock = context.read<StockProvider>();
     try {
       final csv = await file.readAsString();
-      final result = await api.importStockCsv(csv);
+      final result = await _withUploadProgress(() => api.importStockCsv(csv));
       if (!mounted) return;
       await stock.refresh();
       if (!mounted) return;
@@ -204,7 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final stock = context.read<StockProvider>();
     try {
       final bytes = await file.readAsBytes();
-      await api.restoreBackup(bytes, file.name);
+      await _withUploadProgress(() => api.restoreBackup(bytes, file.name));
       if (!mounted) return;
       // The restore just swapped the entire database out from under every
       // provider -- reload rather than trust anything already in memory.

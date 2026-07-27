@@ -205,6 +205,7 @@
   "couldNotReachServer": "Server nicht erreichbar",
   "couldNotExport": "Export fehlgeschlagen: {error}",
   "couldNotImport": "Import fehlgeschlagen: {error}",
+  "uploadInProgress": "Wird hochgeladen … das kann bei langsamer Verbindung einige Minuten dauern. App nicht schließen.",
   "couldNotRestore": "Wiederherstellung fehlgeschlagen: {error}",
   "serverUrlDescription": "Server-URL. Leer lassen, wenn innerhalb von Home Assistant (gleicher Ursprung via Ingress) ausgeführt. Native Apps und lokale Entwicklung benötigen die vollständige URL, z. B. http://192.168.1.20:8099",
   "serverUrlLabel": "Server-URL",

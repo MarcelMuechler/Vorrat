@@ -364,6 +364,7 @@
   "@couldNotImport": {
     "placeholders": { "error": { "type": "String" } }
   },
+  "uploadInProgress": "Uploading… this can take a few minutes on a slow connection. Don't close the app.",
   "couldNotRestore": "Could not restore: {error}",
   "@couldNotRestore": {
     "placeholders": { "error": { "type": "String" } }
