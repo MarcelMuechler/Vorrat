@@ -202,9 +202,17 @@ integration polling that one endpoint:
   "expired": 1,
   "expiring_soon": 3,
   "low_stock_products": 2,
-  "earliest_expiry": "2025-01-20"
+  "earliest_expiry": "2025-01-20",
+  "total_value": 87.4,
+  "attention": [
+    {"product": "Joghurt", "amount": 2, "unit": "pcs", "expiry": "2025-01-18", "status": "expired"},
+    {"product": "Milch", "amount": 1, "unit": "l", "expiry": "2025-01-20", "status": "expiring_soon"}
+  ]
 }
 ```
+
+`attention` lists the batches behind the `expired`/`expiring_soon` counters, soonest first and
+capped at 20 — it's what lets a notification name what's going off instead of only counting it.
 
 Ingress URLs aren't stable (Home Assistant mints a new per-session path each time), so point
 the sensor at the add-on's host:port instead — e.g. `http://homeassistant.local:8099` if
@@ -229,9 +237,17 @@ rest:
       - name: "Vorrat low stock products"
         value_template: "{{ value_json.low_stock_products }}"
         unit_of_measurement: "products"
+      # A sensor's state is capped at 255 characters, so the list of names
+      # rides along as an attribute rather than as the state.
+      - name: "Vorrat needs attention"
+        value_template: "{{ value_json.attention | count }}"
+        unit_of_measurement: "items"
+        json_attributes_path: "$"
+        json_attributes:
+          - attention
 ```
 
-And an example automation that notifies your phone when something has expired:
+And an example automation that notifies your phone with what has actually gone off:
 
 ```yaml
 automation:
@@ -244,7 +260,8 @@ automation:
       - service: notify.mobile_app_your_phone
         data:
           message: >
-            {{ states('sensor.vorrat_expired_items') }} item(s) in Vorrat have expired.
+            {{ state_attr('sensor.vorrat_needs_attention', 'attention')
+               | map(attribute='product') | join(', ') }} needs using up.
 ```
 
 MQTT and a custom HA integration were both considered and rejected for v1 — `rest:` covers

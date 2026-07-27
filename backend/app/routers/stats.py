@@ -8,9 +8,13 @@ from app.db import get_db
 from app.models import Product, StockEntry
 from app.routers.settings import get_app_settings
 from app.routers.stock import _effective_expiry, _status
-from app.schemas import StatsRead
+from app.schemas import StatsAttentionItem, StatsRead
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
+
+# Enough for a readable notification, bounded so a neglected pantry can't
+# turn every HA state update into a multi-hundred-row payload.
+_MAX_ATTENTION_ITEMS = 20
 
 
 def low_stock_products_query(db: Session):
@@ -42,6 +46,7 @@ def get_stats(db: Session = Depends(get_db)):
     expired = 0
     expiring_soon = 0
     earliest_expiry: date | None = None
+    attention: list[StatsAttentionItem] = []
     entries = db.query(StockEntry).options(joinedload(StockEntry.product))
     for entry in entries:
         expiry = _effective_expiry(
@@ -56,6 +61,17 @@ def get_stats(db: Session = Depends(get_db)):
             expired += 1
         elif status == "expiring_soon":
             expiring_soon += 1
+        if status != "ok":
+            # Only reachable with a date -- _status returns "ok" without one.
+            attention.append(
+                StatsAttentionItem(
+                    product=entry.product.name,
+                    amount=entry.amount,
+                    unit=entry.product.quantity_unit,
+                    expiry=expiry,
+                    status=status,
+                )
+            )
         # does_not_spoil products keep whatever date is printed on the pack but
         # never count as expiring, so they must not drive earliest_expiry either
         # -- otherwise the HA sensor reports a date the UI shows as green (#320).
@@ -65,6 +81,11 @@ def get_stats(db: Session = Depends(get_db)):
             and (earliest_expiry is None or expiry < earliest_expiry)
         ):
             earliest_expiry = expiry
+
+    # Soonest (most overdue) first, matching how the stock list orders the
+    # same rows, then capped -- a notification names the urgent few.
+    attention.sort(key=lambda item: item.expiry)
+    del attention[_MAX_ATTENTION_ITEMS:]
 
     low_stock_products = low_stock_products_query(db).count()
 
@@ -87,4 +108,5 @@ def get_stats(db: Session = Depends(get_db)):
         low_stock_products=low_stock_products,
         earliest_expiry=earliest_expiry,
         total_value=total_value,
+        attention=attention,
     )
