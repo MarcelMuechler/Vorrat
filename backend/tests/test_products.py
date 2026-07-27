@@ -352,3 +352,49 @@ def test_default_consume_amount_must_be_positive(client):
         "/api/products", json={"name": "Flour", "default_consume_amount": 0}
     )
     assert response.status_code == 422
+
+
+def _product_with_stock(client, name, barcode=None, amount=1):
+    product = client.post("/api/products", json={"name": name, "barcode": barcode}).json()
+    client.post("/api/stock", json={"product_id": product["id"], "amount": amount})
+    return product
+
+
+def test_merge_moves_everything_onto_the_keeper(client):
+    # #333: without a merge there's no recovery from a duplicate --
+    # delete_product refuses while stock exists, so the only way out was
+    # deleting every batch by hand, which logs waste that never happened.
+    keeper = _product_with_stock(client, "Milk", barcode="4001234567890", amount=2)
+    duplicate = _product_with_stock(client, "Milch", barcode="4009876543210", amount=3)
+    client.post(f"/api/stock/{client.get('/api/stock').json()[0]['id']}/consume", json={"amount": 1})
+    client.post("/api/shopping-list", json={"product_id": duplicate["id"], "amount": 1})
+
+    response = client.post(f"/api/products/{duplicate['id']}/merge", json={"into_product_id": keeper["id"]})
+
+    assert response.status_code == 200
+    assert response.json()["id"] == keeper["id"]
+    # The duplicate is gone and everything that pointed at it now points here.
+    assert client.get(f"/api/products/{duplicate['id']}").status_code == 404
+    assert all(item["product_id"] == keeper["id"] for item in client.get("/api/stock").json())
+    assert all(row["product_id"] == keeper["id"] for row in client.get("/api/consumption-log").json())
+    assert all(
+        item["product_id"] in (None, keeper["id"]) for item in client.get("/api/shopping-list").json()
+    )
+    # The duplicate's code keeps resolving -- to the keeper now.
+    assert "4009876543210" in response.json()["extra_barcodes"]
+    lookup = client.get("/api/barcode/4009876543210").json()
+    assert lookup["product"]["id"] == keeper["id"]
+
+
+def test_merge_rejects_a_product_into_itself_and_unknown_ids(client):
+    product = _product_with_stock(client, "Milk")
+
+    assert client.post(
+        f"/api/products/{product['id']}/merge", json={"into_product_id": product["id"]}
+    ).status_code == 400
+    assert client.post(
+        f"/api/products/{product['id']}/merge", json={"into_product_id": 9999}
+    ).status_code == 404
+    assert client.post(
+        "/api/products/9999/merge", json={"into_product_id": product["id"]}
+    ).status_code == 404

@@ -261,6 +261,14 @@ class ApiClient {
     return Product.fromJson(jsonDecode(res.body));
   }
 
+  /// Folds [id] into [intoProductId] and deletes it, moving its stock,
+  /// history, shopping-list references and barcodes across (#333). Returns
+  /// the kept product.
+  Future<Product> mergeProduct(int id, int intoProductId) async {
+    final res = await _post('/api/products/$id/merge', {'into_product_id': intoProductId});
+    return Product.fromJson(jsonDecode(res.body));
+  }
+
   Future<void> deleteProduct(int id) async {
     await _delete('/api/products/$id');
   }

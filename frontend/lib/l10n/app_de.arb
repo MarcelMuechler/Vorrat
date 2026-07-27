@@ -167,6 +167,10 @@
 
   "deleteProductTitle": "Produkt löschen?",
   "deleteProductConfirm": "Dies löscht \"{name}\". Produkte, die noch im Bestand sind, können nicht gelöscht werden.",
+  "mergeProductAction": "Zusammenführen…",
+  "mergeProductPickTitle": "\"{name}\" mit welchem Produkt zusammenführen?",
+  "mergeProductConfirm": "Verschiebt Bestand, Verlauf und Barcodes von \"{from}\" zu \"{into}\" und löscht \"{from}\".",
+  "couldNotMergeProduct": "Zusammenführen fehlgeschlagen: {error}",
   "couldNotDeleteProduct": "Produkt konnte nicht gelöscht werden: {error}",
   "couldNotLoadProducts": "Produkte konnten nicht geladen werden: {error}",
   "noProductsYet": "Noch keine Produkte. Scanne etwas, um eines hinzuzufügen.",

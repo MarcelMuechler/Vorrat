@@ -21,7 +21,7 @@ from app.models import (
     StockEntry,
 )
 from app.off_client import OffLookupError, lookup_off
-from app.schemas import ProductBarcodeCreate, ProductCreate, ProductRead, ProductUpdate
+from app.schemas import ProductBarcodeCreate, ProductCreate, ProductMerge, ProductRead, ProductUpdate
 from app.utils import escape_like, normalize_barcode
 
 router = APIRouter(prefix="/api/products", tags=["products"])
@@ -375,6 +375,59 @@ async def refresh_product_from_off(product_id: int, db: Session = Depends(get_db
     if not off_product:
         raise HTTPException(404, "Not found on Open Food Facts")
     return off_product
+
+
+@router.post("/{product_id}/merge", response_model=ProductRead)
+def merge_product(product_id: int, payload: ProductMerge, db: Session = Depends(get_db)):
+    """Folds `product_id` (the duplicate) into `into_product_id` (the keeper)
+    and deletes it, in one transaction (#333).
+
+    Without this there is no recovery from a duplicate: delete_product refuses
+    while stock exists, so the only way out was deleting every batch by hand
+    -- which writes phantom `spoiled` rows into the consumption log -- and
+    re-entering them against the other product.
+
+    Everything that points at the duplicate is repointed rather than deleted,
+    including its consumption history: unlike delete_product, nothing here is
+    "a product that no longer exists", it's the same physical item under two
+    rows."""
+    duplicate = db.get(Product, product_id)
+    keeper = db.get(Product, payload.into_product_id)
+    if not duplicate or not keeper:
+        raise HTTPException(404, "Product not found")
+    if duplicate.id == keeper.id:
+        raise HTTPException(400, "Cannot merge a product into itself")
+
+    db.query(StockEntry).filter(StockEntry.product_id == duplicate.id).update(
+        {StockEntry.product_id: keeper.id}
+    )
+    db.query(ConsumptionLog).filter(ConsumptionLog.product_id == duplicate.id).update(
+        {ConsumptionLog.product_id: keeper.id}
+    )
+    db.query(ShoppingListItem).filter(ShoppingListItem.product_id == duplicate.id).update(
+        {ShoppingListItem.product_id: keeper.id}
+    )
+    db.query(ProductBarcode).filter(ProductBarcode.product_id == duplicate.id).update(
+        {ProductBarcode.product_id: keeper.id}
+    )
+    # The duplicate's primary code survives as one of the keeper's alternates
+    # -- that's the whole point of merging two rows for one physical item:
+    # scanning either code afterwards has to resolve to the keeper. Skipped
+    # if the keeper already carries it (it can't, given _barcode_in_use, but
+    # a hand-edited db shouldn't turn this into an IntegrityError).
+    if duplicate.barcode and duplicate.barcode != keeper.barcode:
+        already = db.query(ProductBarcode).filter(ProductBarcode.code == duplicate.barcode).first()
+        if not already:
+            db.add(ProductBarcode(product_id=keeper.id, code=duplicate.barcode))
+    duplicate.barcode = None
+
+    image_url = duplicate.image_url
+    db.delete(duplicate)
+    db.commit()
+    # Only after the transaction succeeded -- same ordering as delete_product.
+    _delete_local_upload(image_url)
+    db.refresh(keeper)
+    return keeper
 
 
 @router.delete("/{product_id}", status_code=204)
