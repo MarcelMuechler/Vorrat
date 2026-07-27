@@ -26,6 +26,7 @@
   "nameLabel": "Name",
   "categoryLabel": "Category",
   "clearCategoryTooltip": "Clear category",
+  "clearLocationTooltip": "Clear location",
   "amountFieldLabel": "Amount",
   "decreaseAmountTooltip": "Decrease amount",
   "increaseAmountTooltip": "Increase amount",

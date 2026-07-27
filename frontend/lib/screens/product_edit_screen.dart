@@ -6,7 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
-import '../widgets/category_field.dart';
+import '../widgets/named_entity_field.dart';
 import '../widgets/quantity_unit_field.dart';
 
 class ProductEditScreen extends StatefulWidget {
@@ -20,7 +20,8 @@ class ProductEditScreen extends StatefulWidget {
 
 class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _nameController;
-  final _categoryFieldKey = GlobalKey<CategoryFieldState>();
+  final _categoryFieldKey = GlobalKey<NamedEntityFieldState<Category>>();
+  final _locationFieldKey = GlobalKey<NamedEntityFieldState<Location>>();
   int? _categoryId;
   String? _categoryName;
   late String _quantityUnit;
@@ -30,8 +31,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   late final TextEditingController _targetStockLevelController;
   late final TextEditingController _expiringSoonDaysController;
   late bool _doesNotSpoil;
-  List<Location> _locations = [];
   int? _selectedLocationId;
+  String? _selectedLocationName;
   String? _imageUrl;
   bool _loadingLocations = true;
   bool _saving = false;
@@ -92,11 +93,17 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     super.dispose();
   }
 
+  /// The product only carries its default location's *id*, and the field
+  /// below needs a name to prefill -- so the list is still fetched once here,
+  /// and the body waits for it rather than flashing an empty field.
   Future<void> _loadLocations() async {
     final locations = await context.read<ApiClient>().listLocations();
     if (!mounted) return;
     setState(() {
-      _locations = locations;
+      _selectedLocationName = locations
+          .where((location) => location.id == _selectedLocationId)
+          .map((location) => location.name)
+          .firstOrNull;
       _loadingLocations = false;
     });
   }
@@ -107,6 +114,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     // after typing a brand-new category would otherwise race the field's
     // own async create-category call.
     await _categoryFieldKey.currentState?.resolve();
+    if (!mounted) return;
+    await _locationFieldKey.currentState?.resolve();
     if (!mounted) return;
     final api = context.read<ApiClient>();
     try {
@@ -417,11 +426,15 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                CategoryField(
+                NamedEntityField<Category>(
                   key: _categoryFieldKey,
-                  categoryId: _categoryId,
-                  categoryName: _categoryName,
+                  initialName: _categoryName,
                   label: l10n.categoryLabel,
+                  clearTooltip: l10n.clearCategoryTooltip,
+                  load: (api) => api.listCategories(),
+                  create: (api, name) => api.createCategory(name),
+                  nameOf: (category) => category.name,
+                  errorMessage: (e) => l10n.couldNotAddCategory('$e'),
                   onChanged: (category) => setState(() {
                     _categoryId = category?.id;
                     _categoryName = category?.name;
@@ -434,16 +447,22 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   onChanged: (value) => setState(() => _quantityUnit = value),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  initialValue: _selectedLocationId,
-                  decoration: InputDecoration(
-                    labelText: l10n.defaultLocationLabel,
-                  ),
-                  items: [
-                    DropdownMenuItem<int>(value: null, child: Text(l10n.noneLabel)),
-                    for (final l in _locations) DropdownMenuItem(value: l.id, child: Text(l.name)),
-                  ],
-                  onChanged: (value) => setState(() => _selectedLocationId = value),
+                // Same inline-create field as the category above (#338):
+                // a dropdown made the form a dead end whenever the location
+                // you wanted didn't exist yet.
+                NamedEntityField<Location>(
+                  key: _locationFieldKey,
+                  initialName: _selectedLocationName,
+                  label: l10n.defaultLocationLabel,
+                  clearTooltip: l10n.clearLocationTooltip,
+                  load: (api) => api.listLocations(),
+                  create: (api, name) => api.createLocation(name),
+                  nameOf: (location) => location.name,
+                  errorMessage: (e) => l10n.couldNotAddLocation('$e'),
+                  onChanged: (location) => setState(() {
+                    _selectedLocationId = location?.id;
+                    _selectedLocationName = location?.name;
+                  }),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
