@@ -30,6 +30,13 @@
   "decreaseAmountTooltip": "Decrease amount",
   "increaseAmountTooltip": "Increase amount",
   "priceFieldLabel": "Price per unit (optional)",
+  "priceFieldLabelWithCurrency": "Price per unit in {currency} (optional)",
+  "@priceFieldLabelWithCurrency": {
+    "placeholders": { "currency": { "type": "String" } }
+  },
+  "currencyLabel": "Currency",
+  "currencyDescription": "ISO code used to display prices and stock value (e.g. EUR, USD, GBP). Nothing is converted — this only changes how amounts are shown.",
+  "currencyCodeInvalid": "Enter a three-letter currency code, e.g. EUR.",
   "totalStockValueLabel": "Total value: {value}",
   "@totalStockValueLabel": {
     "placeholders": { "value": { "type": "String" } }

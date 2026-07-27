@@ -227,10 +227,21 @@ class AppSettingsRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     expiring_soon_days: int
+    currency: str
 
 
 class AppSettingsUpdate(BaseModel):
-    expiring_soon_days: int = Field(gt=0)
+    """Every field optional so this is a real PATCH: with a second setting
+    added (#324), a required field would mean any partial update silently
+    reset the other one."""
+
+    expiring_soon_days: int | None = Field(default=None, gt=0)
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _upper_currency(cls, v):
+        return v.strip().upper() if isinstance(v, str) else v
 
 
 class StatsAttentionItem(BaseModel):

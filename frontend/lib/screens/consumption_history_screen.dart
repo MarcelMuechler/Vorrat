@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/client.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../state/stock_provider.dart';
 import '../util/format.dart';
 import '../util/open_url.dart';
 import '../util/status.dart';
@@ -162,16 +163,15 @@ class _ConsumptionHistoryScreenState extends State<ConsumptionHistoryScreen> {
   }
 
   Widget _buildSummary(BuildContext context, AppLocalizations l10n, ConsumptionSummary summary) {
-    // Values are plain numbers, not currency -- this app has no currency
-    // setting (#324), the same reason the stock overview's total is unformatted.
+    final currency = context.read<StockProvider>().currency;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.historyUsedSummary(summary.usedEntries, formatAmount(summary.usedValue))),
+          Text(l10n.historyUsedSummary(summary.usedEntries, formatMoney(context, summary.usedValue, currency))),
           Text(
-            l10n.historySpoiledSummary(summary.spoiledEntries, formatAmount(summary.spoiledValue)),
+            l10n.historySpoiledSummary(summary.spoiledEntries, formatMoney(context, summary.spoiledValue, currency)),
             style: TextStyle(color: statusColor('expired')),
           ),
         ],

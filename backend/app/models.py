@@ -107,6 +107,10 @@ class AppSettings(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, default=1)
     expiring_soon_days: Mapped[int] = mapped_column(default=3)
+    # ISO 4217 code, used only for formatting prices in the app (#324) --
+    # there is no conversion anywhere, so this is a display label, not a unit
+    # the stored numbers are converted into.
+    currency: Mapped[str] = mapped_column(String, default="EUR", server_default="EUR")
 
 
 class StockEntry(Base):

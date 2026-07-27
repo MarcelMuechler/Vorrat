@@ -72,7 +72,7 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StockProvider>()
-        ..loadExpiringSoonDays()
+        ..loadSettings()
         ..refresh();
     });
     _loadLocations();
@@ -427,13 +427,13 @@ class _StockOverviewScreenState extends State<StockOverviewScreen> {
         children: [
           Text(l10n.stockTitle),
           // Hidden entirely (rather than showing "0") until at least one
-          // stock entry has a price -- no currency setting exists in this
-          // app, so this is a plain number, not a formatted currency amount.
-          // Computed client-side from the already-loaded list (#126), same
-          // approach the stat strip below uses for its own counts.
+          // stock entry has a price. Formatted in the household's configured
+          // currency (#324). Computed client-side from the already-loaded
+          // list (#126), same approach the stat strip below uses for its own
+          // counts.
           if (stock.hasAnyPricedItem)
             Text(
-              l10n.totalStockValueLabel(formatAmount(stock.totalValue)),
+              l10n.totalStockValueLabel(formatMoney(context, stock.totalValue, stock.currency)),
               style: Theme.of(context).textTheme.labelSmall,
             ),
         ],

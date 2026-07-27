@@ -21,7 +21,8 @@ class FakeApiClient extends ApiClient {
   Future<List<ConsumptionLogEntry>> listConsumptionLog({DateTime? since, DateTime? until, String? reason}) async => [];
 
   @override
-  Future<int> getExpiringSoonDays() async => 3;
+  Future<AppSettingsData> getSettings() async =>
+      AppSettingsData(expiringSoonDays: 3, currency: 'EUR');
 }
 
 Widget _wrap(SettingsProvider settings, ApiClient api, ScanQueue queue) => MultiProvider(

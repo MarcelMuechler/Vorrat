@@ -6,6 +6,7 @@ import 'package:vorrat/l10n/app_localizations.dart';
 import 'package:vorrat/models/models.dart';
 import 'package:vorrat/screens/consumption_history_screen.dart';
 import 'package:vorrat/state/settings_provider.dart';
+import 'package:vorrat/state/stock_provider.dart';
 
 class FakeApiClient extends ApiClient {
   FakeApiClient(super.settings);
@@ -52,6 +53,8 @@ Widget _app(ApiClient api, SettingsProvider settings) => MultiProvider(
       providers: [
         ChangeNotifierProvider<SettingsProvider>.value(value: settings),
         Provider<ApiClient>.value(value: api),
+        // The summary line formats values in the configured currency (#324).
+        ChangeNotifierProvider<StockProvider>(create: (_) => StockProvider(api)),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -71,8 +74,8 @@ void main() {
     expect(find.text('Milk'), findsOneWidget);
     expect(find.text('Bread'), findsOneWidget);
     // Values come from the server-side summary, not from summing the list.
-    expect(find.textContaining('worth 4'), findsOneWidget);
-    expect(find.textContaining('worth 2.5'), findsOneWidget);
+    expect(find.textContaining('€4.00'), findsOneWidget);
+    expect(find.textContaining('€2.50'), findsOneWidget);
   });
 
   testWidgets('the reason chips filter through the API, not client-side', (tester) async {

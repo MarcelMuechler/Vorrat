@@ -28,28 +28,34 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _controller;
   late final TextEditingController _expiringSoonController;
+  late final TextEditingController _currencyController;
   String? _testResult;
   bool _testing = false;
   bool _savingExpiringSoon = false;
+  bool _savingCurrency = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: context.read<SettingsProvider>().serverUrl);
     _expiringSoonController = TextEditingController(text: '${context.read<StockProvider>().expiringSoonDays}');
-    _loadExpiringSoonDays();
+    _currencyController = TextEditingController(text: context.read<StockProvider>().currency);
+    _loadSettings();
   }
 
-  Future<void> _loadExpiringSoonDays() async {
+  Future<void> _loadSettings() async {
     final stock = context.read<StockProvider>();
-    await stock.loadExpiringSoonDays();
-    if (mounted) _expiringSoonController.text = '${stock.expiringSoonDays}';
+    await stock.loadSettings();
+    if (!mounted) return;
+    _expiringSoonController.text = '${stock.expiringSoonDays}';
+    _currencyController.text = stock.currency;
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _expiringSoonController.dispose();
+    _currencyController.dispose();
     super.dispose();
   }
 
@@ -66,8 +72,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final api = context.read<ApiClient>();
     final stock = context.read<StockProvider>();
     try {
-      await api.setExpiringSoonDays(days);
-      await stock.loadExpiringSoonDays();
+      await api.updateSettings(expiringSoonDays: days);
+      await stock.loadSettings();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -76,6 +82,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } finally {
       if (mounted) setState(() => _savingExpiringSoon = false);
+    }
+  }
+
+  Future<void> _saveCurrency() async {
+    final l10n = AppLocalizations.of(context)!;
+    final code = _currencyController.text.trim();
+    if (code.length != 3) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.currencyCodeInvalid)));
+      return;
+    }
+    setState(() => _savingCurrency = true);
+    final api = context.read<ApiClient>();
+    final stock = context.read<StockProvider>();
+    try {
+      await api.updateSettings(currency: code);
+      await stock.loadSettings();
+      if (mounted) _currencyController.text = stock.currency;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotSave(apiFailureReason(e, l10n)))));
+      }
+    } finally {
+      if (mounted) setState(() => _savingCurrency = false);
     }
   }
 
@@ -207,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // The restore just swapped the entire database out from under every
       // provider -- reload rather than trust anything already in memory.
       await stock.refresh();
-      await stock.loadExpiringSoonDays();
+      await stock.loadSettings();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.restoreBackupSuccess)));
     } catch (e) {
@@ -351,6 +382,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     FilledButton(
                       onPressed: _savingExpiringSoon ? null : _saveExpiringSoonDays,
                       child: _savingExpiringSoon
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : Text(l10n.saveButton),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(l10n.currencyDescription),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: TextField(
+                        controller: _currencyController,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(isDense: true, labelText: l10n.currencyLabel),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: _savingCurrency ? null : _saveCurrency,
+                      child: _savingCurrency
                           ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                           : Text(l10n.saveButton),
                     ),
