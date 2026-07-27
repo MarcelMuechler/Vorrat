@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/MarcelMuechler/Vorrat/compare/v1.0.0...v1.1.0) (2026-07-27)
+
+
+### Features
+
+* **backend:** back up uploaded product photos alongside the database ([2993b77](https://github.com/MarcelMuechler/Vorrat/commit/2993b774652d0d525fdaefead57b557e3dd7b570)), closes [#325](https://github.com/MarcelMuechler/Vorrat/issues/325)
+* **backend:** list what needs using up in /api/stats ([ad24d51](https://github.com/MarcelMuechler/Vorrat/commit/ad24d51009da000e6ade0b6d220904675e8f104e)), closes [#327](https://github.com/MarcelMuechler/Vorrat/issues/327)
+* **frontend:** edit a stock batch instead of deleting and re-adding it ([45a0805](https://github.com/MarcelMuechler/Vorrat/commit/45a08058e7b196e7576b122b0c2886993154d18d)), closes [#319](https://github.com/MarcelMuechler/Vorrat/issues/319)
+
+
+### Bug Fixes
+
+* **backend:** exclude does_not_spoil products from earliest_expiry ([cf42aac](https://github.com/MarcelMuechler/Vorrat/commit/cf42aac9eae04284f80290924452e5dbf3364fe4)), closes [#320](https://github.com/MarcelMuechler/Vorrat/issues/320)
+* **backend:** fold UPC-A/UPC-E barcodes into their EAN-13 form ([c4fbe3a](https://github.com/MarcelMuechler/Vorrat/commit/c4fbe3a95d738bb139ea6bf041b5a5b4f88bafb5)), closes [#328](https://github.com/MarcelMuechler/Vorrat/issues/328)
+* **backend:** migrate an older-schema backup before swapping it in ([1d49ba0](https://github.com/MarcelMuechler/Vorrat/commit/1d49ba09fe326e15913564b5abe83934af1e4aeb)), closes [#326](https://github.com/MarcelMuechler/Vorrat/issues/326)
+* **frontend:** give uploads their own timeout and a progress dialog ([92fbdc1](https://github.com/MarcelMuechler/Vorrat/commit/92fbdc170165d881e59c894c99a23af5a276f234)), closes [#335](https://github.com/MarcelMuechler/Vorrat/issues/335)
+* **frontend:** name the insecure origin when the browser withholds the camera ([6c422fd](https://github.com/MarcelMuechler/Vorrat/commit/6c422fd7f566aafc0f2217dbc3426a1c5fead959)), closes [#329](https://github.com/MarcelMuechler/Vorrat/issues/329)
+
 ## [1.0.0](https://github.com/MarcelMuechler/Vorrat/compare/v0.21.2...v1.0.0) (2026-07-21)
 
 
