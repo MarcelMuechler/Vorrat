@@ -112,7 +112,7 @@ class _AddBatchSheetState extends State<AddBatchSheet> {
       context: context,
       initialDate: _bestBeforeDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      lastDate: DateTime.now().add(const Duration(days: 36500)),
     );
     if (picked != null) setState(() => _bestBeforeDate = picked);
   }
